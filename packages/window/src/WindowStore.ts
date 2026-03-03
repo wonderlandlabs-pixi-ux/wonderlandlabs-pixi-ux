@@ -1,5 +1,5 @@
 import {TickerForest} from "@wonderlandlabs-pixi-ux/ticker-forest";
-import type {PartialWindowStyle, RgbColor, WindowCloseHandler, WindowDef, WindowStyle} from "./types";
+import type {PartialWindowStyle, RgbColor, WindowCloseHandler, WindowDef, WindowRectTransform, WindowStyle} from "./types";
 import {Application, Container, Graphics, Rectangle} from "pixi.js";
 import {WindowsManager} from "./WindowsManager";
 import rgbToColor from "./rgbToColor";
@@ -18,6 +18,7 @@ const HANDLE_COLOR: RgbColor = {r: 0.3, g: 0.6, b: 1};
 export class WindowStore extends TickerForest<WindowDef> {
     handlesContainer?: Container; // Shared container for resize handles
     customStyle?: PartialWindowStyle; // User style overrides
+    rectTransform?: WindowRectTransform; // Optional transform for resizer rectangle
 
     // Pixi components - created in property definitions
     // guardContainer wraps rootContainer to protect event listeners from being purged
@@ -122,6 +123,21 @@ export class WindowStore extends TickerForest<WindowDef> {
 
     setOnClose(onClose?: WindowCloseHandler): void {
         this.#onClose = onClose;
+    }
+
+    setRectTransform(rectTransform?: WindowRectTransform): void {
+        if (this.rectTransform === rectTransform) {
+            return;
+        }
+        this.rectTransform = rectTransform;
+
+        // Recreate resizer so new transform callback is applied.
+        if (this.#resizerStore) {
+            this.#resizerStore.removeHandles();
+            this.#resizerStore.cleanup();
+            this.#resizerStore = undefined;
+            this.markDirty();
+        }
     }
 
     requestClose(): void {
@@ -470,6 +486,7 @@ export class WindowStore extends TickerForest<WindowDef> {
                 mode: resizeMode || 'ONLY_CORNER',
                 size: 8,
                 color: HANDLE_COLOR,
+                rectTransform: this.rectTransform,
                 drawRect: (rect: Rectangle) => {
                     // Update window dimensions when resizing
                     self.mutate((draft) => {
@@ -497,13 +514,13 @@ export class WindowStore extends TickerForest<WindowDef> {
         if (this.#resizerStore) {
             const currentRect = this.#resizerStore.value.rect;
             if (currentRect.width !== width || currentRect.height !== height) {
-                this.#resizerStore.setRect(new Rectangle(0, 0, width, height));
+                this.#resizerStore.setRect(new Rectangle(currentRect.x, currentRect.y, width, height));
             }
 
             // Only show handles when window is selected
             const rootStore = this.$root as unknown as WindowsManager;
-            const isSelected = rootStore?.isWindowSelected?.(id) ?? false;
-            this.#resizerStore.setVisible(isSelected);
+            const isSelected = rootStore?.isWindowSelected?.(id) ;
+            this.#resizerStore.setVisible(isSelected ?? false);
         }
     }
 

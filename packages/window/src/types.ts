@@ -1,7 +1,7 @@
 import {z} from 'zod';
 import {DIMENSION_TYPE, LOAD_STATUS, TITLEBAR_MODE, WINDOW_STATUS, STYLE_VARIANT} from './constants';
 import type {HandleMode} from '@wonderlandlabs-pixi-ux/resizer';
-import type {Application, Container} from 'pixi.js';
+import type {Application, Container, Rectangle} from 'pixi.js';
 
 // Color schema for RGB values (0..1)
 export const RgbColorSchema = z.object({
@@ -184,6 +184,33 @@ export type WindowCloseContext = {
 
 export type WindowCloseHandler = (context: WindowCloseContext) => boolean | void;
 
+export type WindowRectTransformHandle =
+    | 'top-left'
+    | 'top-center'
+    | 'top-right'
+    | 'middle-left'
+    | 'middle-right'
+    | 'bottom-left'
+    | 'bottom-center'
+    | 'bottom-right';
+
+export type WindowRectTransformPhase = 'drag' | 'release';
+
+export type WindowRectLike = {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+};
+
+export interface WindowRectTransformParams {
+    rect: Rectangle;
+    phase: WindowRectTransformPhase;
+    handle: WindowRectTransformHandle | null;
+}
+
+export type WindowRectTransform = (params: WindowRectTransformParams) => Rectangle | WindowRectLike;
+
 // Type for WindowStore class constructor
 export type WindowStoreClass<T extends WindowDef = WindowDef> = new (
     config: any,
@@ -194,6 +221,7 @@ export type WindowStoreClass<T extends WindowDef = WindowDef> = new (
 export type WindowDefInput = Omit<Partial<WindowDef>, 'titlebar'> & {
     id: string;
     titlebar?: Partial<TitlebarConfig>;
+    rectTransform?: WindowRectTransform; // Optional rect transform forwarded to resizer handles
     closable?: boolean;
     onClose?: WindowCloseHandler;
     customStyle?: PartialWindowStyle; // User style overrides

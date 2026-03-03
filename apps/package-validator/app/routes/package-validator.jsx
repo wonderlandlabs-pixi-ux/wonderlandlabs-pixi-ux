@@ -4,30 +4,11 @@ import {
   PACKAGE_DEFINITIONS,
   SOURCE_MODES,
   resolveSourceLoader,
-  runHeartbeat,
 } from "../../src/packageHeartbeats.js";
 import { Application, Container, Graphics, Rectangle } from "pixi.js";
 import { FiArrowDown, FiArrowLeft, FiArrowRight, FiArrowUp, FiRotateCcw } from "react-icons/fi";
 
 const SOURCE_LIST = [SOURCE_MODES.published, SOURCE_MODES.workspace];
-
-function statusLabel(status) {
-  if (status === "pass") return "PASS";
-  if (status === "fail") return "FAIL";
-  if (status === "running") return "RUNNING";
-  return "IDLE";
-}
-
-function statusClass(status) {
-  if (status === "pass") return "status-pass";
-  if (status === "fail") return "status-fail";
-  if (status === "running") return "status-running";
-  return "status-idle";
-}
-
-function routeKey(packageId, sourceMode) {
-  return `${packageId}:${sourceMode}`;
-}
 
 function routePath(packageId, sourceMode) {
   return `/${packageId}/${sourceMode}`;
@@ -117,11 +98,8 @@ function DemoStats({ x, y, compact = false }) {
 export default function PackageValidatorRoute() {
   const params = useParams();
   const navigate = useNavigate();
-  const mountRef = useRef(null);
   const rootDemoMountRef = useRef(null);
   const rootDemoApiRef = useRef(null);
-  const [results, setResults] = useState({});
-  const [runningAll, setRunningAll] = useState(false);
   const [demo, setDemo] = useState({
     status: "idle",
     zoom: 1,
@@ -568,6 +546,138 @@ export default function PackageValidatorRoute() {
           });
           return;
         }
+
+        if (selectedPackageId === "window-snap") {
+          app.stage.eventMode = "static";
+          app.stage.hitArea = new Rectangle(0, 0, app.screen.width, app.screen.height);
+
+          const frame = new Container();
+          frame.position.set(app.screen.width / 2, app.screen.height / 2);
+          app.stage.addChild(frame);
+
+          const scaleCarrier = new Container();
+          frame.addChild(scaleCarrier);
+
+          const referenceSpace = new Container();
+          scaleCarrier.addChild(referenceSpace);
+          addDemoGeometry(referenceSpace);
+
+          const SNAP_GRID = 16;
+          const MIN_SIZE = 64;
+          const snapValue = (value) => Math.round(value / SNAP_GRID) * SNAP_GRID;
+          const snapDimension = (value) => {
+            const sign = value < 0 ? -1 : 1;
+            const snappedAbs = snapValue(Math.abs(value));
+            const roundedAbs = Math.max(SNAP_GRID, snappedAbs);
+            const clampedAbs = Math.max(MIN_SIZE, roundedAbs);
+            return sign * clampedAbs;
+          };
+
+          const applyHandleSnap = (rect, handle) => {
+            const snapped = {
+              x: rect.x,
+              y: rect.y,
+              width: rect.width,
+              height: rect.height,
+            };
+
+            switch (handle) {
+              case "top-left":
+                snapped.x = snapValue(rect.x);
+                snapped.y = snapValue(rect.y);
+                snapped.width = snapDimension(rect.width);
+                snapped.height = snapDimension(rect.height);
+                break;
+              case "top-center":
+                snapped.y = snapValue(rect.y);
+                snapped.height = snapDimension(rect.height);
+                break;
+              case "top-right":
+                snapped.y = snapValue(rect.y);
+                snapped.width = snapDimension(rect.width);
+                snapped.height = snapDimension(rect.height);
+                break;
+              case "middle-left":
+                snapped.x = snapValue(rect.x);
+                snapped.width = snapDimension(rect.width);
+                break;
+              case "middle-right":
+                snapped.width = snapDimension(rect.width);
+                break;
+              case "bottom-left":
+                snapped.x = snapValue(rect.x);
+                snapped.width = snapDimension(rect.width);
+                snapped.height = snapDimension(rect.height);
+                break;
+              case "bottom-center":
+                snapped.height = snapDimension(rect.height);
+                break;
+              case "bottom-right":
+                snapped.width = snapDimension(rect.width);
+                snapped.height = snapDimension(rect.height);
+                break;
+              default:
+                snapped.x = snapValue(rect.x);
+                snapped.y = snapValue(rect.y);
+                snapped.width = snapDimension(rect.width);
+                snapped.height = snapDimension(rect.height);
+                break;
+            }
+
+            return new Rectangle(snapped.x, snapped.y, snapped.width, snapped.height);
+          };
+
+          const windows = new mod.WindowsManager({
+            app,
+            container: referenceSpace,
+          });
+
+          windows.addWindow("snap-window", {
+            x: -96,
+            y: -64,
+            width: 160,
+            height: 128,
+            isDraggable: true,
+            isResizeable: true,
+            resizeMode: "EDGE_AND_CORNER",
+            titlebar: { title: "Snap Window" },
+            rectTransform: ({ rect, handle }) => applyHandleSnap(rect, handle),
+          });
+
+          const branch = windows.initWindow("snap-window");
+          windows.setSelectedWindow("snap-window");
+          branch?.resolveComponents(windows.windowsContainer, windows.handlesContainer);
+
+          const observe = createDemoObserver(setDemo, () => ({
+            zoom: Number(scaleCarrier.scale.x.toFixed(2)),
+            x: Math.round(frame.position.x),
+            y: Math.round(frame.position.y),
+          }));
+          observe();
+
+          rootDemoApiRef.current = createDemoController({
+            observe,
+            onSetZoom(value) {
+              scaleCarrier.scale.set(value);
+            },
+            onPanBy(dx, dy) {
+              frame.position.set(frame.position.x + dx, frame.position.y + dy);
+            },
+            onResetView() {
+              scaleCarrier.scale.set(1);
+              frame.position.set(app.screen.width / 2, app.screen.height / 2);
+              windows.setSelectedWindow("snap-window");
+            },
+            onDestroy() {
+              windows.removeWindow("snap-window");
+              app.destroy(true);
+              if (mountNode) {
+                mountNode.innerHTML = "";
+              }
+            },
+          });
+          return;
+        }
       } catch (error) {
         if (!cancelled) {
           setDemo({
@@ -593,83 +703,32 @@ export default function PackageValidatorRoute() {
     };
   }, [selected, selectedSourceMode, selectedPackageId]);
 
-  async function runOne(packageDef, sourceMode) {
-    const key = routeKey(packageDef.id, sourceMode);
-    setResults((prev) => ({
-      ...prev,
-      [key]: { status: "running" },
-    }));
-
-    const result = await runHeartbeat(packageDef, sourceMode, mountRef.current);
-    setResults((prev) => ({ ...prev, [key]: result }));
-  }
-
-  async function runAllRoutes() {
-    setRunningAll(true);
-    try {
-      for (const pkg of PACKAGE_DEFINITIONS) {
-        for (const sourceMode of SOURCE_LIST) {
-          await runOne(pkg, sourceMode);
-        }
-      }
-    } finally {
-      setRunningAll(false);
-    }
-  }
-
-  const selectedKey = routeKey(selected.id, selectedSourceMode);
-  const selectedResult = results[selectedKey];
-  const allResults = Object.values(results);
-  const passCount = allResults.filter((result) => result?.status === "pass").length;
-  const failCount = allResults.filter((result) => result?.status === "fail").length;
-  const totalRoutes = PACKAGE_DEFINITIONS.length * SOURCE_LIST.length;
-
   return (
     <div className="layout">
       <aside className="sidebar">
-        <div className="button-row">
-          <button
-            type="button"
-            onClick={() => runOne(selected, selectedSourceMode)}
-            disabled={selectedResult?.status === "running" || runningAll}
-          >
-            Run Route
-          </button>
-          <button type="button" onClick={runAllRoutes} disabled={runningAll}>
-            Run All Routes
-          </button>
-        </div>
-        <div className="summary">
-          <span>{passCount} pass</span>
-          <span>{failCount} fail</span>
-          <span>{totalRoutes} total routes</span>
-        </div>
         <nav>
           {PACKAGE_DEFINITIONS.map((pkg) => {
-            const publishedStatus = results[routeKey(pkg.id, SOURCE_MODES.published)]?.status ?? "idle";
-            const workspaceStatus = results[routeKey(pkg.id, SOURCE_MODES.workspace)]?.status ?? "idle";
-
             return (
               <div key={pkg.id} className="nav-group">
-                <div className="nav-title">{pkg.workspaceImport}</div>
-                <Link
-                  to={routePath(pkg.id, SOURCE_MODES.published)}
-                  className={`nav-link ${
-                    selected.id === pkg.id && selectedSourceMode === SOURCE_MODES.published ? "active" : ""
-                  }`}
-                >
-                  <span>published</span>
-                  <span className={statusClass(publishedStatus)}>{statusLabel(publishedStatus)}</span>
-                </Link>
-                <Link
-                  to={routePath(pkg.id, SOURCE_MODES.workspace)}
-                  className={`nav-link ${
-                    selected.id === pkg.id && selectedSourceMode === SOURCE_MODES.workspace ? "active" : ""
-                  }`}
-                >
-                  <span>workspace</span>
-                  <span className={statusClass(workspaceStatus)}>{statusLabel(workspaceStatus)}</span>
-                </Link>
+                <div className="nav-title" title={pkg.workspaceImport}>{pkg.id}</div>
+                <div className="nav-links-row">
+                  <Link
+                    to={routePath(pkg.id, SOURCE_MODES.published)}
+                    className={`nav-link nav-link-compact ${
+                      selected.id === pkg.id && selectedSourceMode === SOURCE_MODES.published ? "active" : ""
+                    }`}
+                  >
+                    <span>published</span>
+                  </Link>
+                  <Link
+                    to={routePath(pkg.id, SOURCE_MODES.workspace)}
+                    className={`nav-link nav-link-compact ${
+                      selected.id === pkg.id && selectedSourceMode === SOURCE_MODES.workspace ? "active" : ""
+                    }`}
+                  >
+                    <span>workspace</span>
+                  </Link>
+                </div>
               </div>
             );
           })}
@@ -680,9 +739,6 @@ export default function PackageValidatorRoute() {
         <div className="content-top">
           <header className="content-header">
             <h2>{selected.workspaceImport}</h2>
-            <span className={statusClass(selectedResult?.status ?? "idle")}>
-              {statusLabel(selectedResult?.status ?? "idle")}
-            </span>
           </header>
           <div className="source-tabs">
             <Link
@@ -698,12 +754,6 @@ export default function PackageValidatorRoute() {
               workspace
             </Link>
           </div>
-
-          {selectedResult?.error && (
-            <div className="error-box">
-              <strong>Error:</strong> {selectedResult.error}
-            </div>
-          )}
         </div>
 
         <section className="demo-panel">
@@ -797,7 +847,6 @@ export default function PackageValidatorRoute() {
           </div>
           <div className="pixi-mount" ref={rootDemoMountRef} />
         </section>
-        <div className="runtime-mount" ref={mountRef} aria-hidden />
       </main>
     </div>
   );

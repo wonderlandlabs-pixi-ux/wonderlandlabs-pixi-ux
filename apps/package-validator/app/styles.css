@@ -89,12 +89,37 @@ body {
 }
 
 .nav-title {
-  font-size: 0.78rem;
-  font-weight: 700;
+  font-size: 0.92rem;
+  font-weight: 800;
   color: #475569;
-  margin: 2px 6px 4px;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+  margin: 0 0 4px 0;
+  letter-spacing: 0.02em;
+}
+
+.nav-links-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(92px, max-content));
+  justify-content: start;
+  gap: 6px;
+  margin-left: 14px;
+}
+
+.nav-link-compact {
+  margin-bottom: 0;
+  padding: 6px 8px;
+  font-size: 0.78rem;
+  line-height: 1.2;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.nav-link-compact .status-pass,
+.nav-link-compact .status-fail,
+.nav-link-compact .status-running,
+.nav-link-compact .status-idle {
+  padding: 2px 6px;
+  font-size: 0.62rem;
 }
 
 .content {

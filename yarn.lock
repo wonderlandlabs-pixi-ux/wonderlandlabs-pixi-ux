@@ -3701,6 +3701,24 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@published/window@npm:@wonderlandlabs-pixi-ux/window@latest":
+  version: 1.1.4
+  resolution: "@wonderlandlabs-pixi-ux/window@npm:1.1.4"
+  dependencies:
+    "@wonderlandlabs-pixi-ux/drag": "workspace:^"
+    "@wonderlandlabs-pixi-ux/resizer": "workspace:^"
+    "@wonderlandlabs-pixi-ux/ticker-forest": "workspace:^"
+    "@wonderlandlabs-pixi-ux/toolbar": "workspace:^"
+    "@wonderlandlabs/forestry4": "npm:^4.1.15"
+    lodash-es: "npm:^4.17.22"
+    rxjs: "npm:^7.8.2"
+    zod: "npm:^4.3.6"
+  peerDependencies:
+    pixi.js: 8.16.0
+  checksum: 0e5bdb4a2b6d89b5461031d483961c09d5d1ab4eced787453135488c575be489e40a25da448dd3dd55d84db002ff02f501c40c56cefb467aad53e2d8942bf594
+  languageName: node
+  linkType: hard
+
 "@react-router/dev@npm:^7.13.1":
   version: 7.13.1
   resolution: "@react-router/dev@npm:7.13.1"
@@ -5253,12 +5271,14 @@ __metadata:
     "@published/grid": "npm:@wonderlandlabs-pixi-ux/grid@latest"
     "@published/resizer": "npm:@wonderlandlabs-pixi-ux/resizer@latest"
     "@published/root-container": "npm:@wonderlandlabs-pixi-ux/root-container@latest"
+    "@published/window": "npm:@wonderlandlabs-pixi-ux/window@latest"
     "@react-router/dev": "npm:^7.13.1"
     "@react-router/node": "npm:^7.13.1"
     "@wonderlandlabs-pixi-ux/drag": "workspace:^"
     "@wonderlandlabs-pixi-ux/grid": "workspace:^"
     "@wonderlandlabs-pixi-ux/resizer": "workspace:^"
     "@wonderlandlabs-pixi-ux/root-container": "workspace:^"
+    "@wonderlandlabs-pixi-ux/window": "workspace:^"
     pixi.js: "npm:8.16.0"
     react: "npm:^18.2.1"
     react-dom: "npm:^18.2.1"
@@ -5330,7 +5350,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@wonderlandlabs-pixi-ux/window@workspace:packages/window":
+"@wonderlandlabs-pixi-ux/window@workspace:^, @wonderlandlabs-pixi-ux/window@workspace:packages/window":
   version: 0.0.0-use.local
   resolution: "@wonderlandlabs-pixi-ux/window@workspace:packages/window"
   dependencies:

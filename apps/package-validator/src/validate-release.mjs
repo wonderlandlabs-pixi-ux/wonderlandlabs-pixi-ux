@@ -17,7 +17,7 @@ for (let i = 2; i < process.argv.length; i += 1) {
   }
 }
 
-const defaultPackages = ['root-container', 'grid', 'resizer', 'drag'];
+const defaultPackages = ['root-container', 'grid', 'resizer', 'drag', 'window'];
 const packageIds = argPackages.length > 0 ? argPackages : defaultPackages;
 
 const SOURCE_ROOTS = {

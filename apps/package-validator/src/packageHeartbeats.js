@@ -216,6 +216,173 @@ async function runResizerSnapTest(mod, ctx) {
   ctx.pass('created snapping resizer and committed transformed coordinates on release');
 }
 
+async function runWindowSnapTest(mod, ctx) {
+  await withPixiCanvas(ctx.mountNode, async (app) => {
+    assert(typeof mod.WindowsManager === 'function', 'window module missing WindowsManager export');
+
+    app.stage.eventMode = 'static';
+    app.stage.hitArea = new Rectangle(0, 0, app.screen.width, app.screen.height);
+
+    const frame = new Container();
+    frame.position.set(app.screen.width / 2, app.screen.height / 2);
+    app.stage.addChild(frame);
+
+    const scaleCarrier = new Container();
+    frame.addChild(scaleCarrier);
+
+    const referenceSpace = new Container();
+    scaleCarrier.addChild(referenceSpace);
+
+    const SNAP_GRID = 16;
+    const MIN_SIZE = 64;
+    const snapValue = (value) => Math.round(value / SNAP_GRID) * SNAP_GRID;
+    const snapDimension = (value) => {
+      const sign = value < 0 ? -1 : 1;
+      const snappedAbs = snapValue(Math.abs(value));
+      const roundedAbs = Math.max(SNAP_GRID, snappedAbs);
+      const clampedAbs = Math.max(MIN_SIZE, roundedAbs);
+      return sign * clampedAbs;
+    };
+
+    const applyHandleSnap = (rect, handle) => {
+      const snapped = {
+        x: rect.x,
+        y: rect.y,
+        width: rect.width,
+        height: rect.height,
+      };
+
+      switch (handle) {
+        case 'top-left':
+          snapped.x = snapValue(rect.x);
+          snapped.y = snapValue(rect.y);
+          snapped.width = snapDimension(rect.width);
+          snapped.height = snapDimension(rect.height);
+          break;
+        case 'top-center':
+          snapped.y = snapValue(rect.y);
+          snapped.height = snapDimension(rect.height);
+          break;
+        case 'top-right':
+          snapped.y = snapValue(rect.y);
+          snapped.width = snapDimension(rect.width);
+          snapped.height = snapDimension(rect.height);
+          break;
+        case 'middle-left':
+          snapped.x = snapValue(rect.x);
+          snapped.width = snapDimension(rect.width);
+          break;
+        case 'middle-right':
+          snapped.width = snapDimension(rect.width);
+          break;
+        case 'bottom-left':
+          snapped.x = snapValue(rect.x);
+          snapped.width = snapDimension(rect.width);
+          snapped.height = snapDimension(rect.height);
+          break;
+        case 'bottom-center':
+          snapped.height = snapDimension(rect.height);
+          break;
+        case 'bottom-right':
+          snapped.width = snapDimension(rect.width);
+          snapped.height = snapDimension(rect.height);
+          break;
+        default:
+          snapped.x = snapValue(rect.x);
+          snapped.y = snapValue(rect.y);
+          snapped.width = snapDimension(rect.width);
+          snapped.height = snapDimension(rect.height);
+          break;
+      }
+
+      return new Rectangle(snapped.x, snapped.y, snapped.width, snapped.height);
+    };
+
+    const observedHandles = new Set();
+    const manager = new mod.WindowsManager({
+      app,
+      container: referenceSpace,
+    });
+
+    manager.addWindow('snap-window', {
+      x: -96,
+      y: -64,
+      width: 160,
+      height: 128,
+      isDraggable: true,
+      isResizeable: true,
+      resizeMode: 'EDGE_AND_CORNER',
+      rectTransform: ({ rect, phase, handle }) => {
+        if (handle) {
+          observedHandles.add(`${phase}:${handle}`);
+        }
+        return applyHandleSnap(rect, handle);
+      },
+    });
+
+    const branch = manager.initWindow('snap-window');
+    assert(branch, 'window branch was not created');
+    manager.setSelectedWindow('snap-window');
+    branch.resolveComponents(manager.windowsContainer, manager.handlesContainer);
+
+    const waitForFrame = () => new Promise((resolve) => setTimeout(resolve, 25));
+    const eventAt = (x, y) => ({
+      global: { x, y },
+      stopPropagation() {},
+    });
+
+    const dragWindow = async (dx, dy) => {
+      const start = branch.rootContainer.getGlobalPosition();
+      branch.rootContainer.emit('pointerdown', eventAt(start.x, start.y));
+      app.stage.emit('pointermove', eventAt(start.x + dx, start.y + dy));
+      await waitForFrame();
+      app.stage.emit('pointerup', eventAt(start.x + dx, start.y + dy));
+      await waitForFrame();
+    };
+
+    await dragWindow(40, 24);
+    assert(branch.value.x === -56, 'window drag did not update x');
+    assert(branch.value.y === -40, 'window drag did not update y');
+    assert(branch.value.x !== 0 && branch.value.y !== 0, 'window drag unexpectedly reset position to origin');
+
+    const dragHandle = (handleLabel, dx, dy) => {
+      const handle = manager.handlesContainer.children.find((child) => child.label === `Handle-${handleLabel}`);
+      assert(handle, `missing handle ${handleLabel}`);
+
+      const start = handle.getGlobalPosition();
+
+      handle.emit('pointerdown', eventAt(start.x, start.y));
+      app.stage.emit('pointermove', eventAt(start.x + dx, start.y + dy));
+      app.stage.emit('pointerup', eventAt(start.x + dx, start.y + dy));
+    };
+
+    dragHandle('middle-right', 13, 9);
+    assert(branch.value.x === -56, 'side-handle snap changed x unexpectedly');
+    assert(branch.value.y === -40, 'side-handle snap changed y unexpectedly');
+    assert(branch.value.width === 176, 'side-handle snap did not round width to 16px grid');
+    assert(branch.value.height === 128, 'side-handle snap changed height unexpectedly');
+
+    dragHandle('bottom-right', 13, 9);
+    assert(branch.value.x === -56, 'corner-handle snap changed x unexpectedly');
+    assert(branch.value.y === -40, 'corner-handle snap changed y unexpectedly');
+    assert(branch.value.width === 192, 'corner-handle snap did not round width to 16px grid');
+    assert(branch.value.height === 144, 'corner-handle snap did not round height to 16px grid');
+
+    dragHandle('top-center', 13, -11);
+    assert(branch.value.x === -56, 'top-center snap changed x unexpectedly');
+    assert(branch.value.y === -48, 'top-center snap did not round y to 16px grid');
+    assert(branch.value.width === 192, 'top-center snap changed width unexpectedly');
+    assert(branch.value.height === 160, 'top-center snap did not round height to 16px grid');
+
+    assert(observedHandles.has('release:middle-right'), 'rectTransform did not receive middle-right handle');
+    assert(observedHandles.has('release:bottom-right'), 'rectTransform did not receive bottom-right handle');
+    assert(observedHandles.has('release:top-center'), 'rectTransform did not receive top-center handle');
+
+    manager.removeWindow('snap-window');
+  });
+  ctx.pass('validated window snapping with handle-specific rectTransform behavior');
+}
+
 export const SOURCE_MODES = {
   published: 'published',
   workspace: 'workspace',
@@ -293,6 +460,16 @@ export const PACKAGE_DEFINITIONS = [
     heartbeat: runDragTest,
     publishedLoader: () => import('@published/drag'),
     workspaceLoader: () => import('@wonderlandlabs-pixi-ux/drag'),
+  }),
+  createPackageDefinition({
+    id: 'window-snap',
+    title: 'Window (Snap)',
+    workspaceImport: '@wonderlandlabs-pixi-ux/window',
+    publishedImport: '@published/window',
+    description: 'Window resize snapping demo with handle-aware rect transforms.',
+    heartbeat: runWindowSnapTest,
+    publishedLoader: () => import('@published/window'),
+    workspaceLoader: () => import('@wonderlandlabs-pixi-ux/window'),
   }),
 ];
 

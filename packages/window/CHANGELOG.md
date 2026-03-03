@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## 1.1.5 - 2026-03-03
+
+- Added `rectTransform` passthrough in `WindowsManager.addWindow(...)` so window resize handles can apply coordinate transforms/snapping via `@wonderlandlabs-pixi-ux/resizer`.
+- patched a setStore error where window snaps to 0,0 when resizing
 ## 1.1.4 - 2026-03-03
 
 - Bumped package version to align with `@wonderlandlabs-pixi-ux/resizer@1.1.4`.

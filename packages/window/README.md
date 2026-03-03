@@ -40,6 +40,41 @@ windows.addWindow('notes', {
 });
 ```
 
+## Resize Transform Passthrough
+
+`window` forwards `rectTransform` to the underlying `@wonderlandlabs-pixi-ux/resizer` instance.
+Use this to apply snapping or coordinate transforms during resize drags.
+
+```ts
+windows.addWindow('snapped', {
+  x: 120,
+  y: 100,
+  width: 420,
+  height: 280,
+  isResizeable: true,
+  resizeMode: 'EDGE_AND_CORNER',
+  rectTransform: ({ rect, phase, handle }) => {
+    const snap = (n: number) => Math.round(n / 16) * 16;
+    const min = 64;
+
+    // Keep drag preview responsive; snap on release.
+    if (phase === 'drag') return rect;
+
+    return {
+      x: snap(rect.x),
+      y: snap(rect.y),
+      width: Math.max(min, snap(rect.width)),
+      height: Math.max(min, snap(rect.height)),
+    };
+  },
+});
+```
+
+Callback params:
+- `rect`: current rectangle candidate (`Rectangle`)
+- `phase`: `'drag' | 'release'`
+- `handle`: active resize handle id, or `null`
+
 ## Label Styling
 
 Window title text is styled from `window.label.*` style properties:

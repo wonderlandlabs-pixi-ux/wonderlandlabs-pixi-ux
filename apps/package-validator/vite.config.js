@@ -15,10 +15,12 @@ export default defineConfig({
       '@wonderlandlabs-pixi-ux/grid',
       '@wonderlandlabs-pixi-ux/drag',
       '@wonderlandlabs-pixi-ux/resizer',
+      '@wonderlandlabs-pixi-ux/window',
       '@published/root-container',
       '@published/grid',
       '@published/resizer',
       '@published/drag',
+      '@published/window',
     ],
   },
   server: {
