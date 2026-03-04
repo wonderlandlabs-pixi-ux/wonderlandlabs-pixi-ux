@@ -32,15 +32,58 @@ async function withPixiCanvas(mountNode, run) {
 
 async function runDragTest(mod, ctx) {
   await withPixiCanvas(ctx.mountNode, async (app) => {
-    const store = new mod.DragStore({ app });
-    store.startDrag('item-1', 20, 20, 10, 10);
-    store.updateDrag(30, 35);
-    const position = store.getCurrentItemPosition();
-    assert(position !== null, 'drag position was null');
+    app.stage.eventMode = 'static';
+    app.stage.hitArea = new Rectangle(0, 0, app.screen.width, app.screen.height);
+
+    const frame = new Container();
+    frame.position.set(app.screen.width / 2, app.screen.height / 2);
+    app.stage.addChild(frame);
+
+    const scaleCarrier = new Container();
+    scaleCarrier.scale.set(1.5);
+    frame.addChild(scaleCarrier);
+
+    const square = new Graphics().rect(-20, -20, 40, 40).fill(0x1d4ed8);
+    square.eventMode = 'static';
+    square.position.set(0, 0);
+    scaleCarrier.addChild(square);
+
+    const store = new mod.DragStore({
+      app,
+      callbacks: {
+        onDrag(state) {
+          square.position.set(state.initialItemX + state.deltaX, state.initialItemY + state.deltaY);
+        },
+      },
+    });
+
+    const onPointerDown = (event) => {
+      store.startDragContainer('item-1', event, square);
+    };
+    square.on('pointerdown', onPointerDown);
+
+    const waitForFrame = () => new Promise((resolve) => setTimeout(resolve, 25));
+    const eventAt = (x, y) => ({
+      global: { x, y },
+      stopPropagation() {},
+    });
+
+    const start = square.getGlobalPosition();
+    square.emit('pointerdown', eventAt(start.x, start.y));
+    app.stage.emit('pointermove', eventAt(start.x + 30, start.y + 15));
+    await waitForFrame();
+
+    assert(Math.round(square.position.x) === 20, 'scaled drag did not apply expected local-space x delta');
+    assert(Math.round(square.position.y) === 10, 'scaled drag did not apply expected local-space y delta');
+
+    app.stage.emit('pointerup', eventAt(start.x + 30, start.y + 15));
+    await waitForFrame();
+
     store.endDrag();
+    square.off('pointerdown', onPointerDown);
     store.destroy();
   });
-  ctx.pass('created drag store and completed drag cycle');
+  ctx.pass('validated drag store pointer flow under scaled parent coordinates');
 }
 
 async function runGridTest(mod, ctx) {
@@ -202,8 +245,21 @@ async function runResizerSnapTest(mod, ctx) {
     handles.setVisible(true);
 
     const event = { stopPropagation() {} };
+    const waitForFrame = () => new Promise((resolve) => setTimeout(resolve, 25));
     handles.onDragStart(event, mod.HandlePosition.BOTTOM_RIGHT);
     handles.onDragMove(18, 10, event);
+
+    assert(handles.value.rect.width === 176, 'drag-phase snap did not round width to 16px grid');
+    assert(handles.value.rect.height === 112, 'drag-phase snap did not round height to 16px grid');
+
+    await waitForFrame();
+    const dragHandle = referenceSpace.children
+      .flatMap((child) => child?.children ?? [])
+      .find((child) => child?.label === 'Handle-bottom-right');
+    assert(dragHandle, 'bottom-right handle was not created');
+    assert(Math.round(dragHandle.position.x) === 96, 'bottom-right handle did not move to snapped x during drag');
+    assert(Math.round(dragHandle.position.y) === 62, 'bottom-right handle did not move to snapped y during drag');
+
     handles.onDragEnd(event);
 
     assert(handles.value.rect.width === 176, 'snap transform did not round width to 16px grid');
@@ -229,6 +285,7 @@ async function runWindowSnapTest(mod, ctx) {
 
     const scaleCarrier = new Container();
     frame.addChild(scaleCarrier);
+    scaleCarrier.scale.set(1.5);
 
     const referenceSpace = new Container();
     scaleCarrier.addChild(referenceSpace);
@@ -340,12 +397,12 @@ async function runWindowSnapTest(mod, ctx) {
       await waitForFrame();
     };
 
-    await dragWindow(40, 24);
-    assert(branch.value.x === -56, 'window drag did not update x');
-    assert(branch.value.y === -40, 'window drag did not update y');
+    await dragWindow(48, 24);
+    assert(branch.value.x === -64, 'window drag did not update x');
+    assert(branch.value.y === -48, 'window drag did not update y');
     assert(branch.value.x !== 0 && branch.value.y !== 0, 'window drag unexpectedly reset position to origin');
 
-    const dragHandle = (handleLabel, dx, dy) => {
+    const dragHandle = async (handleLabel, dx, dy, onMove) => {
       const handle = manager.handlesContainer.children.find((child) => child.label === `Handle-${handleLabel}`);
       assert(handle, `missing handle ${handleLabel}`);
 
@@ -353,26 +410,44 @@ async function runWindowSnapTest(mod, ctx) {
 
       handle.emit('pointerdown', eventAt(start.x, start.y));
       app.stage.emit('pointermove', eventAt(start.x + dx, start.y + dy));
+      await waitForFrame();
+      onMove?.(handle);
       app.stage.emit('pointerup', eventAt(start.x + dx, start.y + dy));
+      await waitForFrame();
     };
 
-    dragHandle('middle-right', 13, 9);
-    assert(branch.value.x === -56, 'side-handle snap changed x unexpectedly');
-    assert(branch.value.y === -40, 'side-handle snap changed y unexpectedly');
+    await dragHandle('middle-right', 24, 0, (handle) => {
+      assert(Math.round(handle.position.x) === 112, 'middle-right handle did not move to snapped x during drag');
+      assert(Math.round(handle.position.y) === 16, 'middle-right handle changed y unexpectedly during drag');
+    });
+    assert(branch.value.x === -64, 'side-handle snap changed x unexpectedly');
+    assert(branch.value.y === -48, 'side-handle snap changed y unexpectedly');
     assert(branch.value.width === 176, 'side-handle snap did not round width to 16px grid');
     assert(branch.value.height === 128, 'side-handle snap changed height unexpectedly');
 
-    dragHandle('bottom-right', 13, 9);
-    assert(branch.value.x === -56, 'corner-handle snap changed x unexpectedly');
-    assert(branch.value.y === -40, 'corner-handle snap changed y unexpectedly');
+    await dragHandle('bottom-right', 24, 24);
+    assert(branch.value.x === -64, 'corner-handle snap changed x unexpectedly');
+    assert(branch.value.y === -48, 'corner-handle snap changed y unexpectedly');
     assert(branch.value.width === 192, 'corner-handle snap did not round width to 16px grid');
     assert(branch.value.height === 144, 'corner-handle snap did not round height to 16px grid');
 
-    dragHandle('top-center', 13, -11);
-    assert(branch.value.x === -56, 'top-center snap changed x unexpectedly');
-    assert(branch.value.y === -48, 'top-center snap did not round y to 16px grid');
+    await dragHandle('top-center', 0, -24);
+    assert(branch.value.x === -64, 'top-center snap changed x unexpectedly');
+    assert(branch.value.y === -64, 'top-center snap did not round y to 16px grid');
     assert(branch.value.width === 192, 'top-center snap changed width unexpectedly');
     assert(branch.value.height === 160, 'top-center snap did not round height to 16px grid');
+
+    branch.mutate((draft) => {
+      draft.x = -63;
+      draft.y = -47;
+    });
+    branch.markDirty();
+    await waitForFrame();
+
+    const middleRightHandle = manager.handlesContainer.children.find((child) => child.label === 'Handle-middle-right');
+    assert(middleRightHandle, 'missing handle middle-right after external window move');
+    assert(Math.round(middleRightHandle.position.x) === 129, 'window move used rectTransform instead of current x for handles');
+    assert(Math.round(middleRightHandle.position.y) === 33, 'window move used rectTransform instead of current y for handles');
 
     assert(observedHandles.has('release:middle-right'), 'rectTransform did not receive middle-right handle');
     assert(observedHandles.has('release:bottom-right'), 'rectTransform did not receive bottom-right handle');

@@ -148,7 +148,6 @@ export class ResizerStore extends TickerForest<ResizerStoreValue> {
         this.updateHandles();
 
         this.drawRect?.(this.asRect, this.#targetContainer);
-        this.emitTransformedPreview();
     }
 
     onHandleScaleTick() {
@@ -191,7 +190,8 @@ export class ResizerStore extends TickerForest<ResizerStoreValue> {
             this.dragStartRect
         );
 
-        this.setRect(newRect);
+        const dragRect = this.rectTransform ? this.applyRectTransform(newRect, 'drag') : newRect;
+        this.setRect(dragRect);
     }
 
     /**
@@ -367,13 +367,6 @@ export class ResizerStore extends TickerForest<ResizerStoreValue> {
         return transformed;
     }
 
-    private emitTransformedPreview() {
-        if (!this.dragHandle || !this.rectTransform || !this.onTransformedRect) {
-            return;
-        }
-        this.applyRectTransform(this.value.rect, 'drag');
-    }
-
     /**
      * Update handle positions based on current rect
      */
@@ -401,44 +394,41 @@ export class ResizerStore extends TickerForest<ResizerStoreValue> {
     ): Rect {
         // Clone the rect using spread operator
         const newRect = {...startRect};
-        const parentScale = this.#targetContainer.parent?.scale.x ?? 1;
-        const scaledDeltaX = deltaX / parentScale;
-        const scaledDeltaY = deltaY / parentScale;
 
         switch (position) {
             case HandlePosition.TOP_LEFT:
-                newRect.x += scaledDeltaX;
-                newRect.y += scaledDeltaY;
-                newRect.width -= scaledDeltaX;
-                newRect.height -= scaledDeltaY;
+                newRect.x += deltaX;
+                newRect.y += deltaY;
+                newRect.width -= deltaX;
+                newRect.height -= deltaY;
                 break;
             case HandlePosition.TOP_CENTER:
-                newRect.y += scaledDeltaY;
-                newRect.height -= scaledDeltaY;
+                newRect.y += deltaY;
+                newRect.height -= deltaY;
                 break;
             case HandlePosition.TOP_RIGHT:
-                newRect.y += scaledDeltaY;
-                newRect.width += scaledDeltaX;
-                newRect.height -= scaledDeltaY;
+                newRect.y += deltaY;
+                newRect.width += deltaX;
+                newRect.height -= deltaY;
                 break;
             case HandlePosition.MIDDLE_RIGHT:
-                newRect.width += scaledDeltaX;
+                newRect.width += deltaX;
                 break;
             case HandlePosition.BOTTOM_RIGHT:
-                newRect.width += scaledDeltaX;
-                newRect.height += scaledDeltaY;
+                newRect.width += deltaX;
+                newRect.height += deltaY;
                 break;
             case HandlePosition.BOTTOM_CENTER:
-                newRect.height += scaledDeltaY;
+                newRect.height += deltaY;
                 break;
             case HandlePosition.BOTTOM_LEFT:
-                newRect.x += scaledDeltaX;
-                newRect.width -= scaledDeltaX;
-                newRect.height += scaledDeltaY;
+                newRect.x += deltaX;
+                newRect.width -= deltaX;
+                newRect.height += deltaY;
                 break;
             case HandlePosition.MIDDLE_LEFT:
-                newRect.x += scaledDeltaX;
-                newRect.width -= scaledDeltaX;
+                newRect.x += deltaX;
+                newRect.width -= deltaX;
                 break;
         }
 
@@ -470,7 +460,8 @@ export class ResizerStore extends TickerForest<ResizerStoreValue> {
                     onDragMove: this.$.onDragMove,
                     onDragEnd: this.$.onDragEnd
                 },
-                this.stage
+                this.stage,
+                this.handlesContainer
             );
 
             this.dragTrackers.set(handle, tracker);

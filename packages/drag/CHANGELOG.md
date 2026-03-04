@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## 1.1.6 - 2026-03-03
+
+- Fixed drag delta scaling under zoom/transformed parents by resolving pointer coordinates in the dragged target's parent space (`toLocal`), so drag distance matches pointer movement.
+
 ## 1.1.3 - 2026-03-02
 
 - upgrade to pixi 8.16

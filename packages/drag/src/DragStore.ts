@@ -1,6 +1,6 @@
 import {z} from 'zod';
 import {TickerForest} from '@wonderlandlabs-pixi-ux/ticker-forest';
-import {Application, FederatedEvent, FederatedPointerEvent, Point} from 'pixi.js';
+import {Application, Container, FederatedPointerEvent, Point} from 'pixi.js';
 // Schema for drag state
 const DragStoreSchema = z.object({
     isDragging: z.boolean().default(false),
@@ -34,6 +34,7 @@ export class DragStore extends TickerForest<DragStoreValue> {
     private callbacks: DragCallbacks = {};
     #app: Application;
     #terminate: () => void = () => {};
+    #pointerCoordsFromEvent = (event: FederatedPointerEvent) => ({x: event.global.x, y: event.global.y});
 
     constructor(config: DragStoreConfig) {
         super(
@@ -115,12 +116,31 @@ export class DragStore extends TickerForest<DragStoreValue> {
     }
 
     startDragContainer(itemId: string, event: FederatedPointerEvent, target: {position: Point}) {
+        const parent = target instanceof Container ? target.parent : undefined;
+        if (!parent) {
+            this.startDrag(
+                itemId,
+                event.global.x,
+                event.global.y,
+                target.position.x,
+                target.position.y
+            );
+            return;
+        }
+
+        const startPoint = parent.toLocal(event.global);
+        const pointerCoordsFromEvent = (pointerEvent: FederatedPointerEvent) => {
+            const localPoint = parent.toLocal(pointerEvent.global);
+            return {x: localPoint.x, y: localPoint.y};
+        };
+
         this.startDrag(
             itemId,
-            event.global.x,
-            event.global.y,
+            startPoint.x,
+            startPoint.y,
             target.position.x,
-            target.position.y
+            target.position.y,
+            pointerCoordsFromEvent
         );
     }
 
@@ -134,8 +154,16 @@ export class DragStore extends TickerForest<DragStoreValue> {
     /**
      * Start dragging an item
      */
-    startDrag(itemId: string, clientX: number, clientY: number, itemX: number = 0, itemY: number = 0) {
-       this.removeEventListeners(); // on the off chance we have "overlapping drags" terminate any current drag.
+    startDrag(
+        itemId: string,
+        clientX: number,
+        clientY: number,
+        itemX: number = 0,
+        itemY: number = 0,
+        pointerCoordsFromEvent?: (event: FederatedPointerEvent) => {x: number; y: number}
+    ) {
+        this.removeEventListeners(); // on the off chance we have "overlapping drags" terminate any current drag.
+        this.#pointerCoordsFromEvent = pointerCoordsFromEvent ?? ((event) => ({x: event.global.x, y: event.global.y}));
         this.mutate(draft => {
             draft.isDragging = true;
             draft.draggedItemId = itemId;
@@ -153,7 +181,8 @@ export class DragStore extends TickerForest<DragStoreValue> {
 
         // Create event handlers
         const onDragMove = (moveEvent: FederatedPointerEvent) => {
-            this.updateDrag(moveEvent.global.x, moveEvent.global.y);
+            const point = this.#pointerCoordsFromEvent(moveEvent);
+            this.updateDrag(point.x, point.y);
         };
 
         const onDragEnd = () => {
@@ -172,6 +201,7 @@ export class DragStore extends TickerForest<DragStoreValue> {
             this.#app.stage.off('pointermove', onDragMove);
             this.#app.stage.off('pointerup', onDragEnd);
             this.#app.stage.off('pointerupoutside', onDragEnd);
+            this.#pointerCoordsFromEvent = (event) => ({x: event.global.x, y: event.global.y});
             this.#terminate = () => {};
         };
     }

@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## 1.1.6 - 2026-03-03
+
+- Fixed resize drag deltas under zoom/transformed parents by tracking drag in handle-container local space.
+- Applied drag-phase `rectTransform` output to `setRect`, so handle positions and rendered rect follow snapped/transformed coordinates during drag (not only on release).
+
 ## 1.1.4 - 2026-03-03
 
 - Added optional `rectTransform(rect, phase)` hook to support coordinate transforms such as snapping.

@@ -263,7 +263,12 @@ export default function PackageValidatorRoute() {
         }
 
         if (selectedPackageId === "drag") {
+          app.stage.eventMode = "static";
+          app.stage.hitArea = new Rectangle(0, 0, app.screen.width, app.screen.height);
+
           const square = new Graphics().rect(-35, -35, 70, 70).fill(0x1d4ed8).stroke({ width: 2, color: 0xffffff, alpha: 0.8 });
+          square.eventMode = "static";
+          square.cursor = "grab";
           square.position.set(app.screen.width / 2, app.screen.height / 2);
           app.stage.addChild(square);
 
@@ -286,6 +291,18 @@ export default function PackageValidatorRoute() {
               },
             },
           });
+
+          const onPointerDown = (event) => {
+            event.stopPropagation();
+            square.cursor = "grabbing";
+            store.startDragContainer("demo-item", event, square);
+          };
+          square.on("pointerdown", onPointerDown);
+          const onPointerRelease = () => {
+            square.cursor = "grab";
+          };
+          app.stage.on("pointerup", onPointerRelease);
+          app.stage.on("pointerupoutside", onPointerRelease);
 
           observe();
 
@@ -311,6 +328,9 @@ export default function PackageValidatorRoute() {
               square.position.set(app.screen.width / 2, app.screen.height / 2);
             },
             onDestroy() {
+              square.off("pointerdown", onPointerDown);
+              app.stage.off("pointerup", onPointerRelease);
+              app.stage.off("pointerupoutside", onPointerRelease);
               store.destroy();
               app.destroy(true);
               if (mountNode) {

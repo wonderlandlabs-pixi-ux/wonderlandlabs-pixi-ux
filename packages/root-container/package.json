@@ -1,6 +1,6 @@
 {
   "name": "@wonderlandlabs-pixi-ux/root-container",
-  "version": "1.1.3",
+  "version": "1.1.7",
   "description": "Root container with centered origin and zoom/pan support",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

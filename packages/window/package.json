@@ -1,6 +1,6 @@
 {
   "name": "@wonderlandlabs-pixi-ux/window",
-  "version": "1.1.5",
+  "version": "1.1.7",
   "description": "Window component for wonderlandlabs-pixi-ux",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -15,10 +15,10 @@
     "pixi.js": "8.16.0"
   },
   "dependencies": {
-    "@wonderlandlabs-pixi-ux/drag": "workspace:^",
-    "@wonderlandlabs-pixi-ux/resizer": "workspace:^",
-    "@wonderlandlabs-pixi-ux/ticker-forest": "workspace:^",
-    "@wonderlandlabs-pixi-ux/toolbar": "workspace:^",
+    "@wonderlandlabs-pixi-ux/drag": "latest",
+    "@wonderlandlabs-pixi-ux/resizer": "latest",
+    "@wonderlandlabs-pixi-ux/ticker-forest": "latest",
+    "@wonderlandlabs-pixi-ux/toolbar": "latest",
     "@wonderlandlabs/forestry4": "^4.1.15",
     "lodash-es": "^4.17.22",
     "rxjs": "^7.8.2",

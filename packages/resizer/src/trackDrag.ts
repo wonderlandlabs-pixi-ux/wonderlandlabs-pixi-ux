@@ -36,7 +36,8 @@ export interface TrackDragResult {
 export function trackDrag(
   target: PixiContainer,
   callbacks: TrackDragCallbacks = {},
-  stage?: PixiContainer
+  stage?: PixiContainer,
+  deltaSpace?: PixiContainer
 ): TrackDragResult {
   let isDragging = false;
   let dragStartX = 0;
@@ -44,12 +45,20 @@ export function trackDrag(
 
   // Use stage for move/up listeners if provided, otherwise use target
   const moveUpTarget = stage || target;
+  const resolveEventPoint = (event: FederatedPointerEvent): {x: number; y: number} => {
+    if (!deltaSpace) {
+      return {x: event.global.x, y: event.global.y};
+    }
+    const localPoint = deltaSpace.toLocal(event.global);
+    return {x: localPoint.x, y: localPoint.y};
+  };
 
   const onDragMove = (event: FederatedPointerEvent) => {
     if (!isDragging) return;
 
-    const deltaX = event.global.x - dragStartX;
-    const deltaY = event.global.y - dragStartY;
+    const point = resolveEventPoint(event);
+    const deltaX = point.x - dragStartX;
+    const deltaY = point.y - dragStartY;
 
     callbacks.onDragMove?.(deltaX, deltaY, event);
   };
@@ -71,9 +80,10 @@ export function trackDrag(
     // Prevent multiple simultaneous drags
     if (isDragging) return;
 
+    const point = resolveEventPoint(event);
     isDragging = true;
-    dragStartX = event.global.x;
-    dragStartY = event.global.y;
+    dragStartX = point.x;
+    dragStartY = point.y;
 
     // Attach move/up listeners to stage (or target) when dragging starts
     moveUpTarget.on('pointermove', onDragMove);
@@ -101,4 +111,3 @@ export function trackDrag(
     destroy,
   };
 }
-

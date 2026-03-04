@@ -513,8 +513,13 @@ export class WindowStore extends TickerForest<WindowDef> {
         // Update resizer rect if dimensions changed externally
         if (this.#resizerStore) {
             const currentRect = this.#resizerStore.value.rect;
-            if (currentRect.width !== width || currentRect.height !== height) {
-                this.#resizerStore.setRect(new Rectangle(currentRect.x, currentRect.y, width, height));
+            const rectChanged = currentRect.x !== x
+                || currentRect.y !== y
+                || currentRect.width !== width
+                || currentRect.height !== height;
+            if (rectChanged) {
+                // Sync to current window rect directly (no rectTransform pass here).
+                this.#resizerStore.setRect(new Rectangle(x, y, width, height));
             }
 
             // Only show handles when window is selected

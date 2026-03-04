@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## 1.1.6 - 2026-03-03
+
+- Synced window resizer handles from full window rect changes (`x`, `y`, `width`, `height`) so handle positions follow window moves immediately.
+- When windows are moved externally/repositioned, resizer rect sync now uses current window rect directly (skips rect-transform filtering).
+
 ## 1.1.5 - 2026-03-03
 
 - Added `rectTransform` passthrough in `WindowsManager.addWindow(...)` so window resize handles can apply coordinate transforms/snapping via `@wonderlandlabs-pixi-ux/resizer`.
