@@ -292,7 +292,7 @@ export class WindowStore extends TickerForest<WindowDef> {
                 self.#rootContainer.cursor = 'grabbing';
 
                 // Start drag with current container position
-                (self.#dragStore as any).startDragContainer(
+                self.#dragStore!.startDragContainer(
                     self.value.id,
                     event,
                     self.#rootContainer,
@@ -330,7 +330,7 @@ export class WindowStore extends TickerForest<WindowDef> {
             self.#clickStartY = event.global.y;
 
             // Start drag with current container position (root container moves)
-            (self.#dragStore as any).startDragContainer(
+            self.#dragStore!.startDragContainer(
                 self.value.id,
                 event,
                 self.#rootContainer,
@@ -568,7 +568,7 @@ export class WindowStore extends TickerForest<WindowDef> {
                     });
                     self.markDirty();
                 }
-            } as any);
+            });
         }
 
         // Update resizer rect if dimensions changed externally

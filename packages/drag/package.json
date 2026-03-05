@@ -1,6 +1,6 @@
 {
   "name": "@wonderlandlabs-pixi-ux/drag",
-  "version": "1.1.8",
+  "version": "1.1.9",
   "description": "Drag state controller for PixiJS in wonderlandlabs-pixi-ux",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -21,7 +21,7 @@
     "vitest": "^4.0.18"
   },
   "dependencies": {
-    "@wonderlandlabs-pixi-ux/ticker-forest": "latest",
+    "@wonderlandlabs-pixi-ux/ticker-forest": "1.1.9",
     "@wonderlandlabs/forestry4": "^4.1.15",
     "zod": "^4.3.6"
   },
