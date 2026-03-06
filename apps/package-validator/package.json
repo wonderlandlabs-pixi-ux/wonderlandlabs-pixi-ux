@@ -19,7 +19,7 @@
     "@wonderlandlabs-pixi-ux/grid": "1.1.11",
     "@wonderlandlabs-pixi-ux/resizer": "1.1.11",
     "@wonderlandlabs-pixi-ux/root-container": "1.1.11",
-    "@wonderlandlabs-pixi-ux/window": "2.0.0",
+    "@wonderlandlabs-pixi-ux/window": "1.1.13",
     "pixi.js": "8.16.0",
     "react": "^18.2.1",
     "react-dom": "^18.2.1",

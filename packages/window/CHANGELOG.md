@@ -1,6 +1,6 @@
 # CHANGELOG
 
-## 2.0.0 - 2026-03-06
+## 1.1.13 - 2026-03-06
 
 - Breaking: replaced titlebar render hooks with `titlebarContentRenderer` using a single object parameter:
   `{ titlebarStore, titlebarValue, windowStore, windowValue, contentContainer }`.
