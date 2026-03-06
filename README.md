@@ -185,9 +185,9 @@ If publishing manually, use this dependency-safe order:
 2. `@wonderlandlabs-pixi-ux/ticker-forest`
 3. `@wonderlandlabs-pixi-ux/root-container`
 4. `@wonderlandlabs-pixi-ux/box`
-5. `@wonderlandlabs-pixi-ux/button`
-6. `@wonderlandlabs-pixi-ux/caption`
-7. `@wonderlandlabs-pixi-ux/drag`
+5. `@wonderlandlabs-pixi-ux/drag`
+6. `@wonderlandlabs-pixi-ux/button` --- this and below may have semver above the current monorepo's version
+7. `@wonderlandlabs-pixi-ux/caption`
 8. `@wonderlandlabs-pixi-ux/grid`
 9. `@wonderlandlabs-pixi-ux/resizer`
 10. `@wonderlandlabs-pixi-ux/toolbar`
@@ -199,6 +199,14 @@ i.e.,
 1. set all packages to the next version
 2. insure all imports use the same semver
 3. build each package, then publish it
+
+### semver update policy
+
+Any time the first five packages change, the entire monorepo needs to be republished with a semver
+higher than the highest current package, as they have dependencies in other packages that are 
+too complex to safely synchronize. However minor changes to the other packages may slip in 
+during rapid development as their interfaces are tweaked. Thus, the version of the bottom half don't necessarily
+relate to anything other than indicating they depend on the packages above. 
 
 ## Configuration
 

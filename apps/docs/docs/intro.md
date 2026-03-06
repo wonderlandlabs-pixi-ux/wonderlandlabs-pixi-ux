@@ -48,19 +48,23 @@ on top of that foundation.
 
 ## Package Set
 
-| Package | Docs | GitHub |
-| --- | --- | --- |
-| `@wonderlandlabs-pixi-ux/box` | [![View Docs](https://img.shields.io/badge/View-Docs-0F6D63?style=flat-square)](/packages/box) | [![GitHub](https://img.shields.io/badge/GitHub-Source-24292e?style=flat-square&logo=github)](https://github.com/bingomanatee/forestry-pixi/tree/main/packages/box) |
-| `@wonderlandlabs-pixi-ux/button` | [![View Docs](https://img.shields.io/badge/View-Docs-0F6D63?style=flat-square)](/packages/button) | [![GitHub](https://img.shields.io/badge/GitHub-Source-24292e?style=flat-square&logo=github)](https://github.com/bingomanatee/forestry-pixi/tree/main/packages/button) |
-| `@wonderlandlabs-pixi-ux/caption` | [![View Docs](https://img.shields.io/badge/View-Docs-0F6D63?style=flat-square)](/packages/caption) | [![GitHub](https://img.shields.io/badge/GitHub-Source-24292e?style=flat-square&logo=github)](https://github.com/bingomanatee/forestry-pixi/tree/main/packages/caption) |
-| `@wonderlandlabs-pixi-ux/drag` | [![View Docs](https://img.shields.io/badge/View-Docs-0F6D63?style=flat-square)](/packages/drag) | [![GitHub](https://img.shields.io/badge/GitHub-Source-24292e?style=flat-square&logo=github)](https://github.com/bingomanatee/forestry-pixi/tree/main/packages/drag) |
-| `@wonderlandlabs-pixi-ux/grid` | [![View Docs](https://img.shields.io/badge/View-Docs-0F6D63?style=flat-square)](/packages/grid) | [![GitHub](https://img.shields.io/badge/GitHub-Source-24292e?style=flat-square&logo=github)](https://github.com/bingomanatee/forestry-pixi/tree/main/packages/grid) |
-| `@wonderlandlabs-pixi-ux/resizer` | [![View Docs](https://img.shields.io/badge/View-Docs-0F6D63?style=flat-square)](/packages/resizer) | [![GitHub](https://img.shields.io/badge/GitHub-Source-24292e?style=flat-square&logo=github)](https://github.com/bingomanatee/forestry-pixi/tree/main/packages/resizer) |
-| `@wonderlandlabs-pixi-ux/root-container` | [![View Docs](https://img.shields.io/badge/View-Docs-0F6D63?style=flat-square)](/packages/root-container) | [![GitHub](https://img.shields.io/badge/GitHub-Source-24292e?style=flat-square&logo=github)](https://github.com/bingomanatee/forestry-pixi/tree/main/packages/root-container) |
-| `@wonderlandlabs-pixi-ux/style-tree` | [![View Docs](https://img.shields.io/badge/View-Docs-0F6D63?style=flat-square)](/packages/style-tree) | [![GitHub](https://img.shields.io/badge/GitHub-Source-24292e?style=flat-square&logo=github)](https://github.com/bingomanatee/forestry-pixi/tree/main/packages/style-tree) |
-| `@wonderlandlabs-pixi-ux/ticker-forest` | [![View Docs](https://img.shields.io/badge/View-Docs-0F6D63?style=flat-square)](/packages/ticker-forest) | [![GitHub](https://img.shields.io/badge/GitHub-Source-24292e?style=flat-square&logo=github)](https://github.com/bingomanatee/forestry-pixi/tree/main/packages/ticker-forest) |
-| `@wonderlandlabs-pixi-ux/toolbar` | [![View Docs](https://img.shields.io/badge/View-Docs-0F6D63?style=flat-square)](/packages/toolbar) | [![GitHub](https://img.shields.io/badge/GitHub-Source-24292e?style=flat-square&logo=github)](https://github.com/bingomanatee/forestry-pixi/tree/main/packages/toolbar) |
-| `@wonderlandlabs-pixi-ux/window` | [![View Docs](https://img.shields.io/badge/View-Docs-0F6D63?style=flat-square)](/packages/window) | [![GitHub](https://img.shields.io/badge/GitHub-Source-24292e?style=flat-square&logo=github)](https://github.com/bingomanatee/forestry-pixi/tree/main/packages/window) |
+<!-- PACKAGE_TABLE_START -->
+| Package | Version | Docs | GitHub |
+| --- | --- | --- | --- |
+| `@wonderlandlabs-pixi-ux/box` | `1.1.11` | [![View Docs](https://img.shields.io/badge/View-Docs-0F6D63?style=flat-square)](/packages/box) | [![GitHub](https://img.shields.io/badge/GitHub-Source-24292e?style=flat-square&logo=github)](https://github.com/bingomanatee/forestry-pixi/tree/main/packages/box) |
+| `@wonderlandlabs-pixi-ux/button` | `1.1.11` | [![View Docs](https://img.shields.io/badge/View-Docs-0F6D63?style=flat-square)](/packages/button) | [![GitHub](https://img.shields.io/badge/GitHub-Source-24292e?style=flat-square&logo=github)](https://github.com/bingomanatee/forestry-pixi/tree/main/packages/button) |
+| `@wonderlandlabs-pixi-ux/caption` | `1.1.11` | [![View Docs](https://img.shields.io/badge/View-Docs-0F6D63?style=flat-square)](/packages/caption) | [![GitHub](https://img.shields.io/badge/GitHub-Source-24292e?style=flat-square&logo=github)](https://github.com/bingomanatee/forestry-pixi/tree/main/packages/caption) |
+| `@wonderlandlabs-pixi-ux/drag` | `1.1.11` | [![View Docs](https://img.shields.io/badge/View-Docs-0F6D63?style=flat-square)](/packages/drag) | [![GitHub](https://img.shields.io/badge/GitHub-Source-24292e?style=flat-square&logo=github)](https://github.com/bingomanatee/forestry-pixi/tree/main/packages/drag) |
+| `@wonderlandlabs-pixi-ux/grid` | `1.1.11` | [![View Docs](https://img.shields.io/badge/View-Docs-0F6D63?style=flat-square)](/packages/grid) | [![GitHub](https://img.shields.io/badge/GitHub-Source-24292e?style=flat-square&logo=github)](https://github.com/bingomanatee/forestry-pixi/tree/main/packages/grid) |
+| `@wonderlandlabs-pixi-ux/resizer` | `1.1.11` | [![View Docs](https://img.shields.io/badge/View-Docs-0F6D63?style=flat-square)](/packages/resizer) | [![GitHub](https://img.shields.io/badge/GitHub-Source-24292e?style=flat-square&logo=github)](https://github.com/bingomanatee/forestry-pixi/tree/main/packages/resizer) |
+| `@wonderlandlabs-pixi-ux/root-container` | `1.1.11` | [![View Docs](https://img.shields.io/badge/View-Docs-0F6D63?style=flat-square)](/packages/root-container) | [![GitHub](https://img.shields.io/badge/GitHub-Source-24292e?style=flat-square&logo=github)](https://github.com/bingomanatee/forestry-pixi/tree/main/packages/root-container) |
+| `@wonderlandlabs-pixi-ux/style-tree` | `1.1.11` | [![View Docs](https://img.shields.io/badge/View-Docs-0F6D63?style=flat-square)](/packages/style-tree) | [![GitHub](https://img.shields.io/badge/GitHub-Source-24292e?style=flat-square&logo=github)](https://github.com/bingomanatee/forestry-pixi/tree/main/packages/style-tree) |
+| `@wonderlandlabs-pixi-ux/ticker-forest` | `1.1.11` | [![View Docs](https://img.shields.io/badge/View-Docs-0F6D63?style=flat-square)](/packages/ticker-forest) | [![GitHub](https://img.shields.io/badge/GitHub-Source-24292e?style=flat-square&logo=github)](https://github.com/bingomanatee/forestry-pixi/tree/main/packages/ticker-forest) |
+| `@wonderlandlabs-pixi-ux/toolbar` | `1.1.11` | [![View Docs](https://img.shields.io/badge/View-Docs-0F6D63?style=flat-square)](/packages/toolbar) | [![GitHub](https://img.shields.io/badge/GitHub-Source-24292e?style=flat-square&logo=github)](https://github.com/bingomanatee/forestry-pixi/tree/main/packages/toolbar) |
+| `@wonderlandlabs-pixi-ux/window` | `1.1.13` | [![View Docs](https://img.shields.io/badge/View-Docs-0F6D63?style=flat-square)](/packages/window) | [![GitHub](https://img.shields.io/badge/GitHub-Source-24292e?style=flat-square&logo=github)](https://github.com/bingomanatee/forestry-pixi/tree/main/packages/window) |
+<!-- PACKAGE_TABLE_END -->
+
+_This table is generated from `packages/*/package.json` via `yarn workspace @wonderlandlabs-pixi-ux/docs sync:intro-package-table`._
 
 ## Documentation Source
 

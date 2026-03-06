@@ -3,9 +3,10 @@
   "version": "1.1.9",
   "private": true,
   "scripts": {
-    "dev": "docusaurus start --host 0.0.0.0 --port 3001",
-    "start": "docusaurus start --host 0.0.0.0 --port 3001",
-    "build": "docusaurus build",
+    "sync:intro-package-table": "node scripts/sync-intro-package-table.mjs",
+    "dev": "yarn sync:intro-package-table && docusaurus start --host 0.0.0.0 --port 3001",
+    "start": "yarn sync:intro-package-table && docusaurus start --host 0.0.0.0 --port 3001",
+    "build": "yarn sync:intro-package-table && docusaurus build",
     "serve": "docusaurus serve --port 3001",
     "clear": "docusaurus clear",
     "deploy": "docusaurus deploy",
