@@ -1,6 +1,6 @@
 {
   "name": "@wonderlandlabs-pixi-ux/toolbar",
-  "version": "1.1.11",
+  "version": "1.2.0",
   "description": "Toolbar component with configurable buttons for wonderlandlabs-pixi-ux",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -17,9 +17,9 @@
     "pixi.js": "8.16.0"
   },
   "dependencies": {
-    "@wonderlandlabs-pixi-ux/button": "1.1.11",
-    "@wonderlandlabs-pixi-ux/style-tree": "1.1.11",
-    "@wonderlandlabs-pixi-ux/ticker-forest": "1.1.11",
+    "@wonderlandlabs-pixi-ux/button": "1.2.0",
+    "@wonderlandlabs-pixi-ux/style-tree": "1.2.0",
+    "@wonderlandlabs-pixi-ux/ticker-forest": "1.2.0",
     "zod": "^4.3.6"
   },
   "devDependencies": {

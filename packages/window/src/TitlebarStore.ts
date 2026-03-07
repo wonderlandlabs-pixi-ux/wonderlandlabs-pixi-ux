@@ -9,10 +9,7 @@ import {TITLEBAR_MODE} from "./constants";
 import {WindowStore} from "./WindowStore";
 import type {WindowLabelFontStyle} from "./types";
 
-interface TitlebarStoreValue extends TitlebarConfig {
-    isDirty: boolean;
-    isVisible: boolean;
-}
+type TitlebarStoreValue = TitlebarConfig;
 
 export class TitlebarStore extends TickerForest<TitlebarStoreValue> {
     // Optional custom render function
@@ -59,25 +56,21 @@ export class TitlebarStore extends TickerForest<TitlebarStoreValue> {
                 }
                 if (!this.value && next) {
                     queueMicrotask(() => {
-                        (this as TitlebarStore).queueResolve();
+                        (this as TitlebarStore).dirty();
                     })
-                    return {...next, isDirty: true};
+                    return next;
                 }
-                let nonDirtyChanged: false | string = false;
+                let changed = false;
                 Array.from(Object.keys(next)).forEach((key) => {
-                    if (key === 'isDirty') {
-                        return;
-                    }
                     // @ts-ignore
                     if (next[key] !== (this as TitlebarStore).value[key]) {
-                        nonDirtyChanged = `${key}`;
+                        changed = true;
                     }
                 });
-                if (nonDirtyChanged) {
+                if (changed) {
                     queueMicrotask(() => {
-                        (this as TitlebarStore).queueResolve();
+                        (this as TitlebarStore).dirty();
                     });
-                    return {...next, isDirty: true};
                 }
                 return next;
             }
@@ -85,11 +78,8 @@ export class TitlebarStore extends TickerForest<TitlebarStoreValue> {
             app,
             container: titlebarContainer,
             dirtyOnScale: {
-                enabled: true,
                 watchX: false,
                 watchY: true,
-                epsilon: 0.0001,
-                relativeToRootParent: true,
             }
         });
         if (!this.application) {
@@ -144,6 +134,10 @@ export class TitlebarStore extends TickerForest<TitlebarStoreValue> {
             throw new Error('TitlebarStore: container unavailable');
         }
         return container;
+    }
+
+    set container(container: Container | undefined) {
+        super.container = container;
     }
 
     resolveComponents() {
@@ -393,30 +387,8 @@ export class TitlebarStore extends TickerForest<TitlebarStoreValue> {
         this.#closeButton.y = 0;
     }
 
-    protected isDirty(): boolean {
-        return this.value.isDirty;
-    }
-
-    protected clearDirty(): void {
-        this.set('isDirty', false);
-    }
-
-    protected makeDirty(_data?: unknown): void {
-        this.set('isDirty', true);
-    }
-
-    /**
-     * Mark this titlebar as dirty to trigger re-render
-     */
-    markDirty(): void {
-        this.makeDirty();
-        this.queueResolve();
-    }
-
     protected resolve(): void {
-        if (this.isDirty()) {
-            this.resolveComponents();
-        }
+        this.resolveComponents();
     }
 
     cleanup(): void {
@@ -438,7 +410,7 @@ export class TitlebarStore extends TickerForest<TitlebarStoreValue> {
         if (container) {
             this.parentContainer?.removeChild(container);
             container.destroy({children: true});
-            this.tickerContainer = undefined;
+            this.container = undefined;
         }
     }
 }

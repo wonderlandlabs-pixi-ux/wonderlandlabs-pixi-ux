@@ -219,7 +219,7 @@ export class WindowsManager extends Forest<WindowStoreValue> {
             subclass: StoreClass,
         }, this.app) as unknown as WindowStore;
 
-        branch.set('isDirty', true);
+        branch.dirty();
         this.#windowsBranches.set(key, branch);
         branch.application = this.app;
         branch.handlesContainer = this.handlesContainer; // Pass shared handles container
@@ -350,8 +350,7 @@ export class WindowsManager extends Forest<WindowStoreValue> {
     #refreshWindowSelection(id: string) {
         const windowStore = this.#windowsBranches.get(id);
         if (windowStore) {
-            windowStore.set('isDirty', true);
-            windowStore.queueResolve();
+            windowStore.dirty();
         }
     }
 
@@ -541,7 +540,7 @@ export class WindowsManager extends Forest<WindowStoreValue> {
      */
     #markAllDirty() {
         for (const [, windowStore] of this.#windowsBranches) {
-            windowStore.markDirty();
+            windowStore.dirty();
         }
     }
 }

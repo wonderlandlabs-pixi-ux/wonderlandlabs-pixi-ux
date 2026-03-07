@@ -1,18 +1,7 @@
 import type { Application, Container as PixiContainer, FederatedPointerEvent } from 'pixi.js';
 import { Point } from 'pixi.js';
 import {PointerManager, PointerTraceToken} from '@wonderlandlabs-pixi-ux/ticker-forest';
-
-export interface StageDraggableResult {
-  destroy: () => void;
-}
-
-/**
- * Stage drag event data
- */
-export interface StageDragEvent {
-  type: 'drag-start' | 'drag-move' | 'drag-end';
-  position: { x: number; y: number };
-}
+import type { StageDraggableResult, StageDragEvent } from './types';
 
 /**
  * Makes a container draggable via stage-level pointer events.

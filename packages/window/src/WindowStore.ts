@@ -22,7 +22,7 @@ import {DragStore} from "@wonderlandlabs-pixi-ux/drag";
 import {StoreParams} from "@wonderlandlabs/forestry4";
 import {TitlebarStore} from "./TitlebarStore";
 import {ResizerStore} from "@wonderlandlabs-pixi-ux/resizer";
-import {distinctUntilChanged, map} from 'rxjs';
+import {distinctUntilChanged, filter, map} from 'rxjs';
 import type {Subscription} from 'rxjs';
 import {resolveWindowStyle} from './styles';
 import {STYLE_VARIANT} from './constants';
@@ -85,27 +85,35 @@ export class WindowStore extends TickerForest<WindowDef> {
     }
 
     #initTitlebar() {
+        const self = this;
         const subclass = (this.constructor as typeof WindowStore).titlebarStoreClass ?? TitlebarStore;
         // Create titlebar store as a branch using $branches.$add
         // @ts-ignore
-        this.#titlebarStore = this.$branches.$add(['titlebar'], {
+        self.#titlebarStore = self.$branches.$add(['titlebar'], {
             subclass,
-        }, this.application!) as unknown as TitlebarStore;
-        this.#titlebarStore.application = this.application;
-        this.#titlebarStore.set('isDirty', true);
-        this.#applyTitlebarHooks();
-        this.#applyInitialTitlebarParamOverrides();
-        this.#syncTitlebarCloseState();
+        }, self.application!) as unknown as TitlebarStore;
+        self.#titlebarStore.application = self.application;
+        self.#titlebarStore.dirty();
+        self.#applyTitlebarHooks();
+        self.#applyInitialTitlebarParamOverrides();
+        self.#syncTitlebarCloseState();
 
-        this.#sizeSubscription?.unsubscribe();
-        this.#sizeSubscription = this.$subject.pipe(
-            map(() => `${this.value?.width}-${this.value?.height}`),
+        self.#dirtyCascadeSubscription?.unsubscribe();
+        self.#dirtyCascadeSubscription = self.dirty$
+            .pipe(
+                distinctUntilChanged(),
+                filter(Boolean),
+            )
+            .subscribe(() => {
+                self.#titlebarStore?.dirty();
+            });
+
+        self.#sizeSubscription?.unsubscribe();
+        self.#sizeSubscription = self.$subject.pipe(
+            map(() => `${self.value?.width}-${self.value?.height}`),
             distinctUntilChanged(),
         ).subscribe(() => {
-            this.#titlebarStore?.set('isDirty', true);
-            this.#titlebarStore?.queueResolve();
-            this.set('isDirty', true);
-            this.queueResolve();
+            self.dirty();
         });
     }
 
@@ -132,6 +140,7 @@ export class WindowStore extends TickerForest<WindowDef> {
     #resizerStore?: ResizerStore;
     #dragInitialized = false;
     #sizeSubscription?: Subscription;
+    #dirtyCascadeSubscription?: Subscription;
     #closable = false;
     #onClose?: WindowCloseHandler;
 
@@ -228,8 +237,7 @@ export class WindowStore extends TickerForest<WindowDef> {
                 titlebarChanged = this.#applyPatch(draft, next.state!);
             });
             if (titlebarChanged) {
-                titlebarStore.set('isDirty', true);
-                titlebarStore.queueResolve();
+                titlebarStore.dirty();
             }
         }
 
@@ -239,8 +247,7 @@ export class WindowStore extends TickerForest<WindowDef> {
                 windowChanged = this.#applyPatch(draft, next.config!);
             });
             if (windowChanged) {
-                this.set('isDirty', true);
-                this.queueResolve();
+                this.dirty();
             }
         }
 
@@ -281,8 +288,7 @@ export class WindowStore extends TickerForest<WindowDef> {
             const ctor = this.constructor as typeof WindowStore;
             this.#titlebarStore.titlebarContentRenderer = ctor.titlebarContentRenderer;
         }
-        this.#titlebarStore.markDirty();
-        this.#titlebarStore.queueResolve();
+        this.#titlebarStore.dirty();
     }
 
     configureTitlebar(configureTitlebar?: ConfigureTitlebarFn): void {
@@ -291,8 +297,7 @@ export class WindowStore extends TickerForest<WindowDef> {
             return;
         }
         configureTitlebar(this.#titlebarStore, this);
-        this.#titlebarStore.markDirty();
-        this.#titlebarStore.queueResolve();
+        this.#titlebarStore.dirty();
     }
 
     setModifyInitialTitlebarParams(modifyInitialTitlebarParams?: ModifyInitialTitlebarParamsFn): void {
@@ -302,14 +307,12 @@ export class WindowStore extends TickerForest<WindowDef> {
 
     setWindowContentRenderer(windowContentRenderer?: WindowContentRendererFn): void {
         this.#windowContentRendererOverride = windowContentRenderer;
-        this.markDirty();
-        this.queueResolve();
+        this.dirty();
     }
 
     setOnResolve(onResolve?: WindowResolveHookFn): void {
         this.#onResolveOverride = onResolve;
-        this.markDirty();
-        this.queueResolve();
+        this.dirty();
     }
 
     setRectTransform(rectTransform?: WindowRectTransform): void {
@@ -323,7 +326,7 @@ export class WindowStore extends TickerForest<WindowDef> {
             this.#resizerStore.removeHandles();
             this.#resizerStore.cleanup();
             this.#resizerStore = undefined;
-            this.markDirty();
+            this.dirty();
         }
     }
 
@@ -346,8 +349,7 @@ export class WindowStore extends TickerForest<WindowDef> {
             return;
         }
         this.#titlebarStore.set('showCloseButton', showCloseButton);
-        this.#titlebarStore.set('isDirty', true);
-        this.#titlebarStore.queueResolve();
+        this.#titlebarStore.dirty();
     }
 
     #getFrameContainer(): Container | undefined {
@@ -750,7 +752,7 @@ export class WindowStore extends TickerForest<WindowDef> {
                         draft.width = Math.max(localRect.width, minWidth || 50);
                         draft.height = Math.max(localRect.height, minHeight || 50);
                     });
-                    self.markDirty();
+                    self.dirty();
                 },
                 onRelease: (rect: Rectangle) => {
                     const localRect = self.#frameRectToRootLocal(rect);
@@ -761,7 +763,7 @@ export class WindowStore extends TickerForest<WindowDef> {
                         draft.x = localRect.x;
                         draft.y = localRect.y;
                     });
-                    self.markDirty();
+                    self.dirty();
                 }
             });
         }
@@ -808,36 +810,12 @@ export class WindowStore extends TickerForest<WindowDef> {
         return this.#contentContainer;
     }
 
-    protected isDirty(): boolean {
-        return this.value.isDirty;
-    }
-
-    protected clearDirty(): void {
-        this.set('isDirty', false);
-    }
-
-    protected makeDirty(_data?: unknown): void {
-        this.set('isDirty', true);
-    }
-
-    /**
-     * Mark this window and its titlebar as dirty to trigger re-render
-     */
-    markDirty(): void {
-        this.makeDirty();
-        this.queueResolve();
-
-        this.#titlebarStore?.markDirty();
-    }
-
     protected resolve(): void {
-        if (this.isDirty()) {
-            if (!this.$isRoot) {
-                const rootStore = this.$root as unknown as WindowsManager;
-                if (rootStore?.windowsContainer) {
-                    this.resolveComponents(rootStore.windowsContainer, rootStore.handlesContainer);
-                    rootStore.updateZIndices();
-                }
+        if (!this.$isRoot) {
+            const rootStore = this.$root as unknown as WindowsManager;
+            if (rootStore?.windowsContainer) {
+                this.resolveComponents(rootStore.windowsContainer, rootStore.handlesContainer);
+                rootStore.updateZIndices();
             }
         }
     }
@@ -847,6 +825,8 @@ export class WindowStore extends TickerForest<WindowDef> {
 
         this.#sizeSubscription?.unsubscribe();
         this.#sizeSubscription = undefined;
+        this.#dirtyCascadeSubscription?.unsubscribe();
+        this.#dirtyCascadeSubscription = undefined;
         this.#onClose = undefined;
 
         // Cleanup drag store

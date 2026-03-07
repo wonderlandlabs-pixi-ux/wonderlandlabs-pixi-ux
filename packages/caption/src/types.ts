@@ -91,7 +91,6 @@ export interface CaptionState {
     autoSize: boolean;
     pointer: CaptionPointerConfig;
     thought: CaptionThoughtConfig;
-    isDirty: boolean;
 }
 
 export const DEFAULT_CAPTION_TEXT_STYLE: TextStyleOptions = {

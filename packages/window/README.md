@@ -177,10 +177,8 @@ If you implement a custom titlebar store, keep this setting on:
 
 ```ts
 dirtyOnScale: {
-  enabled: true,
   watchX: false,
   watchY: true,
-  relativeToRootParent: true,
 }
 ```
 
@@ -198,7 +196,7 @@ dirtyOnScale: {
 For runtime content changes (toolbar clicks, async results, external events), use this flow:
 
 1. Mutate store state (including custom fields) on the relevant `WindowStore` / `TitlebarStore`.
-2. Set dirty state (`isDirty = true`), usually by calling `markDirty()` on the store.
+2. Mark the store dirty by calling `dirty()` on the store.
 3. Use `windowContentRenderer` and/or `titlebarContentRenderer` to upsert `Graphics`/`Container`/`Text` nodes into
    the provided `contentContainer` during the refresh cycle.
 
@@ -221,7 +219,7 @@ Why this pattern is required:
 ### Titlebar Content Hook Pattern
 
 Use `addWindow(..., { titlebarContentRenderer })` as the hook for zoom-independent titlebar UI.
-Keep the renderer idempotent (upsert by label), then call `markDirty()` + `queueResolve()` whenever external
+Keep the renderer idempotent (upsert by label), then call `dirty()` whenever external
 state changes. Use `configureTitlebar` for one-time setup after the titlebar store is created.
 Use `modifyInitialTitlebarParams` for a startup-only functional parameter transform:
 `modifyInitialTitlebarParams: ({ state, config }) => ({ state, config })`.
@@ -471,8 +469,7 @@ windows.addWindow('notes', {
 
 // Later, if external data changes and titlebar content must refresh:
 const titlebarStore = windows.windowBranch('notes')?.titlebarStore;
-titlebarStore?.markDirty();
-titlebarStore?.queueResolve();
+titlebarStore?.dirty();
 ```
 
 ## Why guardContainer?

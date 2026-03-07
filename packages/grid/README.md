@@ -1,6 +1,9 @@
 # @wonderlandlabs-pixi-ux/grid
 
-Grid/artboard renderer for PixiJS using `GridManager`.
+Grid/artboard renderer for PixiJS using `GridManager`. it is designed to render a visual grid 
+with major and minor division lines, respecting the relative scale of the root. 
+If the lines are too close to be meaningful they are reduced to major/2 or removed altogether. 
+
 
 ## Installation
 

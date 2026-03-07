@@ -10,9 +10,6 @@ const ALIGN_KEYWORD_CENTER = 'c';
 const ALIGN_KEYWORD_END = 'e';
 const ALIGN_KEYWORD_FILL = 'f';
 
-const MODE_PX = 'px';
-const MODE_PERCENT = '%';
-const MODE_FRACTION = '/';
 const SIZE_MODE_PERCENT = 'percent';
 const SIZE_MODE_PERCENT_FREE = 'percentFree';
 const SIZE_MODE_FILL = 'fill';
@@ -58,25 +55,25 @@ export const ALIGN = Object.freeze({
   F: ALIGN_KEYWORD_FILL,
 } as const);
 
+export const UNIT_BASIS = Object.freeze({
+  PX: 'px',
+  PIXELS: 'px',
+  PERCENT: '%',
+  FRACTION: '/',
+} as const);
+
 export const MEASUREMENT_ENUM_CANONICAL = Object.freeze({
-  PX: MODE_PX,
-  PERCENT: MODE_PERCENT,
+  PX: UNIT_BASIS.PX,
+  PERCENT: UNIT_BASIS.PERCENT,
 } as const);
 
 export const MEASUREMENT_ENUM_INPUT = Object.freeze({
   ...MEASUREMENT_ENUM_CANONICAL,
-  FRACTION: MODE_FRACTION,
-} as const);
-
-export const MEASUREMENT_MODE = Object.freeze({
-  PX: MODE_PX,
-  PIXELS: MODE_PX,
-  PERCENT: MODE_PERCENT,
-  FRACTION: MODE_FRACTION,
+  FRACTION: UNIT_BASIS.FRACTION,
 } as const);
 
 export const SIZE_MODE_INPUT = Object.freeze({
-  PX: MODE_PX,
+  PX: UNIT_BASIS.PX,
   PERCENT: SIZE_MODE_PERCENT,
   PERCENT_FREE: SIZE_MODE_PERCENT_FREE,
   FILL: SIZE_MODE_FILL,
@@ -84,7 +81,7 @@ export const SIZE_MODE_INPUT = Object.freeze({
 } as const);
 
 export const SIZE_MODE = Object.freeze({
-  PX: MODE_PX,
+  PX: UNIT_BASIS.PX,
   PERCENT: SIZE_MODE_PERCENT,
   PERCENT_FREE: SIZE_MODE_PERCENT_FREE,
   HUG: SIZE_MODE_HUG,

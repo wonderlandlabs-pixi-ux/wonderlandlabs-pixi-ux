@@ -11,16 +11,14 @@ export {
 
 export type {
   Color,
+  EnableHandlesConfig,
   HandleMode,
   RectTransform,
   RectTransformParams,
   RectTransformPhase,
-  TransformedRectCallback,
-} from './types.js';
-
-export type {
+  ResizerStoreConfig,
   TrackDragCallbacks,
   TrackDragResult,
-} from './trackDrag.js';
-
-export type { EnableHandlesConfig } from "./enableHandlesConfig.js";
+  ResizerStoreValue,
+  TransformedRectCallback,
+} from './types.js';

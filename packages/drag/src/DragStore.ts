@@ -1,13 +1,14 @@
-import {PointerManager, PointerTraceToken} from '@wonderlandlabs-pixi-ux/ticker-forest';
+import {PointerManager} from '@wonderlandlabs-pixi-ux/ticker-forest';
 import {Application, Container, FederatedPointerEvent, Point} from 'pixi.js';
-
-type ActionFn = (...args: unknown[]) => unknown;
-
-type DragStoreActions = {
-    flush: () => void;
-    onDragMove: (event: FederatedPointerEvent) => void;
-    onDragEnd: (event: FederatedPointerEvent) => void;
-};
+import type {
+    ActionFn,
+    DragCallbacks,
+    DragEventValues,
+    DragRuntimeState,
+    DragStoreActions,
+    DragStoreConfig,
+    DragStoreValue,
+} from './types';
 
 const BIND_EXCLUDE = 'next,isActive,value,complete'.split(',');
 const EVT_POINTER_MOVE = 'pointermove';
@@ -57,52 +58,6 @@ function pointerPointInSpace(event: FederatedPointerEvent, coordinateSpace?: Con
     }
     const localPoint = coordinateSpace.toLocal(event.global);
     return {x: localPoint.x, y: localPoint.y};
-}
-
-export interface DragStoreValue {
-    isDragging: boolean;
-    draggedItemId: string | null;
-    startX: number;
-    startY: number;
-    currentX: number;
-    currentY: number;
-    deltaX: number;
-    deltaY: number;
-    initialItemX: number;
-    initialItemY: number;
-    isDragEnding: boolean;
-}
-
-interface DragEventValues {
-    startX: number;
-    startY: number;
-    currentX: number;
-    currentY: number;
-    deltaX: number;
-    deltaY: number;
-    initialItemX: number;
-    initialItemY: number;
-}
-
-interface DragRuntimeState {
-    listenersAttached: boolean;
-    pointerTraceToken: PointerTraceToken | null;
-    coordinateSpace: Container | null;
-    resolveQueued: boolean;
-    isDragging: boolean;
-    draggedItemId: string | null;
-    isDragEnding: boolean;
-}
-
-export interface DragCallbacks {
-    onDragStart?: (itemId: string, x: number, y: number) => void;
-    onDrag?: (state: DragStoreValue) => void;
-    onDragEnd?: () => void;
-}
-
-export interface DragStoreConfig {
-    app: Application;
-    callbacks?: DragCallbacks;
 }
 
 export class DragStore {

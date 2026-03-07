@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { BoxTree, createBoxTreeState } from '../src/BoxTree';
-import { ALIGN, MEASUREMENT_MODE, SIZE_MODE_INPUT } from '../src/constants';
+import { ALIGN, UNIT_BASIS, SIZE_MODE_INPUT } from '../src/constants';
 
 describe('BoxTree', () => {
   describe('state creation', () => {
@@ -276,8 +276,8 @@ describe('BoxTree', () => {
         },
       });
 
-      expect(child.value.area.width).toEqual({ mode: MEASUREMENT_MODE.PX, value: 10 });
-      expect(child.value.area.height).toEqual({ mode: MEASUREMENT_MODE.PX, value: 10 });
+      expect(child.value.area.width).toEqual({ mode: UNIT_BASIS.PX, value: 10 });
+      expect(child.value.area.height).toEqual({ mode: UNIT_BASIS.PX, value: 10 });
       expect(child.width).toBe(200);
       expect(child.height).toBe(50);
 
@@ -359,8 +359,8 @@ describe('BoxTree', () => {
         area: {
           x: 7,
           y: 8,
-          width: { mode: MEASUREMENT_MODE.PERCENT, value: 0.25 },
-          height: { mode: MEASUREMENT_MODE.PERCENT, value: 0.5 },
+          width: { mode: UNIT_BASIS.PERCENT, value: 0.25 },
+          height: { mode: UNIT_BASIS.PERCENT, value: 0.5 },
         },
         align: { x: ALIGN.FILL, y: ALIGN.END },
         absolute: true,
@@ -723,8 +723,8 @@ describe('BoxTree', () => {
 
       child.setWidthPx(320);
       child.setHeightPx(180);
-      expect(child.value.area.width).toEqual({ mode: MEASUREMENT_MODE.PX, value: 320 });
-      expect(child.value.area.height).toEqual({ mode: MEASUREMENT_MODE.PX, value: 180 });
+      expect(child.value.area.width).toEqual({ mode: UNIT_BASIS.PX, value: 320 });
+      expect(child.value.area.height).toEqual({ mode: UNIT_BASIS.PX, value: 180 });
     });
 
     it('supports visibility setter helper', () => {
@@ -747,13 +747,13 @@ describe('BoxTree', () => {
       });
       const child = root.addChild('child', {
         area: {
-          width: { mode: MEASUREMENT_MODE.FRACTION, value: 1, base: 2 },
-          height: { mode: MEASUREMENT_MODE.FRACTION, value: 1, base: 4 },
+          width: { mode: UNIT_BASIS.FRACTION, value: 1, base: 2 },
+          height: { mode: UNIT_BASIS.FRACTION, value: 1, base: 4 },
         },
       });
 
-      expect(child.value.area.width).toEqual({ mode: MEASUREMENT_MODE.PERCENT, value: 0.5 });
-      expect(child.value.area.height).toEqual({ mode: MEASUREMENT_MODE.PERCENT, value: 0.25 });
+      expect(child.value.area.width).toEqual({ mode: UNIT_BASIS.PERCENT, value: 0.5 });
+      expect(child.value.area.height).toEqual({ mode: UNIT_BASIS.PERCENT, value: 0.25 });
       expect(child.width).toBe(200);
       expect(child.height).toBe(50);
     });
@@ -765,13 +765,13 @@ describe('BoxTree', () => {
       });
       const child = root.addChild('child', {
         area: {
-          width: { mode: MEASUREMENT_MODE.FRACTION, value: 1, base: 2 },
-          height: { mode: MEASUREMENT_MODE.PERCENT, value: 0.25 },
+          width: { mode: UNIT_BASIS.FRACTION, value: 1, base: 2 },
+          height: { mode: UNIT_BASIS.PERCENT, value: 0.25 },
         },
       });
 
-      expect(child.value.area.width).toEqual({ mode: MEASUREMENT_MODE.PERCENT, value: 0.5 });
-      expect(child.value.area.height).toEqual({ mode: MEASUREMENT_MODE.PERCENT, value: 0.25 });
+      expect(child.value.area.width).toEqual({ mode: UNIT_BASIS.PERCENT, value: 0.5 });
+      expect(child.value.area.height).toEqual({ mode: UNIT_BASIS.PERCENT, value: 0.25 });
       expect(child.width).toBe(200);
       expect(child.height).toBe(50);
     });
@@ -782,7 +782,7 @@ describe('BoxTree', () => {
         area: {
           x: 0,
           y: 0,
-          width: { mode: MEASUREMENT_MODE.FRACTION, value: 3, base: 2 },
+          width: { mode: UNIT_BASIS.FRACTION, value: 3, base: 2 },
         },
       })).toThrow(/base must be >= value/i);
     });
@@ -793,7 +793,7 @@ describe('BoxTree', () => {
         area: {
           x: 0,
           y: 0,
-          width: { mode: MEASUREMENT_MODE.FRACTION, value: 0.5 },
+          width: { mode: UNIT_BASIS.FRACTION, value: 0.5 },
         },
       })).toThrow(/required|invalid input/i);
     });

@@ -1,56 +1,20 @@
 import { TickerForest } from '@wonderlandlabs-pixi-ux/ticker-forest';
 import { Container, Graphics } from 'pixi.js';
-import type { Application } from 'pixi.js';
-import type { GridStoreValue, GridManagerValue } from './types';
-
-export interface GridCacheOptions {
-  enabled?: boolean;
-  resolution?: number;
-  antialias?: boolean;
-  debug?: boolean | GridCacheDebugOptions;
-}
-
-export interface GridCacheDebugInfo {
-  reason: GridRedrawReason;
-  zoom: number;
-  baseResolution: number;
-  activeResolution: number;
-  textureWidthPx: number;
-  textureHeightPx: number;
-  pixelCount: number;
-  measuredBytes: number | null;
-  measuredBytesMethod: 'resource-byteLength' | 'resource-data-byteLength' | 'unavailable';
-  estimatedBytes: number;
-  estimatedMiB: number;
-}
-
-export interface GridCacheDebugOptions {
-  logger?: (info: GridCacheDebugInfo) => void;
-  logIntervalMs?: number;
-}
-
-export interface GridManagerConfig {
-  gridSpec: GridStoreValue;
-  application: Application;
-  zoomPanContainer: Container;
-  cache?: GridCacheOptions;
-}
-
-interface WorldBounds {
-  left: number;
-  right: number;
-  top: number;
-  bottom: number;
-}
-
-type GridRedrawReason = 'zoom' | 'drag' | 'resize' | 'spec-update' | 'init' | 'unknown';
+import type {
+  GridStoreValue,
+  GridManagerValue,
+  GridCacheOptions,
+  GridCacheDebugInfo,
+  GridManagerConfig,
+  WorldBounds,
+  GridRedrawReason,
+} from './types';
 
 /**
  * Grid manager that redraws visible lines directly into Graphics objects.
  * This avoids tiled texture seam artifacts and keeps behavior deterministic.
  */
 export class GridManager extends TickerForest<GridManagerValue> {
-  #zoomPanContainer: Container;
   #_gridContainer?: Container;
   #_gridMinor?: Graphics;
   #_gridMajor?: Graphics;
@@ -82,13 +46,11 @@ export class GridManager extends TickerForest<GridManagerValue> {
       {
         value: {
           gridSpec: config.gridSpec,
-          dirty: false,
         },
       },
       { app: config.application, container: config.zoomPanContainer }
     );
 
-    this.#zoomPanContainer = config.zoomPanContainer;
     this.#cacheEnabled = config.cache?.enabled ?? true;
     this.#cacheBaseResolution = Math.max(Number.EPSILON, config.cache?.resolution ?? 2);
     this.#cacheActiveResolution = this.#cacheBaseResolution;
@@ -105,36 +67,19 @@ export class GridManager extends TickerForest<GridManagerValue> {
     this.#initialize();
   }
 
-  protected isDirty(): boolean {
-    return this.value.dirty;
-  }
-
-  protected clearDirty(): void {
-    this.mutate(draft => {
-      draft.dirty = false;
-    });
-  }
-
-  protected makeDirty(_data?: unknown): void {
-    this.mutate(draft => {
-      draft.dirty = true;
-    });
-  }
-
-  protected markDirty(): void {
-    this.makeDirty();
-  }
-
   protected resolve(): void {
     this.#redrawGrid();
-    this.clearDirty();
   }
 
   get #gridContainer(): Container {
     if (!this.#_gridContainer) {
+      const parent = this.container;
+      if (!parent) {
+        throw new Error('GridManager requires a container');
+      }
       const container = new Container();
       container.label = 'GridContainer';
-      this.#zoomPanContainer.addChildAt(container, 0);
+      parent.addChildAt(container, 0);
       if (this.#cacheEnabled) {
         container.cacheAsTexture({
           resolution: this.#cacheActiveResolution,
@@ -196,8 +141,7 @@ export class GridManager extends TickerForest<GridManagerValue> {
 
   #invalidate(reason: GridRedrawReason): void {
     this.#lastRedrawReason = reason;
-    this.markDirty();
-    this.queueResolve();
+    this.dirty();
   }
 
   #applyDensityFloor(spacingX: number, spacingY: number, zoom: number): { x: number; y: number } {
@@ -239,16 +183,19 @@ export class GridManager extends TickerForest<GridManagerValue> {
 
   #worldBounds(spacingX: number, spacingY: number): WorldBounds {
     const screen = this.application?.screen;
+    const container = this.container;
     if (!screen) {
       return { left: -2000, right: 2000, top: -2000, bottom: 2000 };
     }
+    if (!container) {
+      return { left: -2000, right: 2000, top: -2000, bottom: 2000 };
+    }
 
-    const rawScaleX = this.#zoomPanContainer.scale.x;
-    const rawScaleY = this.#zoomPanContainer.scale.y;
-    const safeScaleX = Math.abs(rawScaleX) < 0.0001 ? 0.0001 : rawScaleX;
-    const safeScaleY = Math.abs(rawScaleY) < 0.0001 ? 0.0001 : rawScaleY;
+    const scale = this.getScale();
+    const safeScaleX = Math.max(0.0001, Math.abs(scale.x));
+    const safeScaleY = Math.max(0.0001, Math.abs(scale.y));
 
-    const pos = this.#zoomPanContainer.position;
+    const pos = container.position;
     const rawLeft = (0 - pos.x) / safeScaleX;
     const rawRight = (screen.width - pos.x) / safeScaleX;
     const rawTop = (0 - pos.y) / safeScaleY;
@@ -391,7 +338,7 @@ export class GridManager extends TickerForest<GridManagerValue> {
 
   #redrawGrid(): void {
     const { gridSpec } = this.value;
-    const zoom = Math.max(Math.abs(this.#zoomPanContainer.scale.x), 0.0001);
+    const zoom = Math.max(this.getScale().x, 0.0001);
     const lineWidth = 1 / zoom;
 
     const minorSpacing = this.#resolveMinorSpacing(zoom);
@@ -450,7 +397,6 @@ export class GridManager extends TickerForest<GridManagerValue> {
       if (gridSpec.artboard !== undefined) {
         draft.gridSpec.artboard = gridSpec.artboard;
       }
-      draft.dirty = true;
     });
 
     this.#invalidate('spec-update');
@@ -467,7 +413,7 @@ export class GridManager extends TickerForest<GridManagerValue> {
       if (this.#cacheEnabled) {
         this.#_gridContainer.cacheAsTexture(false);
       }
-      this.#zoomPanContainer.removeChild(this.#_gridContainer);
+      this.container?.removeChild(this.#_gridContainer);
       this.#_gridContainer.destroy({ children: true });
       this.#_gridContainer = undefined;
       this.#_gridMinor = undefined;

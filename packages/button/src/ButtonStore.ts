@@ -20,9 +20,7 @@ import {
 import type { ButtonConfig, ButtonMode, RgbColor } from './types';
 import { rgbToHex } from './types';
 
-type ButtonState = {
-    dirty: boolean;
-};
+type ButtonState = Record<string, never>;
 
 type TickerSource = Application | { ticker: Ticker };
 
@@ -82,7 +80,7 @@ export class ButtonStore extends TickerForest<ButtonState> {
             label: `button-${config.id}`,
             ...rootProps,
         });
-        super({ value: { dirty: true } }, {...toTickerConfig(tickerSource), container: buttonContainer});
+        super({ value: {} }, {...toTickerConfig(tickerSource), container: buttonContainer});
 
         this.id = config.id;
         this.#styleTree = styleTree;
@@ -660,25 +658,6 @@ export class ButtonStore extends TickerForest<ButtonState> {
         this.#label.textDisplay.alpha = alpha;
     }
 
-    protected override isDirty(): boolean {
-        return this.value.dirty;
-    }
-
-    protected override clearDirty(): void {
-        this.set('dirty', false);
-    }
-
-    protected makeDirty(_data?: unknown): void {
-        if (!this.value.dirty) {
-            this.set('dirty', true);
-        }
-    }
-
-    markDirty(): void {
-        this.makeDirty();
-        this.queueResolve();
-    }
-
     protected override resolve(): void {
         this.#syncLayout();
         this.container.zIndex = this.#tree.order;
@@ -698,7 +677,7 @@ export class ButtonStore extends TickerForest<ButtonState> {
         if (this.#isHovered === nextHovered) return;
         this.#isHovered = nextHovered;
         this.#syncModeVerbs();
-        this.markDirty();
+        this.dirty();
     }
 
     setDisabled(isDisabled: boolean): void {
@@ -710,7 +689,7 @@ export class ButtonStore extends TickerForest<ButtonState> {
         this.container.eventMode = isDisabled ? 'none' : 'static';
         this.container.cursor = isDisabled ? 'default' : 'pointer';
         this.#syncModeVerbs();
-        this.markDirty();
+        this.dirty();
     }
 
     setPosition(x: number, y: number): void {
@@ -718,7 +697,7 @@ export class ButtonStore extends TickerForest<ButtonState> {
             return;
         }
         this.#tree.setPosition(x, y);
-        this.markDirty();
+        this.dirty();
     }
 
     setOrder(order: number): void {
@@ -726,7 +705,7 @@ export class ButtonStore extends TickerForest<ButtonState> {
             return;
         }
         this.#tree.setOrder(order);
-        this.markDirty();
+        this.dirty();
     }
 
     setMinSize(minWidth?: number, minHeight?: number): boolean {
@@ -771,7 +750,7 @@ export class ButtonStore extends TickerForest<ButtonState> {
             };
         });
 
-        this.markDirty();
+        this.dirty();
         return true;
     }
 

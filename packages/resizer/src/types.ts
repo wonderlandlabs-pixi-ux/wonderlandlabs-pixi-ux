@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { Rectangle } from 'pixi.js';
+import type { Application, Container, FederatedPointerEvent } from 'pixi.js';
 import type { Rect } from './rectTypes';
 
 // ============================================================================
@@ -42,3 +43,46 @@ export type TransformedRectCallback = (
   transformedRect: Rectangle,
   phase: RectTransformPhase,
 ) => void;
+
+export interface ResizerStoreConfig {
+  container: Container;
+  rect: Rectangle;
+  app: Application;
+  drawRect?: (rect: Rectangle, container: Container) => void;
+  onRelease?: (rect: Rectangle) => void;
+  size?: number;
+  color?: Color;
+  constrain?: boolean;
+  mode?: HandleMode;
+  handleContainer?: Container;
+  rectTransform?: RectTransform;
+  onTransformedRect?: TransformedRectCallback;
+  deltaSpace?: Container;
+}
+
+export interface ResizerStoreValue {
+  rect: Rect;
+}
+
+export interface EnableHandlesConfig {
+  app: Application;
+  drawRect?: (rect: Rectangle, container: Container) => void;
+  onRelease?: (rect: Rectangle) => void;
+  size?: number;
+  color?: Color;
+  constrain?: boolean;
+  mode?: HandleMode;
+  rectTransform?: RectTransform;
+  onTransformedRect?: TransformedRectCallback;
+  deltaSpace?: Container;
+}
+
+export interface TrackDragCallbacks {
+  onDragStart?: (event: FederatedPointerEvent) => void;
+  onDragMove?: (deltaX: number, deltaY: number, event: FederatedPointerEvent) => void;
+  onDragEnd?: (event: FederatedPointerEvent) => void;
+}
+
+export interface TrackDragResult {
+  destroy: () => void;
+}

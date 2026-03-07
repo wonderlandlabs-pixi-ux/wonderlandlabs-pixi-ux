@@ -21,7 +21,7 @@ yarn add @wonderlandlabs-pixi-ux/box
 import {
   ALIGN,
   BoxTree,
-  MEASUREMENT_MODE,
+  UNIT_BASIS,
 } from '@wonderlandlabs-pixi-ux/box';
 
 const layout = new BoxTree({
@@ -31,8 +31,8 @@ const layout = new BoxTree({
   area: {
     x: 60,
     y: 50,
-    width: { mode: MEASUREMENT_MODE.PX, value: 720 },
-    height: { mode: MEASUREMENT_MODE.PX, value: 340 },
+    width: { mode: UNIT_BASIS.PX, value: 720 },
+    height: { mode: UNIT_BASIS.PX, value: 340 },
     px: 's',
     py: 's',
   },
@@ -47,8 +47,8 @@ const layout = new BoxTree({
       area: {
         x: 0,
         y: 0,
-        width: { mode: MEASUREMENT_MODE.PERCENT, value: 1 },
-        height: { mode: MEASUREMENT_MODE.PX, value: 60 },
+        width: { mode: UNIT_BASIS.PERCENT, value: 1 },
+        height: { mode: UNIT_BASIS.PX, value: 60 },
         px: 's',
         py: 's',
       },
@@ -60,8 +60,8 @@ const layout = new BoxTree({
       area: {
         x: 0,
         y: 0,
-        width: { mode: MEASUREMENT_MODE.PX, value: 24 },
-        height: { mode: MEASUREMENT_MODE.PX, value: 24 },
+        width: { mode: UNIT_BASIS.PX, value: 24 },
+        height: { mode: UNIT_BASIS.PX, value: 24 },
         px: 's',
         py: 's',
       },
@@ -238,4 +238,4 @@ const graphics = await boxTreeToPixi(layout, {
 - `boxTreeToPixi`
 - `boxTreeToSvg`
 - `pathToString`, `pathString`, `combinePaths`
-- `ALIGN`, `AXIS`, `MEASUREMENT_MODE`, `SIZE_MODE`, `SIZE_MODE_INPUT`
+- `ALIGN`, `AXIS`, `UNIT_BASIS`, `SIZE_MODE`, `SIZE_MODE_INPUT`

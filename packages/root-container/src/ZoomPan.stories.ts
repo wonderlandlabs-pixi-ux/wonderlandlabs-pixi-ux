@@ -2,8 +2,9 @@ import type { Meta, StoryObj } from '@storybook/html';
 import { Application, Graphics, Text } from 'pixi.js';
 import { createRootContainer } from './RootContainer';
 import { createZoomPan } from './ZoomPanContainer';
-import { makeStageDraggable, type StageDragEvent } from './makeStageDraggable';
-import { makeStageZoomable, type StageZoomEvent } from './makeStageZoomable';
+import { makeStageDraggable } from './makeStageDraggable';
+import { makeStageZoomable } from './makeStageZoomable';
+import type { StageDragEvent, StageZoomEvent } from './types';
 
 interface ZoomPanArgs {}
 

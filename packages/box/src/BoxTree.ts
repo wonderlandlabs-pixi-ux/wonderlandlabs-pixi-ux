@@ -465,15 +465,16 @@ export class BoxTree extends Forest<BoxTreeState> {
     if (this.#renderWatchSubscription) {
       return;
     }
+    const self = this;
 
-    this.#renderWatchSubscription = this.$subject.pipe(
+    self.#renderWatchSubscription = self.$subject.pipe(
       skip(1),
       map(() => ({
-        valueRef: this.value,
-        nounsKey: this.styleNouns.join('.'),
-        verbsKey: this.resolvedVerb.join('|'),
-        contentType: this.content?.type,
-        contentValue: this.content?.value,
+        valueRef: self.value,
+        nounsKey: self.styleNouns.join('.'),
+        verbsKey: self.resolvedVerb.join('|'),
+        contentType: self.content?.type,
+        contentValue: self.content?.value,
       })),
       distinctUntilChanged((prev, next) =>
         prev.valueRef === next.valueRef
@@ -483,7 +484,7 @@ export class BoxTree extends Forest<BoxTreeState> {
         && prev.contentValue === next.contentValue,
       ),
     ).subscribe(() => {
-      this.queueRender();
+      self.queueRender();
     });
   }
 

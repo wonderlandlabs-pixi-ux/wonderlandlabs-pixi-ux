@@ -1,26 +1,6 @@
 import type { Application, Container as PixiContainer, FederatedWheelEvent } from 'pixi.js';
 import { Point } from 'pixi.js';
-
-export interface ZoomOptions {
-  minZoom?: number;
-  maxZoom?: number;
-  zoomSpeed?: number;
-}
-
-export interface StageZoomableResult {
-  setZoom: (zoom: number) => void;
-  getZoom: () => number;
-  destroy: () => void;
-}
-
-/**
- * Stage zoom event data
- */
-export interface StageZoomEvent {
-  type: 'zoom';
-  zoom: number;
-  mousePosition: { x: number; y: number };
-}
+import type { ZoomOptions, StageZoomableResult, StageZoomEvent } from './types';
 
 /**
  * Makes a container zoomable via stage-level mousewheel events.
@@ -105,4 +85,3 @@ export function makeStageZoomable(
     destroy,
   };
 }
-

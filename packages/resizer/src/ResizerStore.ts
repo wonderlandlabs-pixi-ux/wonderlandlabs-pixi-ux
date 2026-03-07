@@ -1,35 +1,19 @@
 import {TickerForest} from '@wonderlandlabs-pixi-ux/ticker-forest';
 import {Application, Container, FederatedPointerEvent, Graphics, Rectangle} from 'pixi.js';
 import {distinctUntilChanged} from 'rxjs';
-import {trackDrag, TrackDragResult} from './trackDrag';
-import type {Color, RectTransform, RectTransformPhase, TransformedRectCallback} from './types';
+import {trackDrag} from './trackDrag';
+import type {
+    Color,
+    TrackDragResult,
+    RectTransform,
+    RectTransformPhase,
+    ResizerStoreConfig,
+    ResizerStoreValue,
+    TransformedRectCallback,
+} from './types';
 import {HandleMode, HandlePosition} from './types';
 import type {Rect} from './rectTypes';
 import {RectSchema} from './rectTypes';
-
-export interface ResizerStoreConfig {
-    container: Container;
-    rect: Rectangle;
-    app: Application;
-    drawRect?: (rect: Rectangle, container: Container) => void;
-    onRelease?: (rect: Rectangle) => void;
-    size?: number;
-    color?: Color;
-    constrain?: boolean;
-    mode?: HandleMode;
-    handleContainer?: Container;
-    rectTransform?: RectTransform;
-    onTransformedRect?: TransformedRectCallback;
-    deltaSpace?: Container;
-}
-
-/**
- * State value for ResizerStore
- */
-export interface ResizerStoreValue {
-    rect: Rect;
-    dirty: boolean;
-}
 
 const RECT_KEYS = ['x', 'y', 'width', 'height'];
 
@@ -79,7 +63,6 @@ export class ResizerStore extends TickerForest<ResizerStoreValue> {
             {
                 value: {
                     rect: RectSchema.parse(config.rect),
-                    dirty: false
                 }
             },
             { app: config.app, container: config.container }
@@ -133,24 +116,7 @@ export class ResizerStore extends TickerForest<ResizerStoreValue> {
             this.stage.hitArea = new Rectangle(0, 0, 10000, 10000);
         }
     }
-    // TickerForest abstract methods implementation
-    protected isDirty(): boolean {
-        return this.value.dirty;
-    }
-
-    protected clearDirty(): void {
-        this.set('dirty', false)
-    }
-
-    protected makeDirty(_data?: unknown): void {
-        this.set('dirty', true);
-    }
-
     protected resolve(): void {
-        if (!this.isDirty()) {
-            return;
-        }
-
         // Update handle positions and scales
         this.updateHandles();
 
@@ -484,7 +450,7 @@ export class ResizerStore extends TickerForest<ResizerStoreValue> {
             this.dragTrackers.set(handle, tracker);
         });
 
-        this.set('dirty', true)
+        this.dirty();
     }
 
     /**
@@ -516,9 +482,8 @@ export class ResizerStore extends TickerForest<ResizerStoreValue> {
         // Convert PixiJS Rectangle to ImmutRect and mark dirty
         this.mutate((draft) => {
             draft.rect = RectSchema.parse(rect);
-            draft.dirty = true;
         });
-        this.queueResolve();
+        this.dirty();
     }
 
     /**

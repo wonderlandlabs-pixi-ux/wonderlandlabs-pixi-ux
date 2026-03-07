@@ -3,12 +3,12 @@ import {
   ALIGN,
   MEASUREMENT_ENUM_CANONICAL,
   MEASUREMENT_ENUM_INPUT,
-  MEASUREMENT_MODE,
+  UNIT_BASIS,
 } from './constants';
 import { dictToStringArray } from './enumUtils';
 
 export type AlignLabel = keyof typeof ALIGN;
-export type MeasurementModeLabel = keyof typeof MEASUREMENT_MODE;
+export type MeasurementModeLabel = keyof typeof UNIT_BASIS;
 
 export const SizeModeSchema = z.enum(dictToStringArray(MEASUREMENT_ENUM_CANONICAL));
 export type SizeMode = z.infer<typeof SizeModeSchema>;
@@ -26,12 +26,12 @@ export const FractionalMeasurementBaseSchema = z.number().finite();
 export type FractionalMeasurementBase = z.infer<typeof FractionalMeasurementBaseSchema>;
 
 const PxMeasurementObjectSchema = z.object({
-  mode: z.literal(MEASUREMENT_MODE.PX),
+  mode: z.literal(UNIT_BASIS.PX),
   value: z.number().finite(),
 });
 
 const PercentMeasurementObjectSchema = z.object({
-  mode: z.literal(MEASUREMENT_MODE.PERCENT),
+  mode: z.literal(UNIT_BASIS.PERCENT),
   value: z.number().finite().refine((value) => value >= 0 && value <= 1, {
     message: '% value must be between 0 and 1',
   }),
@@ -55,7 +55,7 @@ export const FractionalMeasurementObjectSchema = z.object({
   });
 
 const NormalizedFractionalMeasurementSchema = FractionalMeasurementObjectSchema.transform((value) => ({
-  mode: MEASUREMENT_MODE.PERCENT,
+  mode: UNIT_BASIS.PERCENT,
   value: value.value / value.base,
 }));
 
@@ -69,7 +69,7 @@ export const MeasurementConfigSchema = z.union([
   MeasurementObjectSchema,
 ]).transform((value) => {
   if (typeof value === 'number') {
-    return { mode: MEASUREMENT_MODE.PX, value };
+    return { mode: UNIT_BASIS.PX, value };
   }
   return value;
 });

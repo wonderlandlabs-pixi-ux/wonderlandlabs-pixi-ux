@@ -14,18 +14,14 @@ yarn add @wonderlandlabs-pixi-ux/ticker-forest
 
 ## Pattern
 
-1. Subclass manages its own state (including dirty flags)
-2. Subclass calls `this.queueResolve()` when PixiJS updates are needed
-3. Base class schedules a ticker callback for the next frame (manages resolveQueued internally)
-4. Ticker calls `isDirty()`, then `resolve()`, then `clearDirty()`
+1. Subclass manages its own state
+2. Subclass calls `this.dirty()` when PixiJS updates are needed
+3. Base class schedules a ticker callback for the next frame with `ticker.addOnce(...)`
+4. Ticker calls `resolve()` and clears the internal dirty flag
 
 ## Usage
 
-Subclasses must implement:
-- `isDirty()` - Return true if PixiJS operations are needed
-- `makeDirty(data?)` - Mark the store dirty without assuming field names/shape
-- `clearDirty()` - Clear the dirty flag after resolve
-- `resolve()` - Perform PixiJS operations
+Subclasses must implement `resolve()` and call `dirty()` when state changes require Pixi updates.
 
 ### Example
 
@@ -35,13 +31,12 @@ import { Application } from 'pixi.js';
 
 interface MyState {
   position: { x: number; y: number };
-  dirty: boolean;
 }
 
 class MyStore extends TickerForest<MyState> {
   constructor(app: Application) {
     super(
-      { value: { position: { x: 0, y: 0 }, dirty: false } },
+      { value: { position: { x: 0, y: 0 } } },
       { app }
     );
   }
@@ -51,20 +46,7 @@ class MyStore extends TickerForest<MyState> {
       draft.position.x = x;
       draft.position.y = y;
     });
-    this.makeDirty({ reason: 'position' });
-    this.queueResolve();
-  }
-
-  protected isDirty(): boolean {
-    return this.value.dirty;
-  }
-
-  protected makeDirty(): void {
-    this.mutate(draft => { draft.dirty = true; });
-  }
-
-  protected clearDirty(): void {
-    this.mutate(draft => { draft.dirty = false; });
+    this.dirty();
   }
 
   protected resolve(): void {
@@ -86,13 +68,7 @@ constructor(
     app?: Application;
     ticker?: Ticker;
     container?: Container;
-    dirtyOnScale?: boolean | {
-      enabled?: boolean;
-      watchX?: boolean;
-      watchY?: boolean;
-      epsilon?: number;
-      relativeToRootParent?: boolean;
-    };
+    dirtyOnScale?: boolean | DirtyOnScaleOptions | DirtyOnScale;
   } | Application
 )
 ```
@@ -109,17 +85,17 @@ Ticker resolution precedence:
 3. `store.$parent?.ticker`
 
 `dirtyOnScale` options:
-- `true` enables scale tracking with defaults: `watchX: true`, `watchY: true`, `epsilon: 0.0001`, `relativeToRootParent: true`
-- `enabled` turns scale tracking on/off
+- `true` enables scale tracking with defaults: `watchX: true`, `watchY: true`
+- `new DirtyOnScale(...)` allows sharing one configured comparator/reader instance
 - `watchX` / `watchY` select which axis contributes to dirty checks
-- `epsilon` sets per-axis comparison tolerance for `distinctUntilChanged`
-- `relativeToRootParent` compares container scale against the top-most parent instead of raw local scale
+- Set both `watchX: false` and `watchY: false` to disable tracking via object config.
 
-### Protected Methods
+### Core Methods
 
-#### `queueResolve(): void`
+#### `dirty(): void`
 
-Queue a resolve operation for the next ticker frame. Uses `ticker.addOnce()` to ensure the resolve happens once on the next frame. Subclasses should call this after calling `makeDirty()` (or a wrapper method that routes through it).
+Marks the store dirty and schedules a single resolve on the next ticker frame.
+If the store is already dirty, no duplicate ticker callback is queued.
 
 #### `kickoff(): void`
 
@@ -133,25 +109,11 @@ Returns the current container scale as `{x, y}`. By default this is measured rel
 
 Returns the inverse scale of `getScale()` as `{x, y}`. This is the counter-scale value commonly used to keep UI affordances (titlebars, handles, labels) visually constant under zoom.
 
-### Abstract Methods (Must Implement)
-
-#### `isDirty(): boolean`
-
-Check if the state is dirty and needs PixiJS updates. Subclasses implement this to return their dirty flag.
-
-#### `makeDirty(data?: unknown): void`
-
-Mark the store dirty. Subclasses decide what "dirty" means internally and can optionally use the payload (for example `{ reason: 'scale' }`) to route custom behavior.
-
-#### `clearDirty(): void`
-
-Clear the dirty flag after resolve. Subclasses implement this.
+### Abstract Method (Must Implement)
 
 #### `resolve(): void`
 
 Perform PixiJS operations. This method is called inside a ticker handler, ensuring that PixiJS operations are synchronized with the rendering loop.
-
-### Public Methods
 
 #### `ticker: Ticker | undefined` (getter/setter)
 

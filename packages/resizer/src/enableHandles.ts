@@ -1,5 +1,5 @@
 import {Container, Rectangle} from 'pixi.js';
-import {EnableHandlesConfig} from "./enableHandlesConfig";
+import type {EnableHandlesConfig} from './types';
 import {ResizerStore} from "./ResizerStore";
 
 /**

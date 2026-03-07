@@ -71,7 +71,6 @@ export class CaptionStore extends TickerForest<CaptionState> {
             autoSize: resolved.autoSize,
             pointer: resolved.pointer,
             thought: resolved.thought,
-            isDirty: true,
         };
 
         const captionContainer = new Container({
@@ -111,6 +110,10 @@ export class CaptionStore extends TickerForest<CaptionState> {
         return container;
     }
 
+    set container(container: Container | undefined) {
+        super.container = container;
+    }
+
     get textDisplay(): Text {
         return this.#textDisplay;
     }
@@ -127,9 +130,8 @@ export class CaptionStore extends TickerForest<CaptionState> {
         if (this.value.text === text) return;
         this.mutate((draft) => {
             draft.text = text;
-            draft.isDirty = true;
         });
-        this.queueResolve();
+        this.dirty();
     }
 
     setPosition(x: number, y: number): void {
@@ -137,9 +139,8 @@ export class CaptionStore extends TickerForest<CaptionState> {
         this.mutate((draft) => {
             draft.x = x;
             draft.y = y;
-            draft.isDirty = true;
         });
-        this.queueResolve();
+        this.dirty();
     }
 
     setOrder(order: number): void {
@@ -147,9 +148,8 @@ export class CaptionStore extends TickerForest<CaptionState> {
         if (this.value.order === order) return;
         this.mutate((draft) => {
             draft.order = order;
-            draft.isDirty = true;
         });
-        this.queueResolve();
+        this.dirty();
     }
 
     setSize(width: number, height: number): void {
@@ -159,45 +159,40 @@ export class CaptionStore extends TickerForest<CaptionState> {
             draft.width = width;
             draft.height = height;
             draft.autoSize = false;
-            draft.isDirty = true;
         });
-        this.queueResolve();
+        this.dirty();
     }
 
     setShape(shape: CaptionShape): void {
         if (this.value.shape === shape) return;
         this.mutate((draft) => {
             draft.shape = shape;
-            draft.isDirty = true;
         });
-        this.queueResolve();
+        this.dirty();
     }
 
     setCornerRadius(cornerRadius: number): void {
         if (this.value.cornerRadius === cornerRadius) return;
         this.mutate((draft) => {
             draft.cornerRadius = Math.max(0, cornerRadius);
-            draft.isDirty = true;
         });
-        this.queueResolve();
+        this.dirty();
     }
 
     setPadding(padding: number): void {
         if (this.value.padding === padding) return;
         this.mutate((draft) => {
             draft.padding = Math.max(0, padding);
-            draft.isDirty = true;
         });
-        this.queueResolve();
+        this.dirty();
     }
 
     setAutoSize(autoSize: boolean): void {
         if (this.value.autoSize === autoSize) return;
         this.mutate((draft) => {
             draft.autoSize = autoSize;
-            draft.isDirty = true;
         });
-        this.queueResolve();
+        this.dirty();
     }
 
     setPointer(pointer: Partial<CaptionPointerConfig>): void {
@@ -207,9 +202,8 @@ export class CaptionStore extends TickerForest<CaptionState> {
                 ...pointer,
                 speaker: pointer.speaker !== undefined ? pointer.speaker : draft.pointer.speaker,
             };
-            draft.isDirty = true;
         });
-        this.queueResolve();
+        this.dirty();
     }
 
     setThoughtConfig(thought: Partial<CaptionThoughtConfig>): void {
@@ -218,45 +212,26 @@ export class CaptionStore extends TickerForest<CaptionState> {
                 ...draft.thought,
                 ...thought,
             };
-            draft.isDirty = true;
         });
-        this.queueResolve();
+        this.dirty();
     }
 
     setSpeakerPoint(point: Point | null): void {
         this.mutate((draft) => {
             draft.pointer.speaker = point;
-            draft.isDirty = true;
         });
-        this.queueResolve();
+        this.dirty();
     }
 
     setBackgroundStyle(style: Partial<CaptionBackgroundStyle>): void {
         this.#backgroundStyle = mergeBackgroundStyle(this.#backgroundStyle, style);
-        this.markDirty();
+        this.dirty();
     }
 
     setTextStyle(style: Partial<TextStyleOptions>): void {
         this.#textStyle = mergeTextStyle(this.#textStyle, style);
         this.#textDisplay.style = new TextStyle(this.#textStyle);
-        this.markDirty();
-    }
-
-    markDirty(): void {
-        this.makeDirty();
-        this.queueResolve();
-    }
-
-    protected isDirty(): boolean {
-        return this.value.isDirty;
-    }
-
-    protected makeDirty(_data?: unknown): void {
-        this.set('isDirty', true);
-    }
-
-    protected clearDirty(): void {
-        this.set('isDirty', false);
+        this.dirty();
     }
 
     #drawBubbleBody(
@@ -412,7 +387,7 @@ export class CaptionStore extends TickerForest<CaptionState> {
         const container = super.container;
         if (container) {
             container.destroy({children: true});
-            this.tickerContainer = undefined;
+            this.container = undefined;
         }
     }
 }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { AXIS, MEASUREMENT_MODE } from '../src/constants';
+import { AXIS, UNIT_BASIS } from '../src/constants';
 import { MeasurementSchema } from '../src/types';
 import {
   applyAxisConstraints,
@@ -12,43 +12,43 @@ describe('sizeUtils', () => {
   describe('MeasurementSchema.parse', () => {
     it('accepts numeric input as px shorthand', () => {
       expect(MeasurementSchema.parse(24)).toEqual({
-        mode: MEASUREMENT_MODE.PX,
+        mode: UNIT_BASIS.PX,
         value: 24,
       });
     });
 
     it('accepts canonical object modes (px and %)', () => {
       expect(MeasurementSchema.parse({
-        mode: MEASUREMENT_MODE.PX,
+        mode: UNIT_BASIS.PX,
         value: 15,
       })).toEqual({
-        mode: MEASUREMENT_MODE.PX,
+        mode: UNIT_BASIS.PX,
         value: 15,
       });
 
       expect(MeasurementSchema.parse({
-        mode: MEASUREMENT_MODE.PERCENT,
+        mode: UNIT_BASIS.PERCENT,
         value: 0.4,
       })).toEqual({
-        mode: MEASUREMENT_MODE.PERCENT,
+        mode: UNIT_BASIS.PERCENT,
         value: 0.4,
       });
     });
 
     it('accepts fraction mode (/) with explicit base', () => {
       expect(MeasurementSchema.parse({
-        mode: MEASUREMENT_MODE.FRACTION,
+        mode: UNIT_BASIS.FRACTION,
         value: 1,
         base: 4,
       })).toEqual({
-        mode: MEASUREMENT_MODE.PERCENT,
+        mode: UNIT_BASIS.PERCENT,
         value: 0.25,
       });
     });
 
     it('requires base for fraction mode (/)', () => {
       expect(() => MeasurementSchema.parse({
-        mode: MEASUREMENT_MODE.FRACTION,
+        mode: UNIT_BASIS.FRACTION,
         value: 0.5,
       })).toThrow(/required|invalid input/i);
     });
@@ -56,19 +56,19 @@ describe('sizeUtils', () => {
 
   describe('resolveMeasurement', () => {
     it('resolves px measurements directly', () => {
-      expect(resolveMeasurement({ mode: MEASUREMENT_MODE.PX, value: 320 })).toBe(320);
+      expect(resolveMeasurement({ mode: UNIT_BASIS.PX, value: 320 })).toBe(320);
     });
 
     it('resolves % measurements against parent pixels', () => {
       expect(resolveMeasurement(
-        { mode: MEASUREMENT_MODE.PERCENT, value: 0.25 },
+        { mode: UNIT_BASIS.PERCENT, value: 0.25 },
         { axis: AXIS.Y, parentPixels: 200 },
       )).toBe(50);
     });
 
     it('throws on % measurements without parent pixels', () => {
       expect(() => resolveMeasurement(
-        { mode: MEASUREMENT_MODE.PERCENT, value: 0.5 },
+        { mode: UNIT_BASIS.PERCENT, value: 0.5 },
         { axis: AXIS.X },
       )).toThrow(/requires parent x/i);
     });
@@ -76,7 +76,7 @@ describe('sizeUtils', () => {
     it('works with values parsed from numeric and fraction input', () => {
       const numericPx = MeasurementSchema.parse(80);
       const fractionPercent = MeasurementSchema.parse({
-        mode: MEASUREMENT_MODE.FRACTION,
+        mode: UNIT_BASIS.FRACTION,
         value: 1,
         base: 5,
       });
@@ -88,8 +88,8 @@ describe('sizeUtils', () => {
 
   describe('resolveMeasurementPx', () => {
     it('keeps parity with resolveMeasurement for px and %', () => {
-      expect(resolveMeasurementPx(AXIS.X, { mode: MEASUREMENT_MODE.PX, value: 320 })).toBe(320);
-      expect(resolveMeasurementPx(AXIS.Y, { mode: MEASUREMENT_MODE.PERCENT, value: 0.25 }, 200)).toBe(50);
+      expect(resolveMeasurementPx(AXIS.X, { mode: UNIT_BASIS.PX, value: 320 })).toBe(320);
+      expect(resolveMeasurementPx(AXIS.Y, { mode: UNIT_BASIS.PERCENT, value: 0.25 }, 200)).toBe(50);
     });
   });
 

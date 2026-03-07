@@ -1,0 +1,37 @@
+{
+  "name": "@wonderlandlabs-pixi-ux/observe-drag",
+  "version": "1.2.0",
+  "description": "A stream-based subject for PixiJS in wonderlandlabs-pixi-ux",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "clean": "rm -rf dist",
+    "test": "vitest run --config vitest.config.ts",
+    "test:watch": "vitest --config vitest.config.ts",
+    "test:typecheck": "tsc -p tsconfig.test.json --noEmit"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "peerDependencies": {
+    "pixi.js": "8.16.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.4",
+    "vitest": "^4.0.18"
+  },
+  "dependencies": {
+    "pixi.js": "8.16.0",
+    "rxjs": "^7.8.2"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "homepage": "https://wonderlandlabs-pixi-ux.netlify.app/packages/observe-drag",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/wonderlandlabs-pixi-ux/wonderlandlabs-pixi-ux.git",
+    "directory": "packages/observe-drag"
+  }
+}

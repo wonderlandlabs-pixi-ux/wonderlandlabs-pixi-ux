@@ -208,7 +208,7 @@ const meta: Meta<EditableWindowArgs> = {
         const markAllStoryWindowsDirty = () => {
             if (!wm) return;
             for (const id of wm.value.windows.keys()) {
-                wm.windowBranch(id)?.markDirty();
+                wm.windowBranch(id)?.dirty();
             }
         };
 
@@ -254,7 +254,7 @@ const meta: Meta<EditableWindowArgs> = {
             if (type === 'image') {
                 ensurePlaceholderImageLoaded();
             }
-            windowStore.markDirty();
+            windowStore.dirty();
         };
 
         const windowContentRenderer: WindowContentRendererFn = ({

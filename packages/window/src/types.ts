@@ -103,7 +103,6 @@ export const TitlebarConfigSchema = z.object({
     showCloseButton: z.boolean().default(false),
     fontSize: z.number().min(0).default(14),
     textColor: RgbColorSchema.default({r: 0, g: 0, b: 0}),
-    isDirty: z.boolean().default(true),
     icon: TitlebarIconSchema.optional(),
 });
 
@@ -204,7 +203,6 @@ export const WindowDefSchema = z.object({
         textColor: RGB_BLACK,
         showCloseButton: false,
         isVisible: true,
-        isDirty: true
     }),
     isResizeable: z.boolean().default(false),
     isDraggable: z.boolean().default(false),
@@ -212,7 +210,6 @@ export const WindowDefSchema = z.object({
     resizeMode: z.string().optional() as z.ZodType<HandleMode | undefined>,
     status: WindowStatusSchema.default(WINDOW_STATUS.CLEAN),
     zIndex: z.number().default(0),
-    isDirty: z.boolean().default(true),
     contentClickable: z.boolean().default(false),
     // Style system
     variant: StyleVariantSchema,

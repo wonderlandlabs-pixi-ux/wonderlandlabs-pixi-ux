@@ -1,25 +1,6 @@
 import { Container as PixiContainer, FederatedPointerEvent } from 'pixi.js';
 import {PointerManager, PointerTraceToken} from '@wonderlandlabs-pixi-ux/ticker-forest';
-
-/**
- * Callbacks for drag events
- */
-export interface TrackDragCallbacks {
-  /** Called when drag starts */
-  onDragStart?: (event: FederatedPointerEvent) => void;
-  /** Called during drag with delta values */
-  onDragMove?: (deltaX: number, deltaY: number, event: FederatedPointerEvent) => void;
-  /** Called when drag ends */
-  onDragEnd?: (event: FederatedPointerEvent) => void;
-}
-
-/**
- * Result from trackDrag
- */
-export interface TrackDragResult {
-  /** Remove all event listeners and clean up */
-  destroy: () => void;
-}
+import type { TrackDragCallbacks, TrackDragResult } from './types';
 
 /**
  * Track drag events on a PixiJS container.

@@ -17,7 +17,6 @@ import { ToolbarConfigSchema } from './types';
 import defaultStyles from './styles/toolbar.default.json';
 
 type ToolbarState = {
-  dirty: boolean;
   order: number;
 };
 
@@ -102,7 +101,7 @@ export class ToolbarStore extends TickerForest<ToolbarState> {
     const parsedConfig = ToolbarConfigSchema.parse(config);
     const toolbarContainer = new Container({ label: `toolbar-${parsedConfig.id ?? 'toolbar'}` });
     super(
-      { value: { dirty: true, order: parsedConfig.order ?? 0 } },
+      { value: { order: parsedConfig.order ?? 0 } },
       {...toTickerConfig(tickerSource), container: toolbarContainer}
     );
 
@@ -159,12 +158,12 @@ export class ToolbarStore extends TickerForest<ToolbarState> {
 
     button.setHovered = (isHovered: boolean): void => {
       originalSetHovered(isHovered);
-      this.markDirty();
+      this.dirty();
     };
 
     button.setDisabled = (isDisabled: boolean): void => {
       originalSetDisabled(isDisabled);
-      this.markDirty();
+      this.dirty();
     };
 
     return () => {
@@ -192,7 +191,7 @@ export class ToolbarStore extends TickerForest<ToolbarState> {
   addButton(buttonConfig: ToolbarButtonConfig): ButtonStore {
     const button = this.#createButton(buttonConfig, this.#toolbarConfig.bitmapFont);
     button.kickoff();
-    this.markDirty();
+    this.dirty();
     return button;
   }
 
@@ -207,7 +206,7 @@ export class ToolbarStore extends TickerForest<ToolbarState> {
     this.#contentContainer.removeChild(button.container);
     button.cleanup();
 
-    this.markDirty();
+    this.dirty();
   }
 
   getButton(id: string): ButtonStore | undefined {
@@ -231,9 +230,8 @@ export class ToolbarStore extends TickerForest<ToolbarState> {
     }
     this.mutate((draft) => {
       draft.order = order;
-      draft.dirty = true;
     });
-    this.queueResolve();
+    this.dirty();
   }
 
   #layoutButtons(): { width: number; height: number } {
@@ -294,7 +292,7 @@ export class ToolbarStore extends TickerForest<ToolbarState> {
 
     if (orientation === 'vertical') {
       if (fillChanged) {
-        this.markDirty();
+        this.dirty();
       }
       return {
         width: crossSize,
@@ -303,7 +301,7 @@ export class ToolbarStore extends TickerForest<ToolbarState> {
     }
 
     if (fillChanged) {
-      this.markDirty();
+      this.dirty();
     }
     return {
       width: flowOffset,
@@ -352,25 +350,6 @@ export class ToolbarStore extends TickerForest<ToolbarState> {
         width: style.stroke.width,
       });
     }
-  }
-
-  protected override isDirty(): boolean {
-    return this.value.dirty;
-  }
-
-  protected override clearDirty(): void {
-    this.set('dirty', false);
-  }
-
-  protected makeDirty(_data?: unknown): void {
-    if (!this.value.dirty) {
-      this.set('dirty', true);
-    }
-  }
-
-  markDirty(): void {
-    this.makeDirty();
-    this.queueResolve();
   }
 
   override kickoff(): void {

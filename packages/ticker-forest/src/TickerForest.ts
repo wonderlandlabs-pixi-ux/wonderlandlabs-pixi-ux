@@ -1,147 +1,74 @@
 import {Forest, StoreParams} from '@wonderlandlabs/forestry4';
-import type {Application, Container, Ticker} from 'pixi.js';
-import {Observable, Subscription, distinctUntilChanged, filter} from 'rxjs';
+import {Application, Container, Point, Ticker} from 'pixi.js';
+import {BehaviorSubject, combineLatest, distinctUntilChanged, filter, map, pairwise, Subscription} from 'rxjs';
+import {
+    compareScalePoints,
+    inverseScalePoint,
+    isPixiApplication,
+    isScaleBinding,
+    isScalePoint,
+    makeDirtyProps,
+    readScalePoint,
+} from './helpers.js';
+import {DirtyOnScale} from './DirtyOnScale.js';
+import type {ScalePoint, TickerForestConfig,} from './types.js';
 
-export interface DirtyOnScaleConfig {
-    enabled?: boolean;
-    watchX?: boolean;
-    watchY?: boolean;
-    epsilon?: number;
-    relativeToRootParent?: boolean;
-}
+export type {DirtyOnScaleOptions, TickerForestConfig} from './types.js';
+export {DirtyOnScale} from './DirtyOnScale.js';
 
-export interface TickerForestConfig {
-    app?: Application;
-    ticker?: Ticker;
-    container?: Container;
-    dirtyOnScale?: boolean | DirtyOnScaleConfig;
-}
+/** Base store for ticker-synchronized, dirty-flagged Pixi updates. */
 
-/**
- * Abstract base class for Forestry state management that synchronizes
- * state changes with PixiJS rendering via the ticker pattern.
- *
- * This class solves the problem of PixiJS artifacts that occur when
- * PixiJS operations are performed outside of ticker handlers. While
- * Forestry state changes are synchronous, PixiJS-centric effects must
- * be encapsulated inside ticker handlers to work correctly.
- *
- * Pattern:
- * 1. Subclass manages its own state (including dirty flags)
- * 2. Subclass calls `this.queueResolve()` when PixiJS updates are needed
- * 3. Base class schedules a ticker callback for the next frame (manages resolveQueued internally)
- * 4. Ticker calls `isDirty()`, then `resolve()`, then `clearDirty()`
- *
- * Subclasses must implement:
- * - `isDirty()` - Return true if PixiJS operations are needed
- * - `makeDirty(data?)` - Mark the store as dirty without assuming field names/shape
- * - `clearDirty()` - Clear the dirty flag after resolve
- * - `resolve()` - Perform PixiJS operations
- *
- * @example
- * ```typescript
- * interface MyState {
- *   position: { x: number; y: number };
- *   dirty: boolean;
- * }
- *
- * class MyStore extends TickerForest<MyState> {
- *   constructor(app: Application) {
- *     super(
- *       { value: { position: { x: 0, y: 0 }, dirty: false } },
- *       { app },
- *     );
- *   }
- *
- *   updatePosition(x: number, y: number) {
- *     this.mutate(draft => {
- *       draft.position.x = x;
- *       draft.position.y = y;
- *       draft.dirty = true;
- *     });
- *     this.queueResolve();
- *   }
- *
- *   protected isDirty(): boolean {
- *     return this.value.dirty;
- *   }
- *
- *   protected makeDirty(): void {
- *     this.mutate(draft => { draft.dirty = true; });
- *   }
- *
- *   protected clearDirty(): void {
- *     this.mutate(draft => { draft.dirty = false; });
- *   }
- *
- *   protected resolve(): void {
- *     // Perform PixiJS operations here
- *     const { position } = this.value;
- *     this.sprite.position.set(position.x, position.y);
- *   }
- * }
- * ```
- */
 export abstract class TickerForest<T> extends Forest<T> {
     #app?: Application;
     #ticker?: Ticker;
     #container?: Container;
-    #queuedOnTicker?: Ticker;
-    #scaleDirtyConfig?: Required<DirtyOnScaleConfig>;
+    public dirtyOnScale: DirtyOnScale = DirtyOnScale.from();
+    #tickerStateSubscription?: Subscription;
+    #scaleSourceSubscription?: Subscription;
     #scaleDirtySubscription?: Subscription;
+    #scaleTickerCleanupFn?: () => void;
+    #removeTickListenerFn?: () => void;
+    #containerState$ = new BehaviorSubject<Container | undefined>(undefined);
+    #tickerState$ = new BehaviorSubject<Ticker | undefined>(undefined);
+    #scaleState$ = new BehaviorSubject<ScalePoint | undefined>(undefined);
+    protected readonly container$ = this.#containerState$.pipe(distinctUntilChanged());
+    protected readonly ticker$ = this.#tickerState$.pipe(distinctUntilChanged());
+    protected readonly scale$ = this.#scaleState$.asObservable();
+    #dirtyProps = makeDirtyProps();
+    public readonly dirty$ = this.#dirtyProps.stream$;
 
-    /**
-     * @param args - The Forestry configuration object (includes {value: ..., res: ...} and other Forest options)
-     * @param config - Flexible ticker config ({ app?, ticker?, container? })
-     */
     constructor(args: StoreParams<T>, config: TickerForestConfig | Application = {}) {
         super(args);
-        if (TickerForest.isApplicationConfig(config)) {
+        if (isPixiApplication(config)) {
             this.#app = config;
-            return;
+        } else {
+            this.#app = config.app;
+            this.#ticker = config.ticker;
+            this.#container = config.container;
+            this.dirtyOnScale = DirtyOnScale.from(config.dirtyOnScale);
         }
-        this.#app = config.app;
-        this.#ticker = config.ticker;
-        this.#container = config.container;
-        this.#scaleDirtyConfig = TickerForest.resolveDirtyOnScaleConfig(config.dirtyOnScale);
-    }
-
-    static isApplicationConfig(value: TickerForestConfig | Application): value is Application {
-        return !!value && typeof value === 'object' && 'ticker' in value && 'renderer' in value;
-    }
-
-    static resolveDirtyOnScaleConfig(config?: boolean | DirtyOnScaleConfig): Required<DirtyOnScaleConfig> | undefined {
-        if (!config) {
-            return undefined;
-        }
-        if (config === true) {
-            return {
-                enabled: true,
-                watchX: true,
-                watchY: true,
-                epsilon: 0.0001,
-                relativeToRootParent: true,
-            };
-        }
-        if (!config.enabled) {
-            return undefined;
-        }
-        return {
-            enabled: true,
-            watchX: config.watchX ?? true,
-            watchY: config.watchY ?? true,
-            epsilon: config.epsilon ?? 0.0001,
-            relativeToRootParent: config.relativeToRootParent ?? true,
-        };
+        this.#containerState$.next(this.#container);
+        this.#refreshTickerState();
+        this.#tickerStateSubscription = this.#tickerState$
+            .pipe(filter((value) => !value))
+            .subscribe(this.$.removeTickListener);
+        this.#setupScaleDirtyObservers();
     }
 
     get application(): Application | undefined {
-        return this.#app
-            ?? (this.$parent as unknown as { application?: Application } | undefined)?.application;
+        const parent = this.$parent;
+        if (this.#app) {
+            return this.#app;
+        }
+        if (parent instanceof TickerForest) {
+            return parent.application;
+        }
+        return undefined;
     }
 
     set application(app: Application | undefined) {
         this.#app = app;
+        this.#refreshTickerState();
     }
 
     get app(): Application | undefined {
@@ -153,217 +80,202 @@ export abstract class TickerForest<T> extends Forest<T> {
     }
 
     get container(): Container | undefined {
-        return this.#container
-            ?? (this.$parent as unknown as { container?: Container } | undefined)?.container;
+        return this.#container;
     }
 
-    get tickerContainer(): Container | undefined {
-        return this.container;
-    }
-
-    set tickerContainer(container: Container | undefined) {
+    set container(container: Container | undefined) {
         this.#container = container;
+        this.#containerState$.next(container);
+    }
+
+    #resolveParentTicker(): Ticker | undefined {
+        const parent = this.$parent as unknown as {
+            ticker?: Ticker;
+            container?: { ticker?: Ticker };
+        } | undefined;
+        return parent?.ticker ?? parent?.container?.ticker;
+    }
+
+    #resolveTickerForState(): Ticker | undefined {
+        return this.#ticker ?? this.#app?.ticker ?? this.#resolveParentTicker();
+    }
+
+    #refreshTickerState(): void {
+        const resolved = this.#resolveTickerForState();
+        if (this.#tickerState$.value !== resolved) {
+            this.#tickerState$.next(resolved);
+        }
     }
 
     get ticker(): Ticker {
-        if (this.#ticker) {
-            return this.#ticker;
-        }
-        if (this.#app?.ticker) {
-            return this.#app.ticker;
-        }
-        const parentTicker = (this.$parent as unknown as { ticker?: Ticker } | undefined)?.ticker;
-        if (parentTicker) {
-            return parentTicker;
+        const ticker = this.#tickerState$.value;
+        if (ticker) {
+            return ticker;
         }
         throw new Error(
-            `${this.constructor.name}: ticker is unavailable (expected config.ticker, config.app.ticker, or parent.ticker)`,
+            `${this.constructor.name}: ticker is unavailable (expected config.ticker, config.app.ticker, parent.ticker, or parent.container.ticker)`,
         );
     }
 
     set ticker(ticker: Ticker | undefined) {
         this.#ticker = ticker;
+        this.#refreshTickerState();
     }
 
-    /**
-     * Check if the state is dirty and needs PixiJS updates.
-     * Subclasses implement this to return their dirty flag.
-     *
-     * the reason this is abstract is that there may be a singular lag
-     * or multiple flags that collectively create a dirty condition
-     * in the state. All we care about is that the selector here
-     * is an accurate reflection of work needed in the resolver.
-     *
-     * @abstract
-     */
-    protected abstract isDirty(): boolean;
+    protected get isDirty(): boolean {
+        return this.#dirtyProps.state$.value;
+    }
 
-    /**
-     * Mark this store dirty. Subclasses decide which internal flags/state represent "dirty".
-     * Optional payload can provide trigger context (for example scale changes).
-     */
-    protected abstract makeDirty(data?: unknown): void;
+    protected set isDirty(next: boolean) {
+        if (this.#dirtyProps.state$.value === next) {
+            return;
+        }
+        this.#dirtyProps.state$.next(next);
+    }
 
-    /**
-     * Clear the dirty flag after resolve. Subclasses implement this.
-     * @abstract
-     */
-    protected abstract clearDirty(): void;
+    get #removeTickListener(): (() => void) | undefined {
+        return this.#removeTickListenerFn;
+    }
 
-    #resolveQueued = false;
-    #requeueAfterTick = false;
+    set #removeTickListener(next: (() => void) | undefined) {
+        this.#removeTickListenerFn?.();
+        this.#removeTickListenerFn = next;
+    }
 
-    /**
-     * Queue a resolve operation for the next ticker frame.
-     * Uses `ticker.addOnce()` to ensure the resolve happens once on the next frame.
-     * Subclasses should call this after calling their dirtifier (`makeDirty` or wrapper methods).
-     */
-    queueResolve(): void {
-        this.#ensureScaleDirtyObserver();
+    get #scaleTickerCleanup(): (() => void) | undefined {
+        return this.#scaleTickerCleanupFn;
+    }
+
+    set #scaleTickerCleanup(next: (() => void) | undefined) {
+        this.#scaleTickerCleanupFn?.();
+        this.#scaleTickerCleanupFn = next;
+    }
+
+    public removeTickListener(): void {
+        this.#removeTickListener = undefined;
+    }
+
+    #clean(): void {
+        this.isDirty = false;
+        this.removeTickListener();
+    }
+
+    public dirty(): void {
+        if (this.isDirty) {
+            return;
+        }
+        this.isDirty = true;
         const ticker = this.ticker;
-        if (this.#resolveQueued) {
-            // A resolve is already queued or currently executing; request one more pass.
-            this.#requeueAfterTick = true;
-            return;
-        }
+        this.removeTickListener();
         ticker.addOnce(this.$.onTick, this);
-        this.#queuedOnTicker = ticker;
-        this.#resolveQueued = true;
-    }
-
-    /**
-     * Trigger an initial resolve on the next ticker frame.
-     * Subclasses should call this in their constructor after initialization
-     * to ensure initial PixiJS operations are performed.
-     */
-    kickoff(): void {
-        this.#ensureScaleDirtyObserver();
-        this.queueResolve();
-    }
-
-    #ensureScaleDirtyObserver(): void {
-        const config = this.#scaleDirtyConfig;
-        if (!config || this.#scaleDirtySubscription || (!config.watchX && !config.watchY)) {
-            return;
-        }
-        const self = this;
-
-        const scale$ = new Observable<readonly [number, number]>((subscriber) => {
-            const onScaleTick = () => {
-                const scale = self.#readContainerScale(config.relativeToRootParent);
-                if (!scale) {
-                    return;
-                }
-                subscriber.next(scale);
-            };
-            self.ticker.add(onScaleTick, self);
-            return () => {
-                self.ticker.remove(onScaleTick, self);
-            };
-        });
-
-        self.#scaleDirtySubscription = scale$
-            .pipe(
-                filter(() => !self.isDirty()),
-                distinctUntilChanged((prev, next) => {
-                    const xStable = !config.watchX || Math.abs(prev[0] - next[0]) <= config.epsilon;
-                    const yStable = !config.watchY || Math.abs(prev[1] - next[1]) <= config.epsilon;
-                    return xStable && yStable;
-                })
-            )
-            .subscribe(() => {
-                self.#markDirtyFromScaleObserver();
-            });
-    }
-
-    #markDirtyFromScaleObserver(): void {
-        this.makeDirty({reason: 'scale'});
-        this.queueResolve();
-    }
-
-    protected getScale(): {x: number; y: number} {
-        const scale = this.#readContainerScale(true);
-        if (!scale) {
-            return {x: 1, y: 1};
-        }
-        return {x: scale[0], y: scale[1]};
-    }
-
-    protected getInverseScale(): {x: number; y: number} {
-        const scale = this.getScale();
-        return {
-            x: Number.isFinite(scale.x) && scale.x > 0 ? 1 / scale.x : 1,
-            y: Number.isFinite(scale.y) && scale.y > 0 ? 1 / scale.y : 1,
+        this.#removeTickListener = () => {
+            ticker.remove(this.$.onTick, this);
         };
     }
 
-    #readContainerScale(relativeToRootParent: boolean): readonly [number, number] | undefined {
-        const container = this.container;
-        if (!container) {
-            return undefined;
-        }
-        if (!relativeToRootParent) {
-            return [Math.abs(container.scale.x) || 1, Math.abs(container.scale.y) || 1];
-        }
-        const rootParent = this.#resolveRootParent(container);
-        if (!rootParent) {
-            return undefined;
-        }
-
-        const origin = rootParent.toLocal(container.toGlobal({x: 0, y: 0}));
-        const xAxis = rootParent.toLocal(container.toGlobal({x: 1, y: 0}));
-        const yAxis = rootParent.toLocal(container.toGlobal({x: 0, y: 1}));
-
-        const scaleX = Math.hypot(xAxis.x - origin.x, xAxis.y - origin.y);
-        const scaleY = Math.hypot(yAxis.x - origin.x, yAxis.y - origin.y);
-        return [scaleX || 1, scaleY || 1];
+    kickoff(): void {
+        this.dirty();
     }
 
-    #resolveRootParent(container: Container): Container | undefined {
-        let root = container.parent ?? undefined;
-        while (root?.parent) {
-            root = root.parent;
-        }
-        return root;
+    #teardownScaleTickerSource(): void {
+        this.#scaleTickerCleanup = undefined;
     }
 
-    /**
-     * Internal ticker callback that calls resolve and clears dirty flags.
-     * @private
-     */
-    private onTick (){
-        if (this.isDirty()) {
+    #setupScaleDirtyObservers(): void {
+        const self = this;
+
+        self.#scaleSourceSubscription = combineLatest([
+            self.container$,
+            self.ticker$,
+        ]).pipe(
+            map(([container, ticker]) => ({
+                container,
+                ticker,
+            })),
+            filter(isScaleBinding),
+        ).subscribe((binding) => {
+            self.#teardownScaleTickerSource();
+
+            const onScaleTick = () => {
+                if (binding.container !== self.#containerState$.value || binding.ticker !== self.#tickerState$.value) {
+                    binding.ticker.remove(onScaleTick, self);
+                    return;
+                }
+                if (!self.dirtyOnScale.enabled) {
+                    return;
+                }
+                const scale = readScalePoint(binding.container);
+                if (!scale) {
+                    return;
+                }
+                const previous = self.#scaleState$.value;
+                if (!previous || !compareScalePoints(self.dirtyOnScale, previous, scale)) {
+                    self.#scaleState$.next(scale);
+                }
+            };
+
+            binding.ticker.add(onScaleTick, self);
+            self.#scaleTickerCleanup = () => {
+                binding.ticker.remove(onScaleTick, self);
+            };
+        });
+
+        self.#scaleDirtySubscription = self.scale$
+            .pipe(
+                pairwise(),
+                filter(([previousScale, nextScale]) => {
+                    if (self.isDirty) {
+                        return false;
+                    }
+                    const prevIssValid = isScalePoint(previousScale);
+                    const nextIsValid = isScalePoint(nextScale);
+                    if (prevIssValid !== nextIsValid) {
+                        // scale has changed - we can't compare them
+                        // but they are different; we do need to re-render
+                        return true;
+                    } else if (!prevIssValid || !nextIsValid) {
+                        // scale has been unreadable for last two cycles
+                        // in most situations that means scale has not changed;
+                        // do not re-render
+                        return false;
+                    }
+                    return !compareScalePoints(self.dirtyOnScale, previousScale, nextScale);
+                }),
+            )
+            .subscribe(self.$.dirty);
+    }
+
+    protected getScale(): ScalePoint {
+        return readScalePoint(this.container) || new Point(1, 1);
+    }
+
+    protected getInverseScale(): { x: number; y: number } {
+        return inverseScalePoint(this.container);
+    }
+
+    private onTick() {
+        if (this.isDirty) {
             this.resolve();
-            this.clearDirty();
-        }
-        this.#resolveQueued = false;
-        this.#queuedOnTicker = undefined;
-        if (this.#requeueAfterTick) {
-            this.#requeueAfterTick = false;
-            this.queueResolve();
+            this.#clean();
         }
     };
 
-    /**
-     * Abstract method that subclasses must implement to perform PixiJS operations.
-     * This method is called inside a ticker handler, ensuring that PixiJS operations
-     * are synchronized with the rendering loop.
-     *
-     * @abstract
-     */
+    /** Apply pending visual updates on the ticker frame. */
     protected abstract resolve(): void;
 
-    /**
-     * Cleanup method to remove ticker listeners.
-     * Subclasses should call `super.cleanup()` in their cleanup/destroy methods.
-     */
+    /** Tear down internal subscriptions and ticker listeners. */
     public cleanup(): void {
+        this.#tickerStateSubscription?.unsubscribe();
+        this.#tickerStateSubscription = undefined;
+        this.#scaleSourceSubscription?.unsubscribe();
+        this.#scaleSourceSubscription = undefined;
         this.#scaleDirtySubscription?.unsubscribe();
         this.#scaleDirtySubscription = undefined;
-        this.#queuedOnTicker?.remove(this.$.onTick, this);
-        this.ticker?.remove(this.$.onTick, this);
-        this.#queuedOnTicker = undefined;
-        this.#resolveQueued = false;
-        this.#requeueAfterTick = false;
+        this.#teardownScaleTickerSource();
+        this.#clean();
+        this.#containerState$.complete();
+        this.#tickerState$.complete();
+        this.#scaleState$.complete();
+        this.#dirtyProps.state$.complete();
     }
 }

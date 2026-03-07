@@ -1,13 +1,16 @@
 export { GridManager } from './GridManager.js';
-export type { GridManagerConfig, GridCacheOptions, GridCacheDebugOptions, GridCacheDebugInfo } from './GridManager.js';
 export type {
   GridLineOptions,
   GridLineConfig,
-  GridLineSchema,
   ArtboardOptions,
   ArtboardConfig,
-  ArtboardSchema,
   GridStoreValue,
-  GridStoreSchema,
   GridManagerValue,
+  GridManagerConfig,
+  GridCacheOptions,
+  GridCacheDebugOptions,
+  GridCacheDebugInfo,
+  GridRedrawReason,
+  WorldBounds,
 } from './types.js';
+export { GridLineSchema, ArtboardSchema, GridStoreSchema } from './types.js';

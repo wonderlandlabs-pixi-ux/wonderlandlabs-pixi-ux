@@ -1,6 +1,6 @@
 {
   "name": "@wonderlandlabs-pixi-ux/caption",
-  "version": "1.1.11",
+  "version": "1.2.0",
   "description": "Caption bubbles for PixiJS with rectangle/oval shapes and optional speaker pointers",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -17,9 +17,7 @@
     "pixi.js": "8.16.0"
   },
   "dependencies": {
-    "@wonderlandlabs-pixi-ux/ticker-forest": "1.1.11",
-    "@wonderlandlabs/forestry4": "^4.1.15",
-    "rxjs": "^7.8.2",
+    "@wonderlandlabs-pixi-ux/ticker-forest": "1.2.0",
     "zod": "^4.3.6"
   },
   "devDependencies": {

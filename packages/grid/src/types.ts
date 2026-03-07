@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import type { Application, Container } from 'pixi.js';
 
 // ============================================================================
 // Grid Line Types
@@ -65,6 +66,46 @@ export type GridStoreValue = z.infer<typeof GridStoreSchema>;
 
 export interface GridManagerValue {
   gridSpec: GridStoreValue;
-  dirty: boolean;
 }
 
+export type GridRedrawReason = 'zoom' | 'drag' | 'resize' | 'spec-update' | 'init' | 'unknown';
+
+export interface GridCacheDebugInfo {
+  reason: GridRedrawReason;
+  zoom: number;
+  baseResolution: number;
+  activeResolution: number;
+  textureWidthPx: number;
+  textureHeightPx: number;
+  pixelCount: number;
+  measuredBytes: number | null;
+  measuredBytesMethod: 'resource-byteLength' | 'resource-data-byteLength' | 'unavailable';
+  estimatedBytes: number;
+  estimatedMiB: number;
+}
+
+export interface GridCacheDebugOptions {
+  logger?: (info: GridCacheDebugInfo) => void;
+  logIntervalMs?: number;
+}
+
+export interface GridCacheOptions {
+  enabled?: boolean;
+  resolution?: number;
+  antialias?: boolean;
+  debug?: boolean | GridCacheDebugOptions;
+}
+
+export interface GridManagerConfig {
+  gridSpec: GridStoreValue;
+  application: Application;
+  zoomPanContainer: Container;
+  cache?: GridCacheOptions;
+}
+
+export interface WorldBounds {
+  left: number;
+  right: number;
+  top: number;
+  bottom: number;
+}
