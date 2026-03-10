@@ -1,6 +1,6 @@
 {
   "name": "@wonderlandlabs-pixi-ux/docs",
-  "version": "1.1.9",
+  "version": "1.2.1",
   "private": true,
   "scripts": {
     "sync:intro-package-table": "node scripts/sync-intro-package-table.mjs",
