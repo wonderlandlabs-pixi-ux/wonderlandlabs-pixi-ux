@@ -4,6 +4,7 @@ import type {DirtyOnScale} from './DirtyOnScale.js';
 import type {
     DirtyProps,
     MaybeScaleBinding,
+    ScaleTickerLike,
     ScalePoint,
     ScaleBinding,
     TickerForestConfig,
@@ -17,8 +18,16 @@ export function makeDirtyProps(): DirtyProps {
     };
 }
 
+function hasScaleTickerApi(value: unknown): value is ScaleTickerLike {
+    if (!value || typeof value !== 'object') {
+        return false;
+    }
+    const candidate = value as {add?: unknown; remove?: unknown};
+    return typeof candidate.add === 'function' && typeof candidate.remove === 'function';
+}
+
 export function isScaleBinding(binding: MaybeScaleBinding): binding is ScaleBinding {
-    return !!binding.container && !!binding.ticker;
+    return !!binding.container && hasScaleTickerApi(binding.ticker);
 }
 
 export function isPixiApplication(value: TickerForestConfig | Application): value is Application {

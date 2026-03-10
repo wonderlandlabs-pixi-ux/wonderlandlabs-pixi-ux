@@ -26,10 +26,12 @@ export type DirtyProps = {
 
 export type MaybeScaleBinding = {
     container: Container | undefined;
-    ticker: Ticker | undefined;
+    ticker: ScaleTickerLike | undefined;
 };
 
 export type ScaleBinding = {
     container: Container;
-    ticker: Ticker;
+    ticker: ScaleTickerLike;
 };
+
+export type ScaleTickerLike = Pick<Ticker, 'add' | 'remove'>;

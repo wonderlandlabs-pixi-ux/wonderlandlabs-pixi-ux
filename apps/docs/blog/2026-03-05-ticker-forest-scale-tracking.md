@@ -10,7 +10,7 @@ tags: [ticker-forest, pixi, scale, titlebar, docs]
 
 - Added `dirtyOnScale` to `TickerForest` config.
 - Added `getScale(): { x, y }` and `getInverseScale(): { x, y }`.
-- Standardized dirty triggering via `makeDirty(data?: unknown)` so the base class can request dirty state without assuming store-specific dirty fields.
+- Standardized dirty triggering through `dirty()` so store updates are coalesced into ticker-frame resolve cycles.
 - Scale observer now only triggers dirtying when `isDirty()` is currently `false`, and uses axis-aware `distinctUntilChanged`.
 
 ## `dirtyOnScale` options
@@ -19,14 +19,11 @@ tags: [ticker-forest, pixi, scale, titlebar, docs]
 - `watchX: true`
 - `watchY: true`
 - `epsilon: 0.0001`
-- `relativeToRootParent: true`
 
 You can also pass an object with:
-- `enabled`
 - `watchX`
 - `watchY`
 - `epsilon`
-- `relativeToRootParent`
 
 ## Why this matters
 

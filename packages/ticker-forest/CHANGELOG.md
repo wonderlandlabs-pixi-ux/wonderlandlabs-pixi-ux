@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## 1.2.1 - 2026-03-09
+
+- Guarded scale-tracking ticker bindings to require `add`/`remove` APIs before subscribing, preventing test/runtime errors when minimal ticker mocks are used.
+
 ## 1.1.3 - 2026-03-02
 
 - upgrade to pixi 8.16

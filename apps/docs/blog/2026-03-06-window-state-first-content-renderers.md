@@ -11,7 +11,7 @@ tags: [window, pixi, rendering, docs, pattern]
 For dynamic content (toolbar actions, async updates, external events), use this flow:
 
 1. Mutate window/titlebar state (including custom fields).
-2. Mark the relevant store dirty (`markDirty()` / `isDirty`).
+2. Request refresh by calling `dirty()` on the relevant store.
 3. Upsert display objects from `windowContentRenderer` and/or `titlebarContentRenderer`.
 
 ## Why this matters
