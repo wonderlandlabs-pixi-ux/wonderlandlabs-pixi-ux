@@ -1,6 +1,6 @@
 {
   "name": "@wonderlandlabs-pixi-ux/grid",
-  "version": "1.2.2",
+  "version": "1.2.3",
   "description": "PixiJS grid component for wonderlandlabs-pixi-ux",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -22,7 +22,7 @@
     "vitest": "^4.0.18"
   },
   "dependencies": {
-    "@wonderlandlabs-pixi-ux/ticker-forest": "1.2.2",
+    "@wonderlandlabs-pixi-ux/ticker-forest": "1.2.3",
     "pixi.js": "8.16.0",
     "zod": "^4.3.6"
   },

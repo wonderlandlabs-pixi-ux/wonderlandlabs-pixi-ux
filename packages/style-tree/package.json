@@ -1,6 +1,6 @@
 {
   "name": "@wonderlandlabs-pixi-ux/style-tree",
-  "version": "1.2.2",
+  "version": "1.2.3",
   "type": "module",
   "description": "Hierarchical style matching system with noun paths and state-based selection",
   "main": "dist/index.js",
