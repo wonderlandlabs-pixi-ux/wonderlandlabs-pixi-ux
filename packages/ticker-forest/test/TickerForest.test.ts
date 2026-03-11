@@ -1,4 +1,4 @@
-import {describe, expect, it} from 'vitest';
+import {describe, expect, it, vi} from 'vitest';
 import type {StoreParams} from '@wonderlandlabs/forestry4';
 import type {Container} from 'pixi.js';
 import {TickerForest} from '../src/TickerForest';
@@ -75,6 +75,25 @@ describe('TickerForest', () => {
         expect(store.resolveCount).toBe(1);
 
         store.cleanup();
+    });
+
+    it('requests a shared app render on each dirty tick', () => {
+        vi.useFakeTimers();
+        const ticker = new MockTicker();
+        const app = createMockApplication(ticker);
+        app.render = vi.fn();
+        const store = new TestTickerForest({value: {value: 1}}, app);
+
+        store.dirty();
+        ticker.tick();
+        vi.advanceTimersByTime(31);
+        store.dirty();
+        ticker.tick();
+
+        expect(app.render).toHaveBeenCalledTimes(2);
+
+        store.cleanup();
+        vi.useRealTimers();
     });
 
     it('does not trigger dirty from scale changes when dirtyOnScale watch is disabled', () => {

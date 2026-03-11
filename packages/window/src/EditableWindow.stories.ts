@@ -113,8 +113,10 @@ type EditableStoryWindowValue = WindowDef & {
 // Uses WindowsManager's texture loading system for the move icon
 const customTitlebarRenderer: TitlebarContentRendererFn = ({
     titlebarStore,
+    titlebarValue,
     windowValue,
-    contentContainer
+    contentContainer,
+    localRect,
 }) => {
     const store = titlebarStore as TitlebarStore;
     const closeButtonId = `close-btn-${windowValue.id}`;
@@ -174,18 +176,20 @@ const customTitlebarRenderer: TitlebarContentRendererFn = ({
     }
 
     // Position buttons at right side of titlebar
-    const parentWidth = (store.$parent?.value as any)?.width || 200;
-    const padding = store.value.padding;
-    const yPos = -store.value.fontSize * 0.3;
+    const padding = titlebarValue.padding ?? store.value.padding ?? 0;
+    const buttonCenterY = localRect.y + (localRect.height / 2);
+    const closeButtonHalfSize = 10;
+    const closeButtonGap = 8;
+    const moveButtonOffset = 24;
 
     // Close button at far right
-    closeBtn.x = parentWidth - padding - 20;
-    closeBtn.y = yPos;
+    closeBtn.x = localRect.x + localRect.width - padding - closeButtonHalfSize;
+    closeBtn.y = buttonCenterY;
 
     // Move button to the left of close button
     if (moveBtn) {
-        moveBtn.x = parentWidth - padding - 44;
-        moveBtn.y = yPos;
+        moveBtn.x = closeBtn.x - moveButtonOffset - closeButtonGap;
+        moveBtn.y = buttonCenterY;
     }
 };
 

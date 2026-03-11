@@ -27,6 +27,7 @@ import type {Subscription} from 'rxjs';
 import {resolveWindowStyle} from './styles';
 import {STYLE_VARIANT} from './constants';
 import {isEqual} from 'lodash-es';
+import {renderStockTitlebarContent} from "./titlebarRenderers";
 
 // Default color for handles and selection border (blue)
 const HANDLE_COLOR: RgbColor = {r: 0.3, g: 0.6, b: 1};
@@ -39,7 +40,7 @@ type WindowDragDebugFn = (source: string, message: string, data?: unknown) => vo
 
 export class WindowStore extends TickerForest<WindowDef> {
     static titlebarStoreClass: TitlebarStoreClass = TitlebarStore;
-    static titlebarContentRenderer?: TitlebarContentRendererFn;
+    static titlebarContentRenderer?: TitlebarContentRendererFn = renderStockTitlebarContent;
     static windowContentRenderer?: WindowContentRendererFn;
     static onResolve?: WindowResolveHookFn;
     static configureTitlebar?: ConfigureTitlebarFn;
@@ -97,8 +98,9 @@ export class WindowStore extends TickerForest<WindowDef> {
         // @ts-ignore
         self.#titlebarStore = self.$branches.$add(['titlebar'], {
             subclass,
-        }, self.application!) as unknown as TitlebarStore;
-        self.#titlebarStore.application = self.application;
+        }, {
+            app: self.application,
+        }) as unknown as TitlebarStore;
         self.#titlebarStore.dirty();
         self.#applyTitlebarHooks();
         self.#applyInitialTitlebarParamOverrides();
@@ -589,6 +591,9 @@ export class WindowStore extends TickerForest<WindowDef> {
         }
 
         const titlebarContainer = this.#titlebarStore.container;
+        if (!titlebarContainer) {
+            return;
+        }
 
         titlebarContainer.cursor = 'grab';
         this.#titlebarDragSubscription?.unsubscribe();
@@ -627,8 +632,9 @@ export class WindowStore extends TickerForest<WindowDef> {
             }
 
             // Reset cursor
-            if (this.#titlebarStore) {
-                this.#titlebarStore.container.cursor = 'grab';
+            const titlebarContainer = this.#titlebarStore?.container;
+            if (titlebarContainer) {
+                titlebarContainer.cursor = 'grab';
             }
         }
 
@@ -728,20 +734,7 @@ export class WindowStore extends TickerForest<WindowDef> {
     }
 
     #refreshContentMask() {
-        const {width, height, id} = this.value;
-
-        // Check if window is selected
-        const rootStore = this.$root as unknown as WindowsManager;
-        const isSelected = rootStore?.isWindowSelected?.(id) ?? false;
-
-        // When selected, disable mask to show content overflow
-        if (isSelected) {
-            this.#contentContainer.mask = null;
-            // Keep mask geometry from drawing over the window background when not used.
-            this.#contentMask.visible = false;
-            this.#contentMask.clear();
-            return;
-        }
+        const {width, height} = this.value;
 
         // Update content mask - simple rectangle matching window dimensions
         if (!this.#contentMask.parent) {
@@ -897,11 +890,12 @@ export class WindowStore extends TickerForest<WindowDef> {
         this.#titlebarDragSubscription?.unsubscribe();
         this.#titlebarDragSubscription = undefined;
 
-        if (this.#titlebarStore && this.#titlebarPointerUpHandler) {
-            this.#titlebarStore.container.off('pointerup', this.#titlebarPointerUpHandler);
+        const titlebarContainer = this.#titlebarStore?.container;
+        if (titlebarContainer && this.#titlebarPointerUpHandler) {
+            titlebarContainer.off('pointerup', this.#titlebarPointerUpHandler);
         }
-        if (this.#titlebarStore && this.#titlebarPointerUpOutsideHandler) {
-            this.#titlebarStore.container.off('pointerupoutside', this.#titlebarPointerUpOutsideHandler);
+        if (titlebarContainer && this.#titlebarPointerUpOutsideHandler) {
+            titlebarContainer.off('pointerupoutside', this.#titlebarPointerUpOutsideHandler);
         }
         this.#titlebarPointerUpHandler = undefined;
         this.#titlebarPointerUpOutsideHandler = undefined;

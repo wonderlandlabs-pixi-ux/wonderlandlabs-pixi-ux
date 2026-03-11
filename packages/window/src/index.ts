@@ -6,3 +6,5 @@ export * from './styles.js';
 export {WindowStore} from './WindowStore.js';
 export {EditableWindowStore} from './EditableWindowStore.js';
 export {TitlebarStore} from './TitlebarStore.js';
+export {CounterScalingTitlebar} from './CounterScalingTitlebar.js';
+export {renderStockTitlebarContent} from './titlebarRenderers.js';

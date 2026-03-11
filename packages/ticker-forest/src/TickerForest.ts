@@ -1,4 +1,5 @@
 import {Forest, StoreParams} from '@wonderlandlabs/forestry4';
+import {getSharedRenderHelper} from '@wonderlandlabs-pixi-ux/utils';
 import {Application, Container, Point, Ticker} from 'pixi.js';
 import {BehaviorSubject, combineLatest, distinctUntilChanged, filter, map, pairwise, Subscription} from 'rxjs';
 import {
@@ -256,6 +257,7 @@ export abstract class TickerForest<T> extends Forest<T> {
     private onTick() {
         if (this.isDirty) {
             this.resolve();
+            getSharedRenderHelper(this.application).request();
             this.#clean();
         }
     };

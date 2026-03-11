@@ -12,7 +12,6 @@ const UNSELECTED_ALPHA = 0.15;
 /**
  * EditableWindowStore extends WindowStore with modal selection behavior:
  * - When this window is selected, other windows fade to 15% alpha and become unselectable
- * - Content mask is disabled when selected (content can overflow)
  * - Provides hooks for toolbar integration
  */
 export class EditableWindowStore extends WindowStore {
@@ -45,4 +44,3 @@ export class EditableWindowStore extends WindowStore {
     }
 
 }
-

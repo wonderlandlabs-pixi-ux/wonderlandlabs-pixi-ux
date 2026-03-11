@@ -31,3 +31,6 @@ storybook-static/
 
 .vscode/*
 /.idea/
+.env
+.env*
+.release-status.yml

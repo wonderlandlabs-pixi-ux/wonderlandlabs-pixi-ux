@@ -2,6 +2,7 @@ import {z} from 'zod';
 import {DIMENSION_TYPE, LOAD_STATUS, TITLEBAR_MODE, WINDOW_STATUS, STYLE_VARIANT} from './constants';
 import type {HandleMode} from '@wonderlandlabs-pixi-ux/resizer';
 import type {Application, Container, Rectangle} from 'pixi.js';
+import type {TickerForestConfig} from '@wonderlandlabs-pixi-ux/ticker-forest';
 
 // Color schema for RGB values (0..1)
 export const RgbColorSchema = z.object({
@@ -260,7 +261,7 @@ export type WindowStoreClass<T extends WindowDef = WindowDef> = new (
 
 export type TitlebarStoreClass = new (
     config: any,
-    app: Application
+    options?: TickerForestConfig
 ) => any;
 
 // Input type for addWindow - allows partial titlebar config and custom style
@@ -277,6 +278,7 @@ export type WindowDefInput = Omit<Partial<WindowDef>, 'titlebar'> & {
     onResolve?: WindowResolveHookFn; // Runs before window refresh/renderers each resolve cycle
     configureTitlebar?: ConfigureTitlebarFn; // Per-window titlebar setup callback
     modifyInitialTitlebarParams?: ModifyInitialTitlebarParamsFn; // Startup-only titlebar/window param modifier
+    titlebarStoreClass?: TitlebarStoreClass; // Per-window titlebar subclass override
 };
 
 // Texture status values

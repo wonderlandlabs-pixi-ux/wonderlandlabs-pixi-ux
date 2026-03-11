@@ -5,6 +5,7 @@ import {
     ConfigureTitlebarFn,
     ModifyInitialTitlebarParamsFn,
     TitlebarContentRendererFn,
+    TitlebarStoreClass,
     WindowDef,
     WindowDefInput,
     WindowDefSchema,
@@ -143,6 +144,7 @@ export class WindowsManager extends Forest<WindowStoreValue> {
         const {
             customStyle,
             storeClass,
+            titlebarStoreClass,
             closable,
             onClose,
             rectTransform,
@@ -159,6 +161,10 @@ export class WindowsManager extends Forest<WindowStoreValue> {
         if (storeClass) {
             this.#storeClasses.set(key, storeClass);
         }
+        if (titlebarStoreClass) {
+            this.#titlebarStoreClasses.set(key, titlebarStoreClass);
+        }
+        this.#resolvedWindowStoreClasses.delete(key);
         if (closable !== undefined) {
             this.#closableMap.set(key, closable);
         } else {
@@ -223,7 +229,7 @@ export class WindowsManager extends Forest<WindowStoreValue> {
         }
 
         // Use custom store class if provided, otherwise default to WindowStore
-        const StoreClass = this.#storeClasses.get(key) || WindowStore;
+        const StoreClass = this.#resolveWindowStoreClass(key);
 
         // @ts-ignore
         const branch = this.$branches.$add<WindowDef, WindowStore>(['windows', key], {
@@ -262,6 +268,8 @@ export class WindowsManager extends Forest<WindowStoreValue> {
     #contentMap = new Map<string, Container>();
     #customStyles = new Map<string, PartialWindowStyle>();
     #storeClasses = new Map<string, WindowStoreClass>();
+    #titlebarStoreClasses = new Map<string, TitlebarStoreClass>();
+    #resolvedWindowStoreClasses = new Map<string, WindowStoreClass>();
     #closableMap = new Map<string, boolean>();
     #onCloseMap = new Map<string, WindowCloseHandler>();
     #rectTransformMap = new Map<string, WindowRectTransform>();
@@ -270,6 +278,27 @@ export class WindowsManager extends Forest<WindowStoreValue> {
     #onResolveMap = new Map<string, WindowResolveHookFn>();
     #configureTitlebarMap = new Map<string, ConfigureTitlebarFn>();
     #modifyInitialTitlebarParamsMap = new Map<string, ModifyInitialTitlebarParamsFn>();
+
+    #resolveWindowStoreClass(id: string): WindowStoreClass {
+        const cached = this.#resolvedWindowStoreClasses.get(id);
+        if (cached) {
+            return cached;
+        }
+
+        const baseStoreClass = this.#storeClasses.get(id) || WindowStore;
+        const titlebarStoreClass = this.#titlebarStoreClasses.get(id);
+        if (!titlebarStoreClass) {
+            this.#resolvedWindowStoreClasses.set(id, baseStoreClass);
+            return baseStoreClass;
+        }
+
+        class InjectedTitlebarWindowStore extends baseStoreClass {
+            static titlebarStoreClass = titlebarStoreClass;
+        }
+
+        this.#resolvedWindowStoreClasses.set(id, InjectedTitlebarWindowStore);
+        return InjectedTitlebarWindowStore;
+    }
 
     getDragObserver() {
         return this.#dragObserverFactory;
@@ -338,6 +367,8 @@ export class WindowsManager extends Forest<WindowStoreValue> {
         this.#contentMap.delete(id);
         this.#customStyles.delete(id);
         this.#storeClasses.delete(id);
+        this.#titlebarStoreClasses.delete(id);
+        this.#resolvedWindowStoreClasses.delete(id);
         this.#closableMap.delete(id);
         this.#onCloseMap.delete(id);
         this.#rectTransformMap.delete(id);

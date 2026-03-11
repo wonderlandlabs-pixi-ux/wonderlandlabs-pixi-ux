@@ -67,6 +67,9 @@ export class MockTicker {
 
 export function createMockApplication(ticker = new MockTicker()): Application {
     return {
+        render() {
+            return undefined;
+        },
         ticker: ticker.asTicker(),
         renderer: {},
     } as unknown as Application;
