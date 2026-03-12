@@ -381,12 +381,12 @@ windows.addWindow('notes', {
 
 ### Complete Example: `addWindow` + zoom-independent titlebar
 
-`addWindow(...)` does not need a special "scale titlebar" flag. The built-in `TitlebarStore` already enables
-`dirtyOnScale` for Y-axis counter-scaling.
+Use `CounterScalingTitlebar` when titlebar content should remain visually stable under zoom.
+The renderer contract stays the same; the renderer explicitly targets the `counter-scale` child when present.
 
 ```ts
 import { Application, Container, Graphics, Text } from 'pixi.js';
-import { WindowsManager } from '@wonderlandlabs-pixi-ux/window';
+import { CounterScalingTitlebar, WindowsManager } from '@wonderlandlabs-pixi-ux/window';
 
 const app = new Application();
 await app.init({ width: 1200, height: 800 });
@@ -408,17 +408,20 @@ windows.addWindow('notes', {
   height: 280,
   isDraggable: true,
   isResizeable: true,
+  titlebarStoreClass: CounterScalingTitlebar,
   titlebar: {
     title: 'Notes',
     height: 30,
   },
   titlebarContentRenderer: ({ contentContainer }) => {
-    const pin = contentContainer.getChildByLabel('pin-btn') as Graphics | null;
+    const counterScale = contentContainer.getChildByLabel('counter-scale') as Container | null;
+    const target = counterScale ?? contentContainer;
+    const pin = target.getChildByLabel('pin-btn') as Graphics | null;
     if (!pin) {
       const nextPin = new Graphics({ label: 'pin-btn' });
       nextPin.circle(0, 0, 6).fill(0xffcc00);
       nextPin.position.set(380, 0);
-      contentContainer.addChild(nextPin);
+      target.addChild(nextPin);
     }
   },
   windowContentRenderer: ({ contentContainer }) => {
@@ -429,7 +432,7 @@ windows.addWindow('notes', {
         style: { fontSize: 14, fill: 0xffffff },
       });
       text.label = 'body-title';
-      text.position.set(12, 42);
+      text.position.set(12, 12);
       contentContainer.addChild(text);
     }
   },
