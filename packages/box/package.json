@@ -1,6 +1,6 @@
 {
   "name": "@wonderlandlabs-pixi-ux/box",
-  "version": "1.2.3",
+  "version": "1.2.5",
   "description": "Box component with size, padding, anchor, and content alignment for wonderlandlabs-pixi-ux",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
