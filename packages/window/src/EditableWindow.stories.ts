@@ -2,10 +2,10 @@ import type {Meta, StoryObj} from '@storybook/html';
 import {Application, Assets, Container, Graphics, Sprite, Text} from 'pixi.js';
 import {ToolbarStore} from '@wonderlandlabs-pixi-ux/toolbar';
 import {fromJSON} from '@wonderlandlabs-pixi-ux/style-tree';
-import {WindowsManager, TEXTURE_STATUS} from "./WindowsManager";
-import type {TitlebarContentRendererFn, WindowContentRendererFn, WindowDef} from "./types";
-import type {TitlebarStore} from "./TitlebarStore";
-import {STYLE_VARIANT} from "./constants";
+import {WindowsManager, TEXTURE_STATUS} from "./WindowsManager.js";
+import type {TitlebarContentRendererFn, WindowContentRendererFn, WindowDef} from "./types.js";
+import type {TitlebarStore} from "./TitlebarStore.js";
+import {STYLE_VARIANT} from "./constants.js";
 
 const toolbarStyleTree = fromJSON({
     button: {

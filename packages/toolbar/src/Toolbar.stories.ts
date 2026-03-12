@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/html';
 import { Application, Assets, Sprite, Spritesheet } from 'pixi.js';
-import { ToolbarStore } from './ToolbarStore';
-import type { ToolbarButtonConfig } from './types';
+import { ToolbarStore } from './ToolbarStore.js';
+import type { ToolbarButtonConfig } from './types.js';
 
 interface ToolbarArgs {
   orientation: 'horizontal' | 'vertical';

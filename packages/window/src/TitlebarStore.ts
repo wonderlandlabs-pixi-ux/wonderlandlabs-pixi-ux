@@ -1,12 +1,12 @@
 import {TickerForest} from "@wonderlandlabs-pixi-ux/ticker-forest";
 import type {TickerForestConfig} from "@wonderlandlabs-pixi-ux/ticker-forest";
 import {readScalePoint} from "@wonderlandlabs-pixi-ux/utils";
-import type {TitlebarConfig, TitlebarContentRendererFn} from "./types";
+import type {TitlebarConfig, TitlebarContentRendererFn} from "./types.js";
 import {Container, Graphics, Rectangle} from "pixi.js";
 import {StoreParams} from "@wonderlandlabs/forestry4";
-import rgbToColor from "./rgbToColor";
-import {TITLEBAR_MODE} from "./constants";
-import type {WindowStore} from "./WindowStore";
+import rgbToColor from "./rgbToColor.js";
+import {TITLEBAR_MODE} from "./constants.js";
+import type {WindowStore} from "./WindowStore.js";
 import {
     fromEventPattern,
     map,

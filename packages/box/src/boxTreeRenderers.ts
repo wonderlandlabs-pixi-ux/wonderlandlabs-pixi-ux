@@ -1,4 +1,4 @@
-import type { BoxTree } from './BoxTree';
+import type { BoxTree } from './BoxTree.js';
 import type { Container } from 'pixi.js';
 
 type BoxNodeContentType = 'text' | 'url' | 'image';

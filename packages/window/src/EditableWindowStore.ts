@@ -1,8 +1,8 @@
-import {WindowStore} from "./WindowStore";
-import {WindowDef} from "./types";
+import {WindowStore} from "./WindowStore.js";
+import {WindowDef} from "./types.js";
 import {Application, Container} from "pixi.js";
 import {StoreParams} from "@wonderlandlabs/forestry4";
-import {WindowsManager} from "./WindowsManager";
+import {WindowsManager} from "./WindowsManager.js";
 
 /**
  * Alpha value for non-selected windows when another window is selected (modal mode)

@@ -1,7 +1,7 @@
 import {z} from 'zod';
 import {Rectangle} from 'pixi.js';
 import type {Application, Container, FederatedPointerEvent} from 'pixi.js';
-import type {Rect} from './rectTypes';
+import type {Rect} from './rectTypes.js';
 
 // ============================================================================
 // Color Types (PixiJS format: RGB values 0..1)

@@ -1,12 +1,12 @@
 import { z } from 'zod';
-import { ALIGN_ENUM_ALIASES, ALIGN_ENUM_KEYWORDS, AXIS } from './constants';
-import { dictToStringArray } from './enumUtils';
+import { ALIGN_ENUM_ALIASES, ALIGN_ENUM_KEYWORDS, AXIS } from './constants.js';
+import { dictToStringArray } from './enumUtils.js';
 import {
   AxisConstraintSchema,
   MeasurementSchema,
   type AxisConstraintLike,
   type Measurement,
-} from './types';
+} from './types.js';
 
 export type BoxStyle = Record<string, unknown>;
 

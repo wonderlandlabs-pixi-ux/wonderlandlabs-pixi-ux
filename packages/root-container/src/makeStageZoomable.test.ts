@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import type { Application } from 'pixi.js';
-import { makeStageZoomable } from './makeStageZoomable';
+import { makeStageZoomable } from './makeStageZoomable.js';
 
 type EventListener = (event: unknown) => void;
 

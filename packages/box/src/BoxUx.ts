@@ -1,9 +1,9 @@
-import './pixiEnvironment';
+import './pixiEnvironment.js';
 import type { Application } from 'pixi.js';
 import { Container, Graphics, Sprite, Text, TextStyle } from 'pixi.js';
-import type { BoxRenderer, BoxTree } from './BoxTree';
-import { BoxUxBase } from './BoxUxBase';
-import { MapEnhanced } from './BoxUxContextMap';
+import type { BoxRenderer, BoxTree } from './BoxTree.js';
+import { BoxUxBase } from './BoxUxBase.js';
+import { MapEnhanced } from './BoxUxContextMap.js';
 import {
   BOX_RENDER_CONTENT_ORDER,
   BOX_UX_CONTENT_ORDER,
@@ -11,7 +11,7 @@ import {
   BOX_UX_ORDER,
   getUxOrder,
   setUxOrder,
-} from './constants';
+} from './constants.js';
 import {
   BACKGROUND_CONTAINER,
   BOX_UX_ENV,
@@ -20,12 +20,12 @@ import {
   OVERLAY_CONTAINER,
   ROOT_CONTAINER,
   STROKE_CONTAINER,
-} from './constants.ux';
-import { asColorNumber, asNonNegativeNumber, resolveStyleProp } from './utils.ux';
+} from './constants.ux.js';
+import { asColorNumber, asNonNegativeNumber, resolveStyleProp } from './utils.ux.js';
 import type {
   BoxTreeStyleMap,
   BoxTreeUxStyleManagerLike,
-} from './types.ux';
+} from './types.ux.js';
 
 export {
   BOX_UX_CONTENT_ORDER,
@@ -34,7 +34,7 @@ export {
   BOX_RENDER_CONTENT_ORDER,
   getUxOrder,
   setUxOrder,
-} from './constants';
+} from './constants.js';
 export {
   BACKGROUND_CONTAINER,
   BOX_UX_ENV,
@@ -43,14 +43,14 @@ export {
   OVERLAY_CONTAINER,
   ROOT_CONTAINER,
   STROKE_CONTAINER,
-} from './constants.ux';
+} from './constants.ux.js';
 export type {
   BoxTreeFillStyle,
   BoxTreeStrokeStyle,
   BoxTreeStyleMap,
   BoxTreeUxStyleManagerLike,
-} from './types.ux';
-export { BoxUxBase } from './BoxUxBase';
+} from './types.ux.js';
+export { BoxUxBase } from './BoxUxBase.js';
 
 function isBoxUxPixi(value: unknown): value is BoxUxPixi {
   if (!value || typeof value !== 'object') {

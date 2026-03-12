@@ -8,7 +8,7 @@ import {
     WATCHDOG_STOP,
     type PixiEventName,
     type WatchdogSignal,
-} from './constants';
+} from './constants.js';
 import type {
     ActivePointerLike,
     DragOwner,
@@ -17,7 +17,7 @@ import type {
     PixiApplicationLike,
     PixiEventLike,
     PixiEventTargetLike,
-} from './type';
+} from './type.js';
 
 const moduleActivePointer$ = new BehaviorSubject<DragOwner>(null);
 

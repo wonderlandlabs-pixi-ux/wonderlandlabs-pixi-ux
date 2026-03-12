@@ -1,6 +1,6 @@
 import {Container, Rectangle} from 'pixi.js';
-import type {EnableHandlesConfig} from './types';
-import {ResizerStore} from './ResizerStore';
+import type {EnableHandlesConfig} from './types.js';
+import {ResizerStore} from './ResizerStore.js';
 
 /**
  * Enable resize handles on a container.

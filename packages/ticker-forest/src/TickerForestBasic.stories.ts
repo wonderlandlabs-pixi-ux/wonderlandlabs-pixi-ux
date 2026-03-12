@@ -1,6 +1,6 @@
 import type {Meta, StoryObj} from '@storybook/html';
 import {Application, Graphics, Text} from 'pixi.js';
-import {TickerForest} from './TickerForest';
+import {TickerForest} from './TickerForest.js';
 
 type ShapeState = {
     x: number;

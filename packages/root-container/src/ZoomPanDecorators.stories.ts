@@ -1,8 +1,8 @@
 import type { Meta, StoryObj } from '@storybook/html';
 import { Application, Graphics, Container, Text } from 'pixi.js';
-import { createRootContainer } from './RootContainer';
-import { makeStageDraggable } from './makeStageDraggable';
-import { makeStageZoomable } from './makeStageZoomable';
+import { createRootContainer } from './RootContainer.js';
+import { makeStageDraggable } from './makeStageDraggable.js';
+import { makeStageZoomable } from './makeStageZoomable.js';
 
 interface ZoomPanDecoratorsArgs {}
 

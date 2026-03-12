@@ -1,5 +1,5 @@
-import { AXIS } from './constants';
-import type { AxisConstraintLike, Measurement } from './types';
+import { AXIS } from './constants.js';
+import type { AxisConstraintLike, Measurement } from './types.js';
 
 type AxisValue = (typeof AXIS)[keyof typeof AXIS];
 

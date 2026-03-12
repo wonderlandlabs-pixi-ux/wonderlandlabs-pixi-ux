@@ -1,6 +1,6 @@
 import type { Application, Container as PixiContainer, FederatedPointerEvent } from 'pixi.js';
 import observeDrag, {dragTargetDecorator} from '@wonderlandlabs-pixi-ux/observe-drag';
-import type { StageDraggableOptions, StageDraggableResult, StageDragEvent } from './types';
+import type { StageDraggableOptions, StageDraggableResult, StageDragEvent } from './types.js';
 
 /**
  * Makes a container draggable via stage-level pointer events.

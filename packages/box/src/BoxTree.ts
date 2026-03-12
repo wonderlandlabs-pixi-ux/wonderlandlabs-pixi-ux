@@ -2,11 +2,11 @@ import { Forest, type StoreParams } from '@wonderlandlabs/forestry4';
 import { z } from 'zod';
 import type { Application, Ticker } from 'pixi.js';
 import { distinctUntilChanged, map, skip, type Subscription } from 'rxjs';
-import { AxisConstraintSchema, PxValueSchema, type PxValue } from './types';
-import { applyAxisConstraints, resolveConstraintValuePx, resolveMeasurement } from './sizeUtils';
-import { pathToString } from './pathUtils';
-import { BoxUxPixi } from './BoxUx';
-import type { BoxTreeUxStyleManagerLike } from './types.ux';
+import { AxisConstraintSchema, PxValueSchema, type PxValue } from './types.js';
+import { applyAxisConstraints, resolveConstraintValuePx, resolveMeasurement } from './sizeUtils.js';
+import { pathToString } from './pathUtils.js';
+import { BoxUxPixi } from './BoxUx.js';
+import type { BoxTreeUxStyleManagerLike } from './types.ux.js';
 import {
   AlignInputSchema,
   AreaPivotInputSchema,
@@ -29,9 +29,9 @@ import {
   type ResolvedArea,
   type ResolvedRect,
   type StyleName,
-} from './types.boxtree';
+} from './types.boxtree.js';
 
-export * from './types.boxtree';
+export * from './types.boxtree.js';
 
 type StyleQueryLike = {
   nouns: string[];

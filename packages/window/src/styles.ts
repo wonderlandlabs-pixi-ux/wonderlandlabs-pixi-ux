@@ -1,12 +1,12 @@
-import {STYLE_VARIANT, type StyleVariant} from './constants';
+import {STYLE_VARIANT, type StyleVariant} from './constants.js';
 import type {
     RgbColor,
     WindowLabelFontStyle,
     WindowLabelStyle,
     WindowStyle,
     PartialWindowStyle,
-} from './types';
-import styleVariantsJson from './styleVariants.json';
+} from './types.js';
+import styleVariantsJson from './styleVariants.json' with { type: 'json' };
 
 // Style variants loaded from JSON
 export const STYLE_VARIANTS = styleVariantsJson as Record<StyleVariant, WindowStyle>;

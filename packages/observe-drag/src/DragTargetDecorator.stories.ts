@@ -1,5 +1,5 @@
 import type {Meta, StoryObj} from '@storybook/html';
-import observeDrag, {dragTargetDecorator} from './index';
+import observeDrag, {dragTargetDecorator} from './index.js';
 import {Application, Container, FederatedPointerEvent, Graphics, Text} from 'pixi.js';
 
 interface DragTargetDecoratorArgs {}

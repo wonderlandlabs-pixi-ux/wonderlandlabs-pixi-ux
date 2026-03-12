@@ -14,20 +14,20 @@ import type {
     WindowResolveHookFn,
     WindowRectTransform,
     WindowStyle
-} from "./types";
+} from "./types.js";
 import {Application, Container, FederatedPointerEvent, Graphics, Rectangle} from "pixi.js";
-import {WindowsManager} from "./WindowsManager";
-import rgbToColor from "./rgbToColor";
+import {WindowsManager} from "./WindowsManager.js";
+import rgbToColor from "./rgbToColor.js";
 import dragObserverFactory from "@wonderlandlabs-pixi-ux/observe-drag";
 import {StoreParams} from "@wonderlandlabs/forestry4";
-import {TitlebarStore} from "./TitlebarStore";
+import {TitlebarStore} from "./TitlebarStore.js";
 import {ResizerStore} from "@wonderlandlabs-pixi-ux/resizer";
 import {distinctUntilChanged, filter, map} from 'rxjs';
 import type {Subscription} from 'rxjs';
-import {resolveWindowStyle} from './styles';
-import {STYLE_VARIANT} from './constants';
+import {resolveWindowStyle} from './styles.js';
+import {STYLE_VARIANT} from './constants.js';
 import {isEqual} from 'lodash-es';
-import {renderStockTitlebarContent} from "./titlebarRenderers";
+import {renderStockTitlebarContent} from "./titlebarRenderers.js";
 
 // Default color for handles and selection border (blue)
 const HANDLE_COLOR: RgbColor = {r: 0.3, g: 0.6, b: 1};

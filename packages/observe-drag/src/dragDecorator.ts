@@ -5,7 +5,7 @@ import type {
     ObserveDragListeners,
     PixiEventLike,
     ResolveDragPointFn,
-} from './type';
+} from './type.js';
 
 type DecoratedContext<DragContext> = {
     userContext: DragContext | undefined;

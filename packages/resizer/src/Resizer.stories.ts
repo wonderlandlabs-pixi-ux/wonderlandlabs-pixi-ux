@@ -1,8 +1,8 @@
 import type { Meta, StoryObj } from '@storybook/html';
 import { Application, Container, Graphics, Rectangle, Text } from 'pixi.js';
-import { enableHandles } from './enableHandles';
-import { ResizerStore } from './ResizerStore';
-import type { HandleMode } from './types';
+import { enableHandles } from './enableHandles.js';
+import { ResizerStore } from './ResizerStore.js';
+import type { HandleMode } from './types.js';
 
 interface ResizerArgs {
   constrain: boolean;

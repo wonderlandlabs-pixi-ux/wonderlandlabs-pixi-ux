@@ -4,7 +4,7 @@ import {
     getEllipseBoundaryPoint,
     getRectBoundaryPoint,
     getThoughtScallops,
-} from './geometry';
+} from './geometry.js';
 
 describe('caption geometry', () => {
     it('gets an ellipse boundary point toward speaker', () => {

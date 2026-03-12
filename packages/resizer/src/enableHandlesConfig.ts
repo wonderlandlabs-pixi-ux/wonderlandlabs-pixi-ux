@@ -1,1 +1,1 @@
-export type { EnableHandlesConfig } from './types';
+export type { EnableHandlesConfig } from './types.js';

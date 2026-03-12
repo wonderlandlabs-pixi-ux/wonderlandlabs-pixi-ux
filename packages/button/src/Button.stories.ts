@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/html';
 import { Application, Graphics, Sprite, Assets, Spritesheet } from 'pixi.js';
 import { StyleTree } from '@wonderlandlabs-pixi-ux/style-tree';
-import { ButtonStore } from './ButtonStore';
+import { ButtonStore } from './ButtonStore.js';
 
 interface ButtonArgs {
     mode: 'icon' | 'iconVertical' | 'text' | 'inline';

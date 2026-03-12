@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { createRenderHelper, getSharedRenderHelper } from './renderHelper';
+import { createRenderHelper, getSharedRenderHelper } from './renderHelper.js';
 
 afterEach(() => {
   vi.useRealTimers();

@@ -22,13 +22,13 @@ import {
     type CaptionState,
     type CaptionThoughtConfig,
     type Point,
-} from './types';
+} from './types.js';
 import {
     computePointerTriangle,
     getThoughtScallops,
     triangleToPathPoints,
     type TrianglePoints,
-} from './geometry';
+} from './geometry.js';
 
 function mergeTextStyle(
     base: TextStyleOptions,

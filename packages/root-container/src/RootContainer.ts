@@ -1,6 +1,6 @@
 import { Container } from 'pixi.js';
 import type { Application } from 'pixi.js';
-import type { RootContainerResult } from './types';
+import type { RootContainerResult } from './types.js';
 
 /**
  * Creates a rootContainer container that centers the origin at screen width/2, height/2

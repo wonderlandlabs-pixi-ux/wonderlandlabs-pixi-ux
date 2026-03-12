@@ -17,8 +17,8 @@ import {
     type TextStyleOptions,
     type Ticker,
 } from 'pixi.js';
-import type { ButtonConfig, ButtonMode, RgbColor } from './types';
-import { rgbToHex } from './types';
+import type { ButtonConfig, ButtonMode, RgbColor } from './types.js';
+import { rgbToHex } from './types.js';
 
 type ButtonState = Record<string, never>;
 

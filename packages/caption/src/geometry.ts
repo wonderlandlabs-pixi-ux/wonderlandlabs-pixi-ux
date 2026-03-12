@@ -1,4 +1,4 @@
-import type { CaptionShape, CaptionThoughtConfig, Point } from './types';
+import type { CaptionShape, CaptionThoughtConfig, Point } from './types.js';
 
 export type TrianglePoints = [Point, Point, Point];
 export interface ThoughtScallop {

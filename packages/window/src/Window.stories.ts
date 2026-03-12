@@ -7,10 +7,10 @@ import type {
     WindowContentRendererFn,
     WindowContentRendererParams,
     WindowDef,
-} from './types';
-import {CounterScalingTitlebar} from './CounterScalingTitlebar';
-import {renderStockTitlebarContent} from './titlebarRenderers';
-import {WindowsManager} from "./WindowsManager";
+} from './types.js';
+import {CounterScalingTitlebar} from './CounterScalingTitlebar.js';
+import {renderStockTitlebarContent} from './titlebarRenderers.js';
+import {WindowsManager} from "./WindowsManager.js";
 
 interface WindowArgs {
 }

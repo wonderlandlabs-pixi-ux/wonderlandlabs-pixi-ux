@@ -7,7 +7,7 @@ import type {
   GridManagerConfig,
   WorldBounds,
   GridRedrawReason,
-} from './types';
+} from './types.js';
 
 /**
  * Grid manager that redraws visible lines directly into Graphics objects.

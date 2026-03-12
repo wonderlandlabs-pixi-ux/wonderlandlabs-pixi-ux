@@ -33,5 +33,6 @@
     "type": "git",
     "url": "git+https://github.com/wonderlandlabs-pixi-ux/wonderlandlabs-pixi-ux.git",
     "directory": "packages/box"
-  }
+  },
+  "type": "module"
 }

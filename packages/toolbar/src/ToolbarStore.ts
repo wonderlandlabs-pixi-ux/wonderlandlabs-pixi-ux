@@ -12,9 +12,9 @@ import type {
   ToolbarConfig,
   ToolbarButtonConfig,
   ToolbarPadding,
-} from './types';
-import { ToolbarConfigSchema } from './types';
-import defaultStyles from './styles/toolbar.default.json';
+} from './types.js';
+import { ToolbarConfigSchema } from './types.js';
+import defaultStyles from './styles/toolbar.default.json' with { type: 'json' };
 
 type ToolbarState = {
   order: number;

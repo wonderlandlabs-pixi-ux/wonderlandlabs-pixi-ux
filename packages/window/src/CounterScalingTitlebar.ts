@@ -1,6 +1,6 @@
 import {Container, Graphics, Rectangle} from "pixi.js";
-import {TitlebarStore} from "./TitlebarStore";
-import type {TitlebarConfig} from "./types";
+import {TitlebarStore} from "./TitlebarStore.js";
+import type {TitlebarConfig} from "./types.js";
 import {StoreParams} from "@wonderlandlabs/forestry4";
 import type {TickerForestConfig} from "@wonderlandlabs-pixi-ux/ticker-forest";
 

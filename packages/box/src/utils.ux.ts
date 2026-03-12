@@ -1,4 +1,4 @@
-import type { BoxTreeStyleMap, BoxTreeUxStyleManagerLike } from './types.ux';
+import type { BoxTreeStyleMap, BoxTreeUxStyleManagerLike } from './types.ux.js';
 
 type RgbLike = {
   r: number;

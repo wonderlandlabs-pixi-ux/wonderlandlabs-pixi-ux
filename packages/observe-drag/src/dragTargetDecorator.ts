@@ -1,13 +1,13 @@
-import dragDecorator from './dragDecorator';
+import dragDecorator from './dragDecorator.js';
 import type {
     DragTargetDecoratorOptions,
     DragTargetLike,
     ObserveDragListeners,
     PixiEventLike,
-} from './type';
+} from './type.js';
 
 /**
- * @deprecated Use dragDecorator(...) from './dragDecorator' instead.
+ * @deprecated Use dragDecorator(...) from './dragDecorator.js' instead.
  *
  * Compatibility behavior:
  * - Supports legacy `listeners: { ... }` nesting.
@@ -33,7 +33,7 @@ export function dragTargetDecorator<
 }
 
 /**
- * @deprecated Use dragTarget exported from './dragDecorator' instead.
+ * @deprecated Use dragTarget exported from './dragDecorator.js' instead.
  */
 export const dragTarget = dragTargetDecorator;
 

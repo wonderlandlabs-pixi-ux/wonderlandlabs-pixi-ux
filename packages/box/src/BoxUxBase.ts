@@ -1,4 +1,4 @@
-import type { BoxRenderer, BoxTree } from './BoxTree';
+import type { BoxRenderer, BoxTree } from './BoxTree.js';
 
 export abstract class BoxUxBase implements BoxRenderer {
   abstract readonly env: string;

@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/html';
 import { Application, Container, Graphics, Text } from 'pixi.js';
-import { makeImageSprite } from './makeImageSprite';
-import { DIMENSION_TYPE, LOAD_STATUS } from './constants';
+import { makeImageSprite } from './makeImageSprite.js';
+import { DIMENSION_TYPE, LOAD_STATUS } from './constants.js';
 
 interface ImageSpriteArgs {
   imageUrl: string;

@@ -1,6 +1,6 @@
 import { Container as PixiContainer, FederatedPointerEvent } from 'pixi.js';
 import {PointerManager, PointerTraceToken} from '@wonderlandlabs-pixi-ux/ticker-forest';
-import type { TrackDragCallbacks, TrackDragResult } from '../types';
+import type { TrackDragCallbacks, TrackDragResult } from '../types.js';
 
 /**
  * Track drag events on a PixiJS container.

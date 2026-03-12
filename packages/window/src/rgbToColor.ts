@@ -1,4 +1,4 @@
-import type {RgbColor} from "./types";
+import type {RgbColor} from "./types.js";
 import {Color} from "pixi.js";
 import {clamp} from 'lodash-es';
 

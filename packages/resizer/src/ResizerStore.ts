@@ -7,10 +7,10 @@ import type {
     ResizerStoreConfig,
     ResizerStoreValue,
     TrackDragResult,
-} from './types';
-import {HandleMode, HandlePosition} from './types';
-import type {Rect} from './rectTypes';
-import {RectSchema} from './rectTypes';
+} from './types.js';
+import {HandleMode, HandlePosition} from './types.js';
+import type {Rect} from './rectTypes.js';
+import {RectSchema} from './rectTypes.js';
 
 const RECT_KEYS = ['x', 'y', 'width', 'height'];
 

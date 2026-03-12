@@ -4,8 +4,8 @@ import {
   MEASUREMENT_ENUM_CANONICAL,
   MEASUREMENT_ENUM_INPUT,
   UNIT_BASIS,
-} from './constants';
-import { dictToStringArray } from './enumUtils';
+} from './constants.js';
+import { dictToStringArray } from './enumUtils.js';
 
 export type AlignLabel = keyof typeof ALIGN;
 export type MeasurementModeLabel = keyof typeof UNIT_BASIS;

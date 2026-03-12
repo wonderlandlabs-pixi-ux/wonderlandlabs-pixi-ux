@@ -3,7 +3,7 @@
   "version": "1.2.3",
   "description": "Shared utilities for wonderlandlabs-pixi-ux packages",
   "main": "dist/index.js",
-  "types": "src/index.ts",
+  "types": "dist/index.d.ts",
   "scripts": {
     "build": "tsc",
     "clean": "rm -rf dist",
@@ -29,5 +29,6 @@
     "type": "git",
     "url": "git+https://github.com/wonderlandlabs-pixi-ux/wonderlandlabs-pixi-ux.git",
     "directory": "packages/utils"
-  }
+  },
+  "type": "module"
 }

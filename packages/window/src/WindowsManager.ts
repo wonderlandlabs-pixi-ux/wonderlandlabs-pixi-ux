@@ -17,9 +17,9 @@ import {
     WindowContentRendererFn,
     WindowCloseHandler,
     WindowResolveHookFn
-} from './types';
-import type {WindowRectTransform} from './types';
-import {WindowStore} from "./WindowStore";
+} from './types.js';
+import type {WindowRectTransform} from './types.js';
+import {WindowStore} from "./WindowStore.js";
 
 // Texture status constants
 export const TEXTURE_STATUS = {

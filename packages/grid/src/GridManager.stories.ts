@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/html';
 import { Application, Container, Graphics, Text } from 'pixi.js';
-import { GridManager } from './GridManager';
+import { GridManager } from './GridManager.js';
 import {
   createRootContainer,
   createZoomPan,

@@ -1,7 +1,7 @@
 import type { Application, Container as PixiContainer, FederatedWheelEvent } from 'pixi.js';
 import { RENDER_THROTTLE_MS } from '@wonderlandlabs-pixi-ux/observe-drag';
 import { getSharedRenderHelper } from '@wonderlandlabs-pixi-ux/utils';
-import type { ZoomOptions, StageZoomableResult, StageZoomEvent } from './types';
+import type { ZoomOptions, StageZoomableResult, StageZoomEvent } from './types.js';
 
 /**
  * Makes a container zoomable via stage-level mousewheel events.

@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/html';
 import { Application, Graphics } from 'pixi.js';
-import { CaptionStore } from './CaptionStore';
-import type { CaptionShape } from './types';
+import { CaptionStore } from './CaptionStore.js';
+import type { CaptionShape } from './types.js';
 
 interface CaptionArgs {
     shape: CaptionShape;

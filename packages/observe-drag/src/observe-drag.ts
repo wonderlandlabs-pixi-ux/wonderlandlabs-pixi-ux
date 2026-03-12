@@ -5,20 +5,20 @@ import type {
     ObserveDragSubscriptionOptions,
     PixiEventLike,
     PixiEventTargetLike,
-} from './type';
+} from './type.js';
 import {
     POINTER_EVT_CANCEL,
     POINTER_EVT_DOWN,
     POINTER_EVT_MOVE,
     POINTER_EVT_UP,
     POINTER_EVT_UP_OUTSIDE,
-} from './constants';
+} from './constants.js';
 import {
     addListener,
     parseSubscriptionOptions,
     removeListener,
     resolveFactoryInputs,
-} from './helpers';
+} from './helpers.js';
 
 export default function dragObserverFactory<PtrEvent extends PixiEventLike = PixiEventLike>(
     factoryOptions: ObserveDragFactoryOptions<PtrEvent> = {},

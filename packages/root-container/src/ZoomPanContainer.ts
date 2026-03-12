@@ -1,6 +1,6 @@
 import { Container } from 'pixi.js';
 import type { Application, Container as PixiContainer } from 'pixi.js';
-import type { ZoomPanResult } from './types';
+import type { ZoomPanResult } from './types.js';
 
 /**
  * Creates a simple zoom/pan container with no event handling.

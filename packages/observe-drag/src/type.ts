@@ -1,6 +1,6 @@
-import type {PixiEventName} from './constants';
+import type {PixiEventName} from './constants.js';
 
-export type {PixiEventName} from './constants';
+export type {PixiEventName} from './constants.js';
 
 export interface PixiEventLike {
     pointerId: number;

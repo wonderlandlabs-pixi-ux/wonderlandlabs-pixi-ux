@@ -1,6 +1,6 @@
-import {ImageSpriteProps, Point} from "./types";
+import {ImageSpriteProps, Point} from "./types.js";
 import {Assets, Rectangle, Sprite, Texture} from "pixi.js";
-import {DIMENSION_TYPE, LOAD_STATUS} from "./constants";
+import {DIMENSION_TYPE, LOAD_STATUS} from "./constants.js";
 import {BehaviorSubject} from "rxjs";
 
 /**

@@ -1,8 +1,8 @@
 import {Assets, Container, Graphics, Rectangle, Sprite, Text} from "pixi.js";
-import type {TitlebarContentRendererFn, WindowLabelFontStyle} from "./types";
-import rgbToColor from "./rgbToColor";
-import type {TitlebarStore} from "./TitlebarStore";
-import type {WindowStore} from "./WindowStore";
+import type {TitlebarContentRendererFn, WindowLabelFontStyle} from "./types.js";
+import rgbToColor from "./rgbToColor.js";
+import type {TitlebarStore} from "./TitlebarStore.js";
+import type {WindowStore} from "./WindowStore.js";
 
 const COUNTER_SCALE_LABEL = 'counter-scale';
 const STOCK_TITLE_TEXT = 'stock-titlebar-text';

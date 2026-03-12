@@ -1,5 +1,5 @@
 import {z} from 'zod';
-import {DIMENSION_TYPE, LOAD_STATUS, TITLEBAR_MODE, WINDOW_STATUS, STYLE_VARIANT} from './constants';
+import {DIMENSION_TYPE, LOAD_STATUS, TITLEBAR_MODE, WINDOW_STATUS, STYLE_VARIANT} from './constants.js';
 import type {HandleMode} from '@wonderlandlabs-pixi-ux/resizer';
 import type {Application, Container, Rectangle} from 'pixi.js';
 import type {TickerForestConfig} from '@wonderlandlabs-pixi-ux/ticker-forest';
