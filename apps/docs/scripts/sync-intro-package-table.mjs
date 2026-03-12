@@ -6,6 +6,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const introPath = path.resolve(__dirname, '../docs/intro.md');
+const docsPackagesDir = path.resolve(__dirname, '../docs/packages');
 const packagesDir = path.resolve(__dirname, '../../../packages');
 const tableStart = '<!-- PACKAGE_TABLE_START -->';
 const tableEnd = '<!-- PACKAGE_TABLE_END -->';
@@ -23,8 +24,22 @@ const summaryBySlug = {
   'style-tree': 'Hierarchical style matching engine keyed by noun paths and state selectors.',
   'ticker-forest': 'Forestry base class that schedules dirty-state resolve work on a Pixi ticker.',
   toolbar: 'Toolbar composition store for arranging and styling groups of buttons.',
+  utils: 'Shared render and scale helper utilities used across Pixi UX packages.',
   window: 'Window manager and window store primitives with titlebar, drag, and resize support.',
 };
+
+async function hasDocsPage(slug) {
+  for (const ext of ['.md', '.mdx']) {
+    try {
+      await fs.access(path.join(docsPackagesDir, `${slug}${ext}`));
+      return true;
+    } catch {
+      // Try the next supported extension.
+    }
+  }
+
+  return false;
+}
 
 async function readPackageRows() {
   const entries = await fs.readdir(packagesDir, { withFileTypes: true });
@@ -48,6 +63,7 @@ async function readPackageRows() {
         continue;
       }
       rows.push({
+        hasDocs: await hasDocsPage(entry.name),
         name: pkg.name,
         version: pkg.version,
         slug: entry.name,
@@ -69,8 +85,9 @@ function buildTable(rows) {
 
   for (const row of rows) {
     const summary = summaryBySlug[row.slug] ?? '-';
+    const docsCell = row.hasDocs ? `${docsLink}(/packages/${row.slug})` : '-';
     lines.push(
-      `| \`${row.name}\`<br/><sub>${summary}</sub> | \`${row.version}\` | ${docsLink}(/packages/${row.slug}) | ${githubBadge}(${githubBase}/${row.slug}) |`,
+      `| \`${row.name}\`<br/><sub>${summary}</sub> | \`${row.version}\` | ${docsCell} | ${githubBadge}(${githubBase}/${row.slug}) |`,
     );
   }
 
