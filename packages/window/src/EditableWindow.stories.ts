@@ -269,10 +269,9 @@ const meta: Meta<EditableWindowArgs> = {
             const items = Array.isArray(contentValue.contentItems) ? contentValue.contentItems : [];
             const activeLabels = new Set<string>();
 
-            const titlebarHeight = windowValue.titlebar?.height || 30;
             const rowHeight = 80;
             const x = 10;
-            const startY = titlebarHeight + 10;
+            const startY = 10;
             const maxWidth = Math.max(10, windowValue.width - 20);
 
             for (const [index, item] of items.entries()) {

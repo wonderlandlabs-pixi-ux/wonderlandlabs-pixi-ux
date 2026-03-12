@@ -7,11 +7,22 @@ import {StoreParams} from "@wonderlandlabs/forestry4";
 import rgbToColor from "./rgbToColor";
 import {TITLEBAR_MODE} from "./constants";
 import type {WindowStore} from "./WindowStore";
-import type {Subscription} from "rxjs";
+import {
+    fromEventPattern,
+    map,
+    merge,
+    of,
+    Subscription,
+    switchMap,
+    takeUntil,
+    timer,
+} from "rxjs";
 
 type TitlebarStoreValue = TitlebarConfig;
 
 export class TitlebarStore extends TickerForest<TitlebarStoreValue> {
+    static readonly HOVER_HIDE_DELAY_MS = 500;
+
     titlebarContentRenderer?: TitlebarContentRendererFn;
 
     protected readonly backgroundGraphic: Graphics = new Graphics({
@@ -24,6 +35,7 @@ export class TitlebarStore extends TickerForest<TitlebarStoreValue> {
 
     #hoverAdded = false;
     #valueSubscription?: Subscription;
+    #hoverVisibilitySubscription?: Subscription;
 
     constructor(
         config: StoreParams<TitlebarStoreValue>,
@@ -59,21 +71,54 @@ export class TitlebarStore extends TickerForest<TitlebarStoreValue> {
         const self = this;
         const windowStore = self.windowStore;
         if (this.value.mode === TITLEBAR_MODE.ON_HOVER && windowStore?.rootContainer) {
-            windowStore.rootContainer.on('pointerenter', () => {
-                self.mutate((draft) => {
-                    draft.isVisible = true;
-                });
-            });
-            windowStore.rootContainer.on('pointerleave', () => {
-                self.mutate((draft) => {
-                    draft.isVisible = false;
-                });
+            const rootContainer = windowStore.rootContainer;
+            const titlebarContainer = self.container;
+            const bodyOver$ = fromEventPattern(
+                (handler) => rootContainer.on('pointerover', handler),
+                (handler) => rootContainer.off('pointerover', handler),
+            );
+            const bodyOut$ = fromEventPattern(
+                (handler) => rootContainer.on('pointerout', handler),
+                (handler) => rootContainer.off('pointerout', handler),
+            );
+            const titlebarOver$ = fromEventPattern(
+                (handler) => titlebarContainer?.on('pointerover', handler),
+                (handler) => titlebarContainer?.off('pointerover', handler),
+            );
+            const titlebarOut$ = fromEventPattern(
+                (handler) => titlebarContainer?.on('pointerout', handler),
+                (handler) => titlebarContainer?.off('pointerout', handler),
+            );
+
+            const hoverOn$ = merge(bodyOver$, titlebarOver$).pipe(
+                map(() => true),
+            );
+            const delayedHoverOff$ = merge(bodyOut$, titlebarOut$).pipe(
+                switchMap(() => timer(TitlebarStore.HOVER_HIDE_DELAY_MS).pipe(
+                    takeUntil(hoverOn$),
+                    map(() => false),
+                )),
+            );
+
+            this.#hoverVisibilitySubscription = merge(
+                of(false),
+                hoverOn$,
+                delayedHoverOff$,
+            ).subscribe((isVisible) => {
+                self.#setHoverVisibility(isVisible);
             });
             self.set('isVisible', false);
         } else {
             self.set('isVisible', true);
         }
         self.#hoverAdded = true;
+    }
+
+    #setHoverVisibility(isVisible: boolean): void {
+        if (this.value.isVisible === isVisible) {
+            return;
+        }
+        this.set('isVisible', isVisible);
     }
 
     get parentContainer(): Container | undefined {
@@ -92,6 +137,13 @@ export class TitlebarStore extends TickerForest<TitlebarStoreValue> {
         return this.value.height;
     }
 
+    get pivot(): { x: number; y: number } {
+        return {
+            x: 0,
+            y: this.height,
+        };
+    }
+
     protected resolve(): void {
         this.resolveComponents();
     }
@@ -103,6 +155,8 @@ export class TitlebarStore extends TickerForest<TitlebarStoreValue> {
         this.layoutContent(rect);
 
         const container = this.container!;
+        container.position.set(0, 0);
+        container.pivot.set(this.pivot.x, this.pivot.y);
         container.hitArea = rect;
         container.visible = this.value.isVisible;
 
@@ -168,11 +222,12 @@ export class TitlebarStore extends TickerForest<TitlebarStoreValue> {
     protected afterLayout(_rect: Rectangle): void {
     }
 
-    protected renderContent(rect: Rectangle): void {
+    protected renderContent(_rect: Rectangle): void {
         const windowStore = this.windowStore;
         if (!windowStore || !this.titlebarContentRenderer) {
             return;
         }
+        const localRect = new Rectangle(0, 0, this.width, this.height);
 
         this.titlebarContentRenderer({
             titlebarStore: this,
@@ -180,13 +235,15 @@ export class TitlebarStore extends TickerForest<TitlebarStoreValue> {
             windowStore,
             windowValue: windowStore.value,
             contentContainer: this.contentContainer,
-            localRect: rect,
+            localRect,
             localScale: this.resolveContentScale(),
         });
     }
 
     cleanup(): void {
         super.cleanup();
+        this.#hoverVisibilitySubscription?.unsubscribe();
+        this.#hoverVisibilitySubscription = undefined;
         this.#valueSubscription?.unsubscribe();
         this.#valueSubscription = undefined;
         const container = super.container;

@@ -1,9 +1,10 @@
-import {Assets, Graphics, Sprite, Text} from "pixi.js";
+import {Assets, Container, Graphics, Rectangle, Sprite, Text} from "pixi.js";
 import type {TitlebarContentRendererFn, WindowLabelFontStyle} from "./types";
 import rgbToColor from "./rgbToColor";
 import type {TitlebarStore} from "./TitlebarStore";
 import type {WindowStore} from "./WindowStore";
 
+const COUNTER_SCALE_LABEL = 'counter-scale';
 const STOCK_TITLE_TEXT = 'stock-titlebar-text';
 const STOCK_TITLE_ICON = 'stock-titlebar-icon';
 const STOCK_CLOSE_BUTTON = 'stock-titlebar-close';
@@ -29,8 +30,46 @@ function resolveLabelStyle(
     };
 }
 
-function getText(contentContainer: TitlebarStore['contentContainer']): Text {
-    let titleText = contentContainer.getChildByLabel(STOCK_TITLE_TEXT) as Text | null;
+function resolveRenderTarget(
+    contentContainer: TitlebarStore['contentContainer'],
+    localRect: Rectangle,
+    localScale: {x: number; y: number},
+): { container: Container; rect: Rectangle } {
+    const counterScale = contentContainer.getChildByLabel(COUNTER_SCALE_LABEL) as Container | null;
+    if (!counterScale) {
+        return {
+            container: contentContainer,
+            rect: localRect,
+        };
+    }
+    return {
+        container: counterScale,
+        rect: new Rectangle(
+            localRect.x,
+            localRect.y,
+            localRect.width * localScale.x,
+            localRect.height * localScale.y,
+        ),
+    };
+}
+
+function getManagedChild<T extends Text | Graphics | Sprite>(
+    targetContainer: Container,
+    rootContainer: Container,
+    label: string,
+): T | null {
+    const local = targetContainer.getChildByLabel(label) as T | null;
+    if (local) {
+        return local;
+    }
+    if (targetContainer === rootContainer) {
+        return null;
+    }
+    return rootContainer.getChildByLabel(label) as T | null;
+}
+
+function getText(targetContainer: Container, rootContainer: Container): Text {
+    let titleText = getManagedChild<Text>(targetContainer, rootContainer, STOCK_TITLE_TEXT);
     if (!titleText) {
         titleText = new Text({
             text: '',
@@ -40,16 +79,20 @@ function getText(contentContainer: TitlebarStore['contentContainer']): Text {
             },
         });
         titleText.label = STOCK_TITLE_TEXT;
-        contentContainer.addChild(titleText);
+        targetContainer.addChild(titleText);
+    } else if (titleText.parent !== targetContainer) {
+        titleText.parent?.removeChild(titleText);
+        targetContainer.addChild(titleText);
     }
     return titleText;
 }
 
 function getCloseButton(
-    contentContainer: TitlebarStore['contentContainer'],
+    targetContainer: Container,
+    rootContainer: Container,
     windowStore: WindowStore,
 ): Graphics {
-    let closeButton = contentContainer.getChildByLabel(STOCK_CLOSE_BUTTON) as Graphics | null;
+    let closeButton = getManagedChild<Graphics>(targetContainer, rootContainer, STOCK_CLOSE_BUTTON);
     if (!closeButton) {
         closeButton = new Graphics({label: STOCK_CLOSE_BUTTON});
         closeButton.eventMode = 'static';
@@ -64,21 +107,30 @@ function getCloseButton(
             event.stopPropagation();
             windowStore.requestClose();
         });
-        contentContainer.addChild(closeButton);
+        targetContainer.addChild(closeButton);
+    } else if (closeButton.parent !== targetContainer) {
+        closeButton.parent?.removeChild(closeButton);
+        targetContainer.addChild(closeButton);
     }
     return closeButton;
 }
 
 function removeChildByLabel(
-    contentContainer: TitlebarStore['contentContainer'],
+    targetContainer: Container,
+    rootContainer: Container,
     label: string,
 ): void {
-    const child = contentContainer.getChildByLabel(label);
-    if (!child) {
-        return;
+    const containers = targetContainer === rootContainer
+        ? [targetContainer]
+        : [targetContainer, rootContainer];
+    for (const container of containers) {
+        const child = container.getChildByLabel(label);
+        if (!child) {
+            continue;
+        }
+        child.parent?.removeChild(child);
+        child.destroy();
     }
-    contentContainer.removeChild(child);
-    child.destroy();
 }
 
 export const renderStockTitlebarContent: TitlebarContentRendererFn = ({
@@ -87,12 +139,14 @@ export const renderStockTitlebarContent: TitlebarContentRendererFn = ({
     titlebarValue,
     contentContainer,
     localRect,
+    localScale,
 }) => {
     const typedTitlebarStore = titlebarStore as TitlebarStore;
     const typedWindowStore = windowStore as WindowStore;
     const labelStyle = resolveLabelStyle(typedTitlebarStore, typedWindowStore);
+    const {container: renderContainer, rect: layoutRect} = resolveRenderTarget(contentContainer, localRect, localScale);
     const padding = titlebarValue.padding ?? 0;
-    const titleText = getText(contentContainer);
+    const titleText = getText(renderContainer, contentContainer);
 
     titleText.text = titlebarValue.title;
     titleText.style.fontSize = labelStyle.size;
@@ -103,26 +157,34 @@ export const renderStockTitlebarContent: TitlebarContentRendererFn = ({
 
     let iconOffset = 0;
     if (!titlebarValue.icon) {
-        removeChildByLabel(contentContainer, STOCK_TITLE_ICON);
+        removeChildByLabel(renderContainer, contentContainer, STOCK_TITLE_ICON);
     } else {
         const iconUrl = titlebarValue.icon.url;
-        const existingIcon = contentContainer.getChildByLabel(STOCK_TITLE_ICON) as StockIconSprite | null;
+        const existingIcon = getManagedChild<StockIconSprite>(renderContainer, contentContainer, STOCK_TITLE_ICON);
         const applyIcon = (sprite: Sprite) => {
             sprite.width = titlebarValue.icon!.width;
             sprite.height = titlebarValue.icon!.height;
             sprite.x = padding;
-            sprite.y = Math.max(0, (localRect.height - sprite.height) / 2);
+            sprite.y = Math.max(0, (layoutRect.height - sprite.height) / 2);
         };
 
         if (existingIcon?.__stockIconUrl === iconUrl) {
+            if (existingIcon.parent !== renderContainer) {
+                existingIcon.parent?.removeChild(existingIcon);
+                renderContainer.addChild(existingIcon);
+            }
             applyIcon(existingIcon);
         } else {
             Assets.load(iconUrl).then((texture) => {
                 if (typedTitlebarStore.value.icon?.url !== iconUrl) {
                     return;
                 }
-                const existing = contentContainer.getChildByLabel(STOCK_TITLE_ICON) as StockIconSprite | null;
+                const existing = getManagedChild<StockIconSprite>(renderContainer, contentContainer, STOCK_TITLE_ICON);
                 if (existing) {
+                    if (existing.parent !== renderContainer) {
+                        existing.parent?.removeChild(existing);
+                        renderContainer.addChild(existing);
+                    }
                     existing.texture = texture;
                     existing.__stockIconUrl = iconUrl;
                     applyIcon(existing);
@@ -132,7 +194,7 @@ export const renderStockTitlebarContent: TitlebarContentRendererFn = ({
                 iconSprite.label = STOCK_TITLE_ICON;
                 iconSprite.__stockIconUrl = iconUrl;
                 applyIcon(iconSprite);
-                contentContainer.addChild(iconSprite);
+                renderContainer.addChild(iconSprite);
             });
         }
         iconOffset = titlebarValue.icon.width + 4;
@@ -140,10 +202,10 @@ export const renderStockTitlebarContent: TitlebarContentRendererFn = ({
 
     let closeButtonReserve = 0;
     if (!titlebarValue.showCloseButton) {
-        removeChildByLabel(contentContainer, STOCK_CLOSE_BUTTON);
+        removeChildByLabel(renderContainer, contentContainer, STOCK_CLOSE_BUTTON);
     } else {
-        const closeButton = getCloseButton(contentContainer, typedWindowStore);
-        const size = Math.max(10, Math.min(18, localRect.height - (padding * 2) - 6));
+        const closeButton = getCloseButton(renderContainer, contentContainer, typedWindowStore);
+        const size = Math.max(10, Math.min(18, layoutRect.height - (padding * 2) - 6));
         const symbolColor = rgbToColor(labelStyle.color);
         const inset = Math.max(2, size * 0.3);
         const half = size / 2;
@@ -158,14 +220,14 @@ export const renderStockTitlebarContent: TitlebarContentRendererFn = ({
         closeButton.moveTo(half - inset, -half + inset)
             .lineTo(-half + inset, half - inset)
             .stroke({color: symbolColor, width: 2});
-        closeButton.x = Math.max(half + padding, localRect.width - padding - half);
-        closeButton.y = localRect.height / 2;
+        closeButton.x = Math.max(half + padding, layoutRect.width - padding - half);
+        closeButton.y = layoutRect.height / 2;
     }
 
     titleText.x = padding + iconOffset;
-    titleText.y = Math.max(0, ((localRect.height - labelStyle.size) / 2) - (labelStyle.size * 0.15));
+    titleText.y = Math.max(0, ((layoutRect.height - labelStyle.size) / 2) - (labelStyle.size * 0.15));
     titleText.style.wordWrapWidth = Math.max(
         0,
-        localRect.width - (padding * 2) - iconOffset - closeButtonReserve,
+        layoutRect.width - (padding * 2) - iconOffset - closeButtonReserve,
     );
 };

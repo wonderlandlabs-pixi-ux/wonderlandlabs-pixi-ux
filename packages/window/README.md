@@ -82,6 +82,14 @@ windows.addWindow('notes', {
 
 This package provides draggable, resizable windows with titlebars, managed through a centralized `WindowsManager`. Each window is a `WindowStore` that extends `TickerForest` for synchronized PixiJS rendering.
 
+## Titlebar Mechanics
+
+See [TITLEBAR_DYNAMICS.md](./TITLEBAR_DYNAMICS.md) for the current titlebar model, including:
+
+- the renderer frame of reference
+- the explicit `counter-scale` child layer used by `CounterScalingTitlebar`
+- shared hover dynamics for `onHover` titlebars
+
 ## Container Hierarchy
 
 The window system uses a nested container structure to manage rendering, events, and z-index ordering:
@@ -139,31 +147,15 @@ app.stage (or your root container)
               Ensures handles are always visible regardless of window z-index
 ```
 
-## Zoom-Independent Titlebar Sizing
+## Titlebar Mechanics Summary
 
-Titlebar visual height is kept stable under zoom by enabling `TickerForest` scale dirty tracking with the
-`dirtyOnScale` parameter in `TitlebarStore` (Y-axis only).
-
-In the built-in implementation, this is enabled automatically when `WindowStore` creates `TitlebarStore`.
-There is no extra `addWindow(...)` flag required.
-
-If you implement a custom titlebar store, keep this setting on:
-
-```ts
-dirtyOnScale: {
-  watchX: false,
-  watchY: true,
-}
-```
-
-## Content Placement Rules (Important)
-
-- Put window body content in `WindowStore.contentContainer` (or `WindowsManager.getContentContainer(id)`).
-- Put titlebar controls that must remain zoom-independent in the
-  `titlebarContentRenderer({ ..., contentContainer })` callback container.
-- Use `windowContentRenderer({ ..., contentContainer })` for generated body content.
-- Do not attach zoom-independent titlebar controls directly to the raw `titlebarContainer`; use the provided
-  render callback container so they stay in the counter-scaled layer.
+- Titlebar geometry derives from `TitlebarStore.height`.
+- The titlebar is anchored upward from the window origin, so the body rect remains canonical content space.
+- `titlebarContentRenderer(...)` keeps the same public inputs for regular and counter-scaled titlebars.
+- `CounterScalingTitlebar` adds a first child labeled `counter-scale` inside `contentContainer`.
+- Renderers should explicitly render zoom-independent titlebar content into `contentContainer.getChildByLabel('counter-scale')`
+  when present.
+- `onHover` titlebars use a shared body/titlebar hover session so moving from body to titlebar does not immediately hide the titlebar.
 
 ## State-First Content Updates (Required Pattern)
 
@@ -232,6 +224,8 @@ onResolve: (state) => {
 
 - `localRect` is the known render bounds in the renderer container's local coordinate space.
 - `localScale` is the renderer container's effective local scale (`x`, `y`) for scale-aware layout.
+- For counter-scaled titlebars, `contentContainer` may expose a first child labeled `counter-scale`.
+  Render into that child when you want zoom-independent titlebar content.
 
 ```ts
 import { Graphics, Text } from 'pixi.js';

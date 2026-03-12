@@ -1,6 +1,6 @@
 {
   "name": "@wonderlandlabs-pixi-ux/window",
-  "version": "1.2.3",
+  "version": "1.2.4",
   "description": "Window component for wonderlandlabs-pixi-ux",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
