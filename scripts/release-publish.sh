@@ -174,6 +174,13 @@ compute_publish_order > "$PUBLISH_ORDER_FILE"
 
 echo "Publishing release $TARGET_VERSION"
 
+SKIP_COUNT=0
+SUCCESS_COUNT=0
+FAIL_COUNT=0
+SKIPPED_PACKAGES=()
+PUBLISHED_PACKAGES=()
+FAILED_PACKAGES=()
+
 while IFS= read -r package_dir; do
   [ -n "$package_dir" ] || continue
   package_name="$(node - "$package_dir/package.json" <<'NODE'
@@ -184,19 +191,11 @@ NODE
 )"
 
   if npm view "${package_name}@${TARGET_VERSION}" version >/dev/null 2>&1; then
-    echo "Refusing to publish: ${package_name}@${TARGET_VERSION} already exists on npm." >&2
-    exit 1
+    echo "Skipping ${package_name}@${TARGET_VERSION}: version already exists on npm."
+    SKIP_COUNT=$((SKIP_COUNT + 1))
+    SKIPPED_PACKAGES+=("${package_name}@${TARGET_VERSION}")
+    continue
   fi
-done < "$PUBLISH_ORDER_FILE"
-
-while IFS= read -r package_dir; do
-  [ -n "$package_dir" ] || continue
-  package_name="$(node - "$package_dir/package.json" <<'NODE'
-const fs = require('fs');
-const pkg = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'));
-process.stdout.write(pkg.name || '');
-NODE
-)"
 
   echo "==> Building $package_name"
   (
@@ -205,11 +204,41 @@ NODE
   )
 
   echo "==> Publishing $package_name"
-  (
+  if (
     cd "$package_dir"
     npm publish
-  )
+  ); then
+    SUCCESS_COUNT=$((SUCCESS_COUNT + 1))
+    PUBLISHED_PACKAGES+=("${package_name}@${TARGET_VERSION}")
+  else
+    echo "Publish failed for ${package_name}@${TARGET_VERSION}; continuing with remaining packages." >&2
+    FAIL_COUNT=$((FAIL_COUNT + 1))
+    FAILED_PACKAGES+=("${package_name}@${TARGET_VERSION}")
+  fi
 done < "$PUBLISH_ORDER_FILE"
+
+echo
+echo "Publish summary:"
+echo "  Published: $SUCCESS_COUNT"
+echo "  Skipped:   $SKIP_COUNT"
+echo "  Failed:    $FAIL_COUNT"
+
+if [ "${#PUBLISHED_PACKAGES[@]}" -gt 0 ]; then
+  echo "Published packages:"
+  printf '  - %s\n' "${PUBLISHED_PACKAGES[@]}"
+fi
+
+if [ "${#SKIPPED_PACKAGES[@]}" -gt 0 ]; then
+  echo "Skipped packages:"
+  printf '  - %s\n' "${SKIPPED_PACKAGES[@]}"
+fi
+
+if [ "${#FAILED_PACKAGES[@]}" -gt 0 ]; then
+  echo "Failed packages:"
+  printf '  - %s\n' "${FAILED_PACKAGES[@]}"
+  echo "Not creating git tag because one or more publishes failed." >&2
+  exit 1
+fi
 
 git -C "$ROOT_DIR" tag -a "$TAG_NAME" -m "Release $TARGET_VERSION"
 
