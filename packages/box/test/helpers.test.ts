@@ -1,6 +1,6 @@
 import {describe, expect, it} from 'vitest';
 
-import {cellLayers, sizeToNumber, rectToAbsolute, insetRect} from './../src/helpers.js';
+import {cellLayers, sizeToNumber, rectToAbsolute, rectToParentSpace, insetRect} from './../src/helpers.js';
 import {
     INSET_SCOPE_ALL,
     INSET_SCOPE_HORIZ,
@@ -81,6 +81,19 @@ describe('helpers', () => {
                 x: 75, y: 50, w: 150, h: 100
             })
         })
+    });
+
+    describe('rectToParentSpace', () => {
+        it('should resolve x and y relative to the parent origin', () => {
+            expect(rectToParentSpace({
+                x: {value: 25, unit: SIZE_PCT},
+                y: 10,
+                w: {value: 50, unit: SIZE_PCT},
+                h: {value: 50, unit: SIZE_PCT}
+            }, SAMPLE_PARENT)).toEqual({
+                x: 85, y: 30, w: 150, h: 100
+            });
+        });
     });
 
     describe('insetRect', () => {

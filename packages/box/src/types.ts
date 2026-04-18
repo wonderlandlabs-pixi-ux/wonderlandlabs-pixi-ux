@@ -1,4 +1,6 @@
 import { z } from 'zod';
+import type { Application, Container } from 'pixi.js';
+import type { BoxStore } from './BoxStore.js';
 import {
   DIR_HORIZ,
   DIR_HORIZ_S,
@@ -164,6 +166,7 @@ export const RectPartial = RectTemplate.partial({
 export type RectPartialType = z.infer<typeof RectPartial>;
 
 export const BoxCellData = z.object({
+  id: z.string().optional(),
   dim: RectPartial,
   location: RectStatic.optional(),
   absolute: z.boolean(),
@@ -174,12 +177,21 @@ export const BoxCellData = z.object({
   align: BoxAlign,
   insets: z.array(BoxInsetEntry).optional(),
   gap: BoxSizeNoFract.optional(),
+  renderGroup: z.boolean().optional(),
 });
 
 export type BoxCellDataType = z.infer<typeof BoxCellData>;
 
 export type BoxCellNodeType = BoxCellDataType & {
   children?: BoxCellNodeType[];
+};
+
+export type BoxPreparedCellDataType = Omit<BoxCellDataType, 'id'> & {
+  id: string;
+};
+
+export type BoxPreparedCellType = BoxPreparedCellDataType & {
+  children?: BoxPreparedCellType[];
 };
 
 // Backward-compatible aliases while the package migrates to the data/node naming split.
@@ -200,6 +212,47 @@ export type BoxLayerType = {
   role: string;
   rect: RectStaticType;
   insets: RectStaticType;
+};
+
+export type BoxPixiNodeContext = {
+  cell: BoxPreparedCellType;
+  parentContainer?: Container;
+  parentContext?: {
+    nouns: string[];
+    states: string[];
+    variant?: string;
+  };
+  parentCell?: BoxPreparedCellType;
+};
+
+export type BoxPixiRenderInput = {
+  options: BoxPixiOptions;
+  context: BoxPixiNodeContext;
+  local: {
+    layers: BoxLayerType[];
+    path: string[];
+    pathString: string;
+    currentContainer?: Container;
+    location: RectStaticType;
+    localLocation: RectStaticType;
+  };
+};
+
+export type BoxPixiNodeRenderer = (
+  input: BoxPixiRenderInput,
+) => Container | false | void;
+
+export type BoxPixiRendererOverride = {
+  renderer: BoxPixiNodeRenderer;
+  post?: boolean;
+};
+
+export type BoxPixiOptions = {
+  root: BoxPreparedCellType;
+  app?: Application;
+  parentContainer?: Container;
+  store?: BoxStore;
+  styleTree?: BoxStyleManagerLike;
 };
 
 export const Axes = z.enum([AXIS_Y, AXIS_X]);

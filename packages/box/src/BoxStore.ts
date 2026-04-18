@@ -1,11 +1,25 @@
 import {Forest} from '@wonderlandlabs/forestry4';
-import type {BoxCellType, BoxStyleManagerLike, RectStaticType} from './types.js';
-import {insetRect, rectToAbsolute} from "./helpers.js";
+import type {BoxCellType, BoxPreparedCellType, BoxStyleManagerLike, RectStaticType} from './types.js';
+import {insetRect, rectToAbsolute, rectToParentSpace} from "./helpers.js";
 import {ComputeAxis} from './ComputeAxis.js';
 import {resolveStyleValue} from './styleHelpers.js';
 
-export class BoxStore extends Forest<BoxCellType> {
+type BoxStoreConfig = {
+    value: BoxCellType;
+};
+
+export class BoxStore extends Forest<BoxPreparedCellType> {
     #styles?: BoxStyleManagerLike;
+
+    constructor(config: BoxStoreConfig) {
+        super({
+            value: prepareBoxCellTree(config.value),
+            // @ts-ignore Forestry binds prep to the store instance at runtime.
+            prep(next: BoxCellType) {
+                return prepareBoxCellTree(next, (this as BoxStore).value);
+            },
+        });
+    }
 
     update() {
         const next = layoutCell(this.value);
@@ -64,7 +78,32 @@ export class BoxStore extends Forest<BoxCellType> {
     }
 }
 
-function layoutCell(cell: BoxCellType, parentRect?: RectStaticType): BoxCellType {
+export function prepareBoxCellTree(
+    next: BoxCellType,
+    previous?: BoxPreparedCellType,
+    seenIds: Set<string> = new Set(),
+): BoxPreparedCellType {
+    const id = next.id
+        ?? (previous?.name === next.name ? previous.id : newBoxCellId());
+
+    if (seenIds.has(id)) {
+        console.error(`[BoxStore] Duplicate box cell id detected: "${id}" on node "${next.name}"`);
+    } else {
+        seenIds.add(id);
+    }
+
+    return {
+        ...next,
+        id,
+        children: next.children?.map((child, index) => prepareBoxCellTree(
+            child,
+            matchPreviousChild(previous?.children, child, index),
+            seenIds,
+        )),
+    };
+}
+
+function layoutCell(cell: BoxPreparedCellType, parentRect?: RectStaticType): BoxPreparedCellType {
     const ownLocation = cell.location
         ? rectToAbsolute(cell.location)
         : rectToAbsolute(cell.dim, cell.absolute ? undefined : parentRect);
@@ -77,22 +116,71 @@ function layoutCell(cell: BoxCellType, parentRect?: RectStaticType): BoxCellType
         };
     }
 
-    const childLocations: RectStaticType[] = new ComputeAxis(
-        align,
-        ownLocation,
-        children.map((child) => child.dim),
-        {
-            insets: cell.insets,
-            gap: cell.gap,
-        },
-    ).compute();
+    const childLocations: RectStaticType[] = new Array(children.length);
+    const flowChildren = children
+        .map((child, index) => ({child, index}))
+        .filter(({child}) => !child.absolute);
+
+    if (flowChildren.length > 0) {
+        const flowChildLocations = new ComputeAxis(
+            align,
+            ownLocation,
+            flowChildren.map(({child}) => child.dim),
+            {
+                insets: cell.insets,
+                gap: cell.gap,
+            },
+        ).compute();
+
+        flowChildren.forEach(({index}, flowIndex) => {
+            childLocations[index] = flowChildLocations[flowIndex];
+        });
+    }
+
+    children.forEach((child, index) => {
+        if (!child.absolute) {
+            return;
+        }
+        childLocations[index] = child.location
+            ? rectToAbsolute(child.location)
+            : rectToParentSpace(child.dim, ownLocation);
+    });
 
     return {
         ...cell,
         location: ownLocation,
-        children: children.map((child: BoxCellType, index: number) => layoutCell({
+        children: children.map((child: BoxPreparedCellType, index: number) => layoutCell({
             ...child,
             location: childLocations[index],
         }, childLocations[index])),
     };
+}
+
+function matchPreviousChild(
+    previousChildren: BoxPreparedCellType[] | undefined,
+    nextChild: BoxCellType,
+    index: number,
+): BoxPreparedCellType | undefined {
+    if (!previousChildren || previousChildren.length === 0) {
+        return undefined;
+    }
+
+    if (nextChild.id) {
+        return previousChildren.find((child) => child.id === nextChild.id);
+    }
+
+    const sameIndex = previousChildren[index];
+    if (sameIndex?.name === nextChild.name) {
+        return sameIndex;
+    }
+
+    return previousChildren.find((child) => child.name === nextChild.name);
+}
+
+function newBoxCellId(): string {
+    if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+        return crypto.randomUUID();
+    }
+
+    return `box-${Math.random().toString(36).slice(2, 10)}`;
 }

@@ -22,7 +22,7 @@
     "zod": "^4.3.6"
   },
   "devDependencies": {
-    "@wonderlandlabs-pixi-ux/style-tree": "1.2.6",
+    "@wonderlandlabs-pixi-ux/style-tree": "1.2.7",
     "typescript": "^5.5.4",
     "vitest": "^4.0.18"
   },

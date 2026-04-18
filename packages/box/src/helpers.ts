@@ -118,6 +118,20 @@ export function rectToAbsolute(r: RectPartialType, parentRect?: RectStaticType):
     }, {}) as RectStaticType;
 }
 
+export function rectToParentSpace(r: RectPartialType, parentRect?: RectStaticType): RectStaticType {
+    const resolved = rectToAbsolute(r, parentRect);
+
+    if (!parentRect) {
+        return resolved;
+    }
+
+    return {
+        ...resolved,
+        x: parentRect.x + resolved.x,
+        y: parentRect.y + resolved.y,
+    };
+}
+
 export function insetRect(
     parentRect: RectStaticType,
     insetters: Array<BoxInsetEntryType | undefined> = [],
