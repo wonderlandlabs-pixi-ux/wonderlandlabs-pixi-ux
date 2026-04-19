@@ -1,4 +1,4 @@
-import type { BoxCellType, BoxStyleManagerLike } from './types.js';
+import type { BoxCellType, BoxStyleManagerLike, BoxStyleQueryLike } from './types.js';
 
 export type BoxStyleContext = {
     nouns: string[];
@@ -7,18 +7,19 @@ export type BoxStyleContext = {
 };
 
 export function styleContextForCell(
-    cell: Pick<BoxCellType, 'name' | 'states' | 'variant'>,
+    cell: Pick<BoxCellType, 'name' | 'verbs' | 'states' | 'variant'>,
     parent?: BoxStyleContext,
 ): BoxStyleContext {
+    const localStates = cell.verbs ?? cell.states ?? [];
     return {
         nouns: [...(parent?.nouns ?? []), cell.name],
-        states: [...(parent?.states ?? []), ...(cell.states ?? [])],
+        states: mergeStates(parent?.states ?? [], localStates),
         variant: cell.variant ?? parent?.variant,
     };
 }
 
 export function resolveStyleValue<T = unknown>(
-    styles: BoxStyleManagerLike | undefined,
+    styles: BoxStyleManagerLike[] | undefined,
     context: BoxStyleContext,
     propertyPath: string[] = [],
     options: { states?: string[]; extraNouns?: string[] } = {},
@@ -67,9 +68,7 @@ export function resolveStyleValue<T = unknown>(
     ];
 
     for (const query of queries) {
-        const result = styles.matchHierarchy
-            ? styles.matchHierarchy(query)
-            : styles.match(query);
+        const result = resolveLayeredStyleValue(styles, query);
         if (result !== undefined) {
             return result as T;
         }
@@ -85,9 +84,7 @@ export function resolveStyleValue<T = unknown>(
     ];
 
     for (const query of objectQueries) {
-        const result = styles.matchHierarchy
-            ? styles.matchHierarchy(query)
-            : styles.match(query);
+        const result = resolveLayeredStyleValue(styles, query);
         const nestedValue = getNestedValue(result, propertyPath);
         if (nestedValue !== undefined) {
             return nestedValue as T;
@@ -117,4 +114,24 @@ function nounSuffixes(nouns: string[]): string[][] {
         suffixes.push(nouns.slice(index));
     }
     return suffixes;
+}
+
+function mergeStates(parentStates: string[], localStates: string[]): string[] {
+    return Array.from(new Set([...parentStates, ...localStates]));
+}
+
+function resolveLayeredStyleValue(
+    styles: BoxStyleManagerLike[],
+    query: BoxStyleQueryLike,
+): unknown {
+    for (let index = styles.length - 1; index >= 0; index -= 1) {
+        const layer = styles[index];
+        const result = layer.matchHierarchy
+            ? layer.matchHierarchy(query)
+            : layer.match(query);
+        if (result !== undefined) {
+            return result;
+        }
+    }
+    return undefined;
 }

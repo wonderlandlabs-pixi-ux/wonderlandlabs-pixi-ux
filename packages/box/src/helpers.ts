@@ -1,5 +1,6 @@
 import type {
     BoxCellType,
+    BoxPreparedCellType,
     BoxLayerType,
     BoxInsetEntryType,
     BoxSizeObjType,
@@ -10,6 +11,7 @@ import type {
     RectStaticType
 } from "./types.js";
 import {
+    ID_PATH_SEPARATOR,
     DIM_HORIZ_S,
     DIM_VERT_S,
     DIR_HORIZ_S,
@@ -27,6 +29,8 @@ import {
     SIZE_PX
 } from './constants.js';
 import { InsetDigest } from './InsetDigest.js';
+import { ComputeAxis } from './ComputeAxis.js';
+import {v4 as uuid} from 'uuid';
 
 type RectPartialKey = keyof RectPartialType;
 
@@ -119,17 +123,7 @@ export function rectToAbsolute(r: RectPartialType, parentRect?: RectStaticType):
 }
 
 export function rectToParentSpace(r: RectPartialType, parentRect?: RectStaticType): RectStaticType {
-    const resolved = rectToAbsolute(r, parentRect);
-
-    if (!parentRect) {
-        return resolved;
-    }
-
-    return {
-        ...resolved,
-        x: parentRect.x + resolved.x,
-        y: parentRect.y + resolved.y,
-    };
+    return rectToAbsolute(r, parentRect);
 }
 
 export function insetRect(
@@ -225,5 +219,132 @@ export function alignOffset(position: string | undefined, available: number): nu
         case POS_START_S:
         default:
             return 0;
+    }
+}
+
+export function prepareBoxCellTree(
+    next: BoxCellType,
+    previous?: BoxPreparedCellType,
+    seenIds: Set<string> = new Set(),
+): BoxPreparedCellType {
+    const id = next.id
+        ?? (previous?.name === next.name ? previous.id : newBoxCellId());
+
+    if (seenIds.has(id)) {
+        console.error(`[BoxStore] Duplicate box cell id detected: "${id}" on node "${next.name}"`);
+    } else {
+        seenIds.add(id);
+    }
+
+    return {
+        ...next,
+        id,
+        children: next.children?.map((child, index) => prepareBoxCellTree(
+            child,
+            matchPreviousChild(previous?.children, child, index),
+            seenIds,
+        )),
+    };
+}
+
+export function layoutCell(cell: BoxPreparedCellType, parentRect?: RectStaticType): BoxPreparedCellType {
+    const ownLocation = cell.location
+        ? rectToAbsolute(cell.location)
+        : rectToAbsolute(cell.dim, cell.absolute ? undefined : parentRect);
+    const {children, align} = cell;
+
+    if (!Array.isArray(children) || children.length === 0) {
+        return {
+            ...cell,
+            location: ownLocation,
+        };
+    }
+
+    const childLocations: RectStaticType[] = new Array(children.length);
+    const flowChildren = children
+        .map((child, index) => ({child, index}))
+        .filter(({child}) => !child.absolute);
+
+    if (flowChildren.length > 0) {
+        const flowChildLocations = new ComputeAxis(
+            align,
+            ownLocation,
+            flowChildren.map(({child}) => child.dim),
+            {
+                insets: cell.insets,
+                gap: cell.gap,
+            },
+        ).compute();
+
+        flowChildren.forEach(({index}, flowIndex) => {
+            childLocations[index] = flowChildLocations[flowIndex];
+        });
+    }
+
+    children
+        .map((child, index) => ({child, index}))
+        .filter(({child}) => child.absolute)
+        .forEach(({child, index}) => {
+            childLocations[index] = child.location
+                ? rectToAbsolute(child.location)
+                : rectToParentSpace(child.dim, ownLocation);
+        });
+
+    return {
+        ...cell,
+        location: ownLocation,
+        children: children.map((child: BoxPreparedCellType, index: number) => layoutCell({
+            ...child,
+            location: childLocations[index],
+        }, childLocations[index])),
+    };
+}
+
+export function collectRemovedIds(
+    previous: BoxPreparedCellType,
+    next: BoxPreparedCellType,
+): Set<string> {
+    const nextIds = flattenPreparedIds(next);
+    const previousIds = flattenPreparedIds(previous);
+    const diff = Array.from(previousIds.values()).filter((path) => !nextIds.has(path));
+    return new Set(diff);
+}
+
+function matchPreviousChild(
+    previousChildren: BoxPreparedCellType[] | undefined,
+    nextChild: BoxCellType,
+    index: number,
+): BoxPreparedCellType | undefined {
+    if (!previousChildren || previousChildren.length === 0) {
+        return undefined;
+    }
+
+    if (nextChild.id) {
+        return previousChildren.find((child) => child.id === nextChild.id);
+    }
+
+    const sameIndex = previousChildren[index];
+    if (sameIndex?.name === nextChild.name) {
+        return sameIndex;
+    }
+
+    return previousChildren.find((child) => child.name === nextChild.name);
+}
+
+function newBoxCellId(): string {
+    return uuid();
+}
+
+function flattenPreparedIds(root: BoxPreparedCellType): Set<string> {
+    const ids = new Set<string>();
+    recordPathToCell(ids, root);
+    return ids;
+}
+
+function recordPathToCell(ids: Set<string>, cell: BoxPreparedCellType, path: string[] = []) {
+    const nextPath = [...path, cell.id];
+    ids.add(nextPath.join(ID_PATH_SEPARATOR));
+    for (const child of cell.children ?? []) {
+        recordPathToCell(ids, child, nextPath);
     }
 }

@@ -19,6 +19,7 @@
   "dependencies": {
     "@wonderlandlabs/forestry4": "^4.1.15",
     "rxjs": "^7.8.2",
+    "uuid": "^11.1.0",
     "zod": "^4.3.6"
   },
   "devDependencies": {

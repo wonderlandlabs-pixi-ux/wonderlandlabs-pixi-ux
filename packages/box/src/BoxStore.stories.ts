@@ -150,7 +150,7 @@ function renderStoreSvg(store: BoxStore): string {
     const root = store.value;
     return boxTreeToSVG({ ...root, location: store.location }, {
         title: 'BoxStore Layout',
-        styleTree: storyStyles,
+        styleTree: [storyStyles],
     });
 }
 
@@ -320,7 +320,7 @@ function renderScenarioStory(scenario: BoxStoreScenario): HTMLElement {
                 <section class="panel">
                     ${boxTreeToSVG({ ...store.value, location: store.location }, {
                         title: scenario.name,
-                        styleTree: storyStyles,
+                        styleTree: [storyStyles],
                     })}
                 </section>
                 <section class="panel">

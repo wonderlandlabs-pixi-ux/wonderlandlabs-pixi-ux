@@ -1,56 +1,83 @@
 import { Color, Container, Graphics, Sprite, Text, TextStyle, Texture, type ColorSource, type TextStyleOptions } from 'pixi.js';
+import { z } from 'zod';
 import type { RectStaticType } from './types.js';
 
 export const GRAPHICS_LABEL = '$$background';
 export const CONTENT_LABEL = '$$content';
+const ContainerLikeSchema = z.object({
+  addChild: z.function(),
+  addChildAt: z.function(),
+  removeChild: z.function(),
+  getChildIndex: z.function(),
+  destroy: z.function(),
+  children: z.array(z.any()),
+  label: z.string().optional(),
+  parent: z.any().optional(),
+  zIndex: z.number().optional(),
+  position: z.object({
+    set: z.function(),
+  }).optional(),
+});
+
+const PixiContainerResult = z.custom<Container>((value) => {
+  if (!value || typeof value !== 'object') {
+    return false;
+  }
+  return ContainerLikeSchema.safeParse(value).success;
+});
 
 export function ensureGraphics(container: Container): Graphics {
-  const existing = container.children.find((child) => child.label === GRAPHICS_LABEL);
-  if (existing instanceof Graphics) {
-    return existing;
-  }
-
-  const graphics = new Graphics({ label: GRAPHICS_LABEL });
-  container.addChildAt(graphics, 0);
-  return graphics;
+  return ensureChild(
+    container,
+    GRAPHICS_LABEL,
+    (child): child is Graphics => child instanceof Graphics,
+    () => new Graphics({ label: GRAPHICS_LABEL }),
+    0,
+  );
 }
 
 export function ensureText(
   container: Container,
   style: TextStyleOptions = {},
 ): Text {
-  const existing = container.children.find((child) => child.label === CONTENT_LABEL);
-  if (existing instanceof Text) {
-    return existing;
-  }
-  if (existing) {
-    container.removeChild(existing);
-    existing.destroy({ children: true });
-  }
-
-  const text = new Text({
-    text: '',
-    style: new TextStyle(style),
-  });
-  text.label = CONTENT_LABEL;
-  container.addChild(text);
-  return text;
+  return ensureChild(
+    container,
+    CONTENT_LABEL,
+    (child): child is Text => child instanceof Text,
+    () => new Text({
+      text: '',
+      style: new TextStyle(style),
+    }),
+  );
 }
 
 export function ensureSprite(container: Container): Sprite {
-  const existing = container.children.find((child) => child.label === CONTENT_LABEL);
-  if (existing instanceof Sprite) {
-    return existing;
-  }
-  if (existing) {
-    container.removeChild(existing);
-    existing.destroy({ children: true });
-  }
+  return ensureChild(
+    container,
+    CONTENT_LABEL,
+    (child): child is Sprite => child instanceof Sprite,
+    () => new Sprite(Texture.EMPTY),
+  );
+}
 
-  const sprite = new Sprite(Texture.EMPTY);
-  sprite.label = CONTENT_LABEL;
-  container.addChild(sprite);
-  return sprite;
+export function fitSpriteToRect(
+  sprite: Sprite,
+  texture: Texture,
+  width: number,
+  height: number,
+): void {
+  const sourceWidth = texture.width || width || 1;
+  const sourceHeight = texture.height || height || 1;
+  const scale = Math.min(width / sourceWidth, height / sourceHeight);
+  const fittedWidth = sourceWidth * scale;
+  const fittedHeight = sourceHeight * scale;
+
+  sprite.width = fittedWidth;
+  sprite.height = fittedHeight;
+  sprite.position.set(
+    Math.max(0, (width - fittedWidth) / 2),
+    Math.max(0, (height - fittedHeight) / 2),
+  );
 }
 
 export function drawBorderBands(
@@ -107,45 +134,95 @@ export function toLocalRect(rect: RectStaticType, parentRect?: RectStaticType): 
   };
 }
 
-export function findContainerById(parent: Container | undefined, id: string): Container | undefined {
-  return (parent?.getChildByLabel(id) as Container | null) ?? undefined;
-}
-
-export function createContainer(id: string): Container {
-  const container = new Container();
-  container.label = id;
-  return container;
-}
-
 export function attachToParent(container: Container, parent: Container | undefined, id: string): Container {
   container.label = id;
-
-  if (!parent) {
-    return container;
-  }
-
-  if (container.parent !== parent) {
+  if (parent && container.parent !== parent) {
     parent.addChild(container);
   }
-
   return container;
 }
 
-export function cleanupChildren(
-  parent: Container,
-  desired: Set<string>,
-): void {
-  for (const child of [...parent.children]) {
-    if (child.label === GRAPHICS_LABEL) {
-      continue;
-    }
-    if (typeof child.label === 'string' && child.label.startsWith('$$')) {
-      continue;
-    }
-    if (desired.has(child.label)) {
-      continue;
-    }
-    parent.removeChild(child);
-    child.destroy({ children: true });
+export function resolveAlignedOffset(
+  outerSize: number,
+  innerSize: number,
+  position: string | undefined,
+): number {
+  if (position === 'center') {
+    return Math.max(0, (outerSize - innerSize) / 2);
   }
+  if (position === 'end' || position === 'right' || position === 'bottom') {
+    return Math.max(0, outerSize - innerSize);
+  }
+  return 0;
+}
+
+export function validateRendererResult(
+  result: Container | false | void | unknown,
+  cellName: string,
+  pathString: string,
+): Container | false | undefined {
+  if (result === undefined || result === false) {
+    return result;
+  }
+
+  const parsed = PixiContainerResult.safeParse(result);
+  if (parsed.success) {
+    return parsed.data;
+  }
+
+  console.error(`[boxTreeToPixi] Custom renderer for "${cellName}" at "${pathString}" returned a non-Container value. Falling back to the default renderer.`, result);
+  return false;
+}
+
+function ensureChild<T extends Container>(
+  container: Container,
+  label: string,
+  isExpected: (child: Container) => child is T,
+  factory: () => T,
+  defaultZIndex = 0,
+): T {
+  const existing = container.children.find((child) => child.label === label);
+  if (existing) {
+    if (isExpected(existing)) {
+      return existing;
+    }
+    return replaceChild(container, existing, label, factory, defaultZIndex);
+  }
+
+  return addChild(container, label, factory, defaultZIndex);
+}
+
+function replaceChild<T extends Container>(
+  container: Container,
+  existing: Container,
+  label: string,
+  factory: () => T,
+  defaultZIndex: number,
+): T {
+  const zIndex = Number.isFinite(existing.zIndex) ? existing.zIndex : defaultZIndex;
+  const childIndex = container.getChildIndex(existing);
+  container.removeChild(existing);
+  existing.destroy({ children: true });
+
+  return addChild(container, label, factory, zIndex, childIndex);
+}
+
+function addChild<T extends Container>(
+  container: Container,
+  label: string,
+  factory: () => T,
+  zIndex: number,
+  childIndex?: number,
+): T {
+  const next = factory();
+  next.label = label;
+  next.zIndex = zIndex;
+  if (typeof childIndex === 'number') {
+    container.addChildAt(next, Math.min(childIndex, container.children.length));
+  } else if (zIndex === 0) {
+    container.addChildAt(next, 0);
+  } else {
+    container.addChild(next);
+  }
+  return next;
 }

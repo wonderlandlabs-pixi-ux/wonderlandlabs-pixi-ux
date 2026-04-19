@@ -40,6 +40,10 @@
         "Arial",
         "sans-serif"
       ],
+      "alpha": {
+        "$*": 1,
+        "$disabled": 0.45
+      },
       "color": {
         "$*": "#000000",
         "$dark": "#FFFFFF"

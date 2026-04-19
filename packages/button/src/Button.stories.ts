@@ -4,7 +4,7 @@ import {fromJSON} from '@wonderlandlabs-pixi-ux/style-tree';
 import {ButtonStore} from './ButtonStore.js';
 import defaultStyles from './defaultStyles.json' with {type: 'json'};
 
-const PLACEHOLDER_ICON = '/placeholder-art.png';
+const PLACEHOLDER_ICON = '/icons/demo-icon.png';
 const STORY_BACKGROUND = new Color('#f6f1e7').toNumber();
 
 function color(value: string | number): number {
@@ -27,6 +27,15 @@ function createStoryStyleTree() {
     tree.set('container.background.width', ['avatar'], 72);
     tree.set('container.background.height', ['avatar'], 72);
 
+    tree.set('icon.size.width', ['button'], 28);
+    tree.set('icon.size.height', ['button'], 28);
+    tree.set('icon.size.width', ['text'], 24);
+    tree.set('icon.size.height', ['text'], 24);
+    tree.set('icon.size.width', ['icon-vert'], 40);
+    tree.set('icon.size.height', ['icon-vert'], 40);
+    tree.set('icon.size.width', ['avatar'], 36);
+    tree.set('icon.size.height', ['avatar'], 36);
+
     tree.set('container.content.gap', ['button'], 10);
     tree.set('container.content.gap', ['icon-vert'], 8);
 
@@ -34,6 +43,27 @@ function createStoryStyleTree() {
     tree.set('container.border.color', ['hover'], color('#3B82F6'));
     tree.set('container.border.width', ['hover'], 1);
 
+    return tree;
+}
+
+function createCapsuleOverrideTree() {
+    const tree = fromJSON({});
+    tree.set('container.background.color', ['button'], color('#183a37'));
+    tree.set('container.border.color', ['button'], color('#183a37'));
+    tree.set('container.border.radius', ['button'], 24);
+    tree.set('label.font.color', ['button'], color('#f7f4ea'));
+    tree.set('icon.size.width', ['button'], 24);
+    tree.set('icon.size.height', ['button'], 24);
+    return tree;
+}
+
+function createWarnOverrideTree() {
+    const tree = fromJSON({});
+    tree.set('container.background.color', ['button'], color('#f4d6a0'));
+    tree.set('container.border.color', ['button'], color('#c27c2c'));
+    tree.set('label.font.color', ['button'], color('#5c3414'));
+    tree.set('container.border.radius', ['button'], 14);
+    tree.set('container.background.color', ['hover'], color('#f7dfb5'));
     return tree;
 }
 
@@ -110,7 +140,7 @@ export const AlertButtons: Story = {
             ];
 
             buttons.forEach((button) => {
-                app.stage.addChild(button.container);
+                app.stage.addChild(button.container!);
                 button.kickoff();
             });
         })();
@@ -150,7 +180,7 @@ export const AlertStates: Story = {
                     variant: 'button',
                     label: 'Disabled',
                     icon: PLACEHOLDER_ICON,
-                    isDisabled: true,
+                    status: new Set(['disabled']),
                     size: {x: 260, y: 40, width: 190, height: 52},
                 }, {
                     app,
@@ -178,7 +208,7 @@ export const AlertStates: Story = {
             ];
 
             buttons.forEach((button) => {
-                app.stage.addChild(button.container);
+                app.stage.addChild(button.container!);
                 button.kickoff();
             });
         })();
@@ -213,11 +243,11 @@ export const SubmitFlow: Story = {
                 styleTree,
                 handlers: {
                     click: () => {
-                        submitButton.set('isDisabled', true);
+                        submitButton.setStatus('disabled', true);
                         submitButton.set('label', 'Submitting...');
 
                         window.setTimeout(() => {
-                            submitButton.set('isDisabled', false);
+                            submitButton.setStatus('disabled', false);
                             submitButton.set('label', 'Submit');
                             window.alert('Submit finished');
                         }, 2000);
@@ -238,7 +268,80 @@ export const SubmitFlow: Story = {
             });
 
             [submitButton, disabledHint].forEach((button) => {
-                app.stage.addChild(button.container);
+                app.stage.addChild(button.container!);
+                button.kickoff();
+            });
+        })();
+
+        return wrapper;
+    },
+};
+
+export const PartialThemeOverrides: Story = {
+    render: () => {
+        const baseStyles = createStoryStyleTree();
+        const capsuleStyles = createCapsuleOverrideTree();
+        const warnStyles = createWarnOverrideTree();
+        const wrapper = document.createElement('div');
+        wrapper.style.width = '100%';
+        wrapper.style.height = '300px';
+
+        void (async () => {
+            const app = new Application();
+            await app.init({
+                width: 960,
+                height: 300,
+                backgroundColor: STORY_BACKGROUND,
+                antialias: true,
+            });
+            wrapper.appendChild(app.canvas);
+
+            const buttons = [
+                new ButtonStore({
+                    variant: 'button',
+                    label: 'Base Theme',
+                    icon: PLACEHOLDER_ICON,
+                    size: {x: 40, y: 40, width: 210, height: 52},
+                }, {
+                    app,
+                    styleTree: [baseStyles],
+                    handlers: {click: showAlert('Base theme clicked')},
+                }),
+                new ButtonStore({
+                    variant: 'button',
+                    label: 'Partial Capsule',
+                    icon: PLACEHOLDER_ICON,
+                    size: {x: 290, y: 40, width: 220, height: 52},
+                }, {
+                    app,
+                    styleTree: [baseStyles, capsuleStyles],
+                    handlers: {click: showAlert('Capsule override clicked')},
+                }),
+                new ButtonStore({
+                    variant: 'button',
+                    label: 'Partial Warm',
+                    icon: PLACEHOLDER_ICON,
+                    size: {x: 550, y: 40, width: 220, height: 52},
+                }, {
+                    app,
+                    styleTree: [baseStyles, warnStyles],
+                    handlers: {click: showAlert('Warm override clicked')},
+                }),
+                new ButtonStore({
+                    variant: 'button',
+                    label: 'Disabled Uses Base + Override',
+                    icon: PLACEHOLDER_ICON,
+                    status: new Set(['disabled']),
+                    size: {x: 40, y: 130, width: 300, height: 52},
+                }, {
+                    app,
+                    styleTree: [baseStyles, capsuleStyles],
+                    handlers: {click: showAlert('Disabled should not click')},
+                }),
+            ];
+
+            buttons.forEach((button) => {
+                app.stage.addChild(button.container!);
                 button.kickoff();
             });
         })();

@@ -62,3 +62,5 @@ export const INSET_PART_TOP = 'top';
 export const INSET_PART_RIGHT = 'right';
 export const INSET_PART_BOTTOM = 'bottom';
 export const INSET_PART_LEFT = 'left';
+
+export const ID_PATH_SEPARATOR = '\t';

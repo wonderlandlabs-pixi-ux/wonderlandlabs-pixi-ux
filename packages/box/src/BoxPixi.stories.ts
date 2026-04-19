@@ -50,7 +50,7 @@ type PixiStoryConfig = {
     width: number;
     height: number;
     root: BoxCellType;
-    styles: StyleTree;
+    styles: StyleTree[];
     renderers: BoxPixiRendererManifest;
 };
 
@@ -155,7 +155,7 @@ async function renderPixiLayout(config: PixiStoryConfig, mount: HTMLElement): Pr
     });
 }
 
-function createPixiStoryStyles(): StyleTree {
+function createPixiStoryStyles(): StyleTree[] {
     const styles = new StyleTree();
 
     styles.set('scene.background.color', [], '#f7f5f1');
@@ -189,8 +189,48 @@ function createPixiStoryStyles(): StyleTree {
     styles.set('cta.background.color', [], '#1f5c4d');
     styles.set('cta.border.color', [], '#17483c');
     styles.set('cta.border.alpha', [], 1);
+    styles.set('eyebrow.font.family', [], 'Courier New');
+    styles.set('eyebrow.font.size', [], 11);
+    styles.set('eyebrow.font.weight', [], '700');
+    styles.set('eyebrow.font.color', [], '#8b5e34');
+    styles.set('eyebrow.font.letterSpacing', [], 2);
 
-    return styles;
+    styles.set('title.font.family', [], 'Georgia');
+    styles.set('title.font.size', [], 26);
+    styles.set('title.font.weight', [], '700');
+    styles.set('title.font.color', [], '#14213d');
+    styles.set('title.font.wordWrap', [], true);
+    styles.set('title.font.lineHeight', [], 26);
+
+    styles.set('price.font.family', [], 'Georgia');
+    styles.set('price.font.size', [], 22);
+    styles.set('price.font.weight', [], '700');
+    styles.set('price.font.color', [], '#1f5c4d');
+
+    styles.set('body.font.family', [], 'Arial');
+    styles.set('body.font.size', [], 14);
+    styles.set('body.font.color', [], '#46546b');
+    styles.set('body.font.wordWrap', [], true);
+    styles.set('body.font.lineHeight', [], 20);
+
+    styles.set('bullet-mark.font.family', [], 'Arial');
+    styles.set('bullet-mark.font.size', [], 13);
+    styles.set('bullet-mark.font.weight', [], '700');
+    styles.set('bullet-mark.font.color', [], '#46546b');
+
+    styles.set('bullet-text.font.family', [], 'Arial');
+    styles.set('bullet-text.font.size', [], 13);
+    styles.set('bullet-text.font.color', [], '#46546b');
+    styles.set('bullet-text.font.wordWrap', [], true);
+    styles.set('bullet-text.font.lineHeight', [], 18);
+
+    styles.set('cta.font.family', [], 'Arial');
+    styles.set('cta.font.size', [], 15);
+    styles.set('cta.font.weight', [], '700');
+    styles.set('cta.font.color', [], '#f9f6f1');
+    styles.set('cta.font.align', [], 'center');
+
+    return [styles];
 }
 
 function createPixiStoryRenderers(): BoxPixiRendererManifest {
@@ -198,11 +238,6 @@ function createPixiStoryRenderers(): BoxPixiRendererManifest {
         byPath: {
             photo: { renderer: renderPhotoNode, post: true } satisfies BoxPixiRendererOverride,
             'hero-photo': { renderer: renderPhotoNode, post: true } satisfies BoxPixiRendererOverride,
-            eyebrow: { renderer: renderTextNode, post: true } satisfies BoxPixiRendererOverride,
-            title: { renderer: renderTextNode, post: true } satisfies BoxPixiRendererOverride,
-            price: { renderer: renderTextNode, post: true } satisfies BoxPixiRendererOverride,
-            body: { renderer: renderTextNode, post: true } satisfies BoxPixiRendererOverride,
-            bullet: { renderer: renderTextNode, post: true } satisfies BoxPixiRendererOverride,
             cta: { renderer: renderCtaNode, post: true } satisfies BoxPixiRendererOverride,
         },
     };
@@ -253,80 +288,12 @@ function renderPhotoNode(input: BoxPixiRenderInput): Container {
     return host;
 }
 
-function renderTextNode(input: BoxPixiRenderInput): Container {
-    const host = input.local.currentContainer!;
-    const location = input.local.localLocation;
-    const cell = input.context.cell;
-    const textValue = cell.content?.value ?? cell.name;
-    const text = ensureTextChild(host, '$$copy');
-
-    let style: TextStyle;
-    let x = 0;
-    let y = 0;
-
-    if (cell.name === 'eyebrow') {
-        style = new TextStyle({
-            fontFamily: 'Courier New',
-            fontSize: 11,
-            fontWeight: '700',
-            fill: 0x8b5e34,
-            letterSpacing: 2,
-        });
-        text.text = textValue.toUpperCase();
-        y = 4;
-    } else if (cell.name === 'title') {
-        style = new TextStyle({
-            fontFamily: 'Georgia',
-            fontSize: Math.max(18, Math.floor(location.h * 0.28)),
-            fontWeight: '700',
-            fill: 0x14213d,
-            wordWrap: true,
-            wordWrapWidth: Math.max(40, location.w),
-            lineHeight: Math.max(22, Math.floor(location.h * 0.34)),
-        });
-        text.text = textValue;
-    } else if (cell.name === 'price') {
-        style = new TextStyle({
-            fontFamily: 'Georgia',
-            fontSize: Math.max(18, Math.floor(location.h * 0.4)),
-            fontWeight: '700',
-            fill: 0x1f5c4d,
-        });
-        text.text = textValue;
-    } else if (cell.name === 'cta') {
-        style = new TextStyle({
-            fontFamily: 'Arial',
-            fontSize: Math.max(13, Math.floor(location.h * 0.34)),
-            fontWeight: '700',
-            fill: 0xf9f6f1,
-            align: 'center',
-        });
-        text.text = textValue;
-        x = Math.max(0, (location.w - text.width) / 2);
-        y = Math.max(0, (location.h - text.height) / 2) - 1;
-    } else {
-        style = new TextStyle({
-            fontFamily: 'Arial',
-            fontSize: cell.name === 'bullet' ? 13 : 14,
-            fill: 0x46546b,
-            wordWrap: true,
-            wordWrapWidth: Math.max(40, location.w),
-            lineHeight: cell.name === 'bullet' ? 18 : 20,
-        });
-        text.text = cell.name === 'bullet' ? `- ${textValue}` : textValue;
-    }
-
-    text.style = style;
-    text.position.set(x, y);
-    return host;
-}
-
 function renderCtaNode(input: BoxPixiRenderInput): Container {
     const host = input.local.currentContainer!;
     const location = input.local.localLocation;
     const textValue = input.context.cell.content?.value ?? 'Action';
     const chrome = ensureGraphicsChild(host, '$$cta-chrome');
-    const text = ensureTextChild(host, '$$copy');
+    const text = ensureTextChild(host, '$$content');
 
     const normalFill = 0x1f5c4d;
     const hoverFill = 0xb85c38;
@@ -347,7 +314,7 @@ function renderCtaNode(input: BoxPixiRenderInput): Container {
         text.text = textValue;
         text.style = new TextStyle({
             fontFamily: 'Arial',
-            fontSize: Math.max(13, Math.floor(location.h * 0.34)),
+            fontSize: 15,
             fontWeight: '700',
             fill: hovered ? 0xfff4e8 : 0xf9f6f1,
             align: 'center',
@@ -532,7 +499,7 @@ function productCard(product: ProductRecord): BoxCellType {
                 absolute: false,
                 dim: { w: { value: 100, unit: SIZE_PCT }, h: 16 },
                 align: { direction: DIR_HORIZ, xPosition: POS_START, yPosition: POS_CENTER },
-                content: { type: 'text', value: 'Studio Edition' },
+                content: { type: 'text', value: 'STUDIO EDITION' },
             },
             {
                 name: 'title',
@@ -541,20 +508,8 @@ function productCard(product: ProductRecord): BoxCellType {
                 align: { direction: DIR_HORIZ, xPosition: POS_START, yPosition: POS_START },
                 content: { type: 'text', value: product.name },
             },
-            {
-                name: 'bullet',
-                absolute: false,
-                dim: { w: { value: 100, unit: SIZE_PCT }, h: 24 },
-                align: { direction: DIR_HORIZ, xPosition: POS_START, yPosition: POS_CENTER },
-                content: { type: 'text', value: product.bullets[0] ?? 'Lorem ipsum dolor sit amet.' },
-            },
-            {
-                name: 'bullet',
-                absolute: false,
-                dim: { w: { value: 100, unit: SIZE_PCT }, h: 24 },
-                align: { direction: DIR_HORIZ, xPosition: POS_START, yPosition: POS_CENTER },
-                content: { type: 'text', value: product.bullets[1] ?? 'Consectetur adipiscing elit.' },
-            },
+            bulletRow(product.bullets[0] ?? 'Lorem ipsum dolor sit amet.', 24),
+            bulletRow(product.bullets[1] ?? 'Consectetur adipiscing elit.', 24),
             {
                 name: 'price',
                 absolute: false,
@@ -569,6 +524,32 @@ function productCard(product: ProductRecord): BoxCellType {
                 dim: { w: { value: 100, unit: SIZE_PCT }, h: 42 },
                 align: { direction: DIR_HORIZ, xPosition: POS_CENTER, yPosition: POS_CENTER },
                 content: { type: 'text', value: 'Add to cart' },
+            },
+        ],
+    };
+}
+
+function bulletRow(text: string, height: number): BoxCellType {
+    return {
+        name: 'bullet-row',
+        absolute: false,
+        dim: { w: { value: 100, unit: SIZE_PCT }, h: height },
+        align: { direction: DIR_HORIZ, xPosition: POS_START, yPosition: POS_CENTER },
+        gap: 8,
+        children: [
+            {
+                name: 'bullet-mark',
+                absolute: false,
+                dim: { w: 10, h: height },
+                align: { direction: DIR_HORIZ, xPosition: POS_CENTER, yPosition: POS_CENTER },
+                content: { type: 'text', value: '-' },
+            },
+            {
+                name: 'bullet-text',
+                absolute: false,
+                dim: { w: { value: 1, unit: SIZE_FRACTION }, h: height },
+                align: { direction: DIR_HORIZ, xPosition: POS_START, yPosition: POS_CENTER },
+                content: { type: 'text', value: text },
             },
         ],
     };
@@ -613,7 +594,7 @@ function createCatalogRoot(products: ProductRecord[]): BoxCellType {
                                 absolute: false,
                                 dim: { w: { value: 100, unit: SIZE_PCT }, h: 18 },
                                 align: { direction: DIR_HORIZ, xPosition: POS_START, yPosition: POS_CENTER },
-                                content: { type: 'text', value: 'Spring Drop 04' },
+                                content: { type: 'text', value: 'SPRING DROP 04' },
                             },
                             {
                                 name: 'title',
@@ -629,20 +610,8 @@ function createCatalogRoot(products: ProductRecord[]): BoxCellType {
                                 align: { direction: DIR_HORIZ, xPosition: POS_START, yPosition: POS_START },
                                 content: { type: 'text', value: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer posuere erat a ante venenatis.' },
                             },
-                            {
-                                name: 'bullet',
-                                absolute: false,
-                                dim: { w: { value: 100, unit: SIZE_PCT }, h: 20 },
-                                align: { direction: DIR_HORIZ, xPosition: POS_START, yPosition: POS_CENTER },
-                                content: { type: 'text', value: 'Durable shell, soft-touch finish, low visual noise.' },
-                            },
-                            {
-                                name: 'bullet',
-                                absolute: false,
-                                dim: { w: { value: 100, unit: SIZE_PCT }, h: 20 },
-                                align: { direction: DIR_HORIZ, xPosition: POS_START, yPosition: POS_CENTER },
-                                content: { type: 'text', value: 'Sized for small spaces and tidy merchandising.' },
-                            },
+                            bulletRow('Durable shell, soft-touch finish, low visual noise.', 20),
+                            bulletRow('Sized for small spaces and tidy merchandising.', 20),
                         ],
                     },
                     {
@@ -707,7 +676,7 @@ function createDetailRoot(product: ProductRecord): BoxCellType {
                         absolute: false,
                         dim: { w: { value: 100, unit: SIZE_PCT }, h: 18 },
                         align: { direction: DIR_HORIZ, xPosition: POS_START, yPosition: POS_CENTER },
-                        content: { type: 'text', value: 'Featured Product' },
+                        content: { type: 'text', value: 'FEATURED PRODUCT' },
                     },
                     {
                         name: 'title',
@@ -730,13 +699,7 @@ function createDetailRoot(product: ProductRecord): BoxCellType {
                         align: { direction: DIR_HORIZ, xPosition: POS_START, yPosition: POS_START },
                         content: { type: 'text', value: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed posuere consectetur est at lobortis. Cras mattis consectetur purus sit amet fermentum.' },
                     },
-                    ...product.bullets.map<BoxCellType>((bullet) => ({
-                        name: 'bullet',
-                        absolute: false,
-                        dim: { w: { value: 100, unit: SIZE_PCT }, h: 24 },
-                        align: { direction: DIR_HORIZ, xPosition: POS_START, yPosition: POS_CENTER },
-                        content: { type: 'text', value: bullet },
-                    })),
+                    ...product.bullets.map<BoxCellType>((bullet) => bulletRow(bullet, 24)),
                     {
                         name: 'cta',
                         absolute: false,
@@ -778,7 +741,7 @@ function createComparisonRoot(products: ProductRecord[]): BoxCellType {
                         absolute: false,
                         dim: { w: { value: 100, unit: SIZE_PCT }, h: 18 },
                         align: { direction: DIR_HORIZ, xPosition: POS_START, yPosition: POS_CENTER },
-                        content: { type: 'text', value: 'Renderer stress test' },
+                        content: { type: 'text', value: 'RENDERER STRESS TEST' },
                     },
                     {
                         name: 'title',

@@ -1,5 +1,5 @@
 import { beforeAll, describe, expect, it, vi } from 'vitest';
-import { prepareBoxCellTree } from '../src/BoxStore.js';
+import { BoxStore, prepareBoxCellTree } from '../src/BoxStore.js';
 import type {
   BoxStyleManagerLike,
   BoxStyleQueryLike,
@@ -24,6 +24,12 @@ function createStyleManager(entries: Record<string, unknown>): BoxStyleManagerLi
   };
 }
 
+function createStore(root: ReturnType<typeof prepareBoxCellTree>) {
+  const store = new BoxStore({ value: root });
+  store.update();
+  return store;
+}
+
 describe('toPixi background handling', () => {
   it('identifies the background graphic with $$background label', () => {
     const styles = createStyleManager({
@@ -37,8 +43,9 @@ describe('toPixi background handling', () => {
       align: { direction: 'horizontal', xPosition: 'start', yPosition: 'start' },
     });
     const parentContainer = new ContainerCtor({ label: 'host' });
+    const store = createStore(root);
 
-    const rendered = boxTreeToPixi({ root, parentContainer, styleTree: styles });
+    const rendered = boxTreeToPixi({ root, parentContainer, styleTree: styles, store });
     const background = rendered.children.find((child) => child.label === '$$background');
 
     expect(background).toBeInstanceOf(GraphicsCtor);
@@ -54,8 +61,9 @@ describe('toPixi background handling', () => {
       align: { direction: 'horizontal', xPosition: 'start', yPosition: 'start' },
     });
     const parentContainer = new ContainerCtor({ label: 'host' });
+    const store = createStore(root);
 
-    const rendered = boxTreeToPixi({ root, parentContainer, styleTree: styles });
+    const rendered = boxTreeToPixi({ root, parentContainer, styleTree: styles, store });
     const background = rendered.children.find((child) => child.label === '$$background') as any;
 
     // Currently it might be __box:graphics, but after fix it should be $$background
@@ -79,15 +87,16 @@ describe('toPixi background handling', () => {
       align: { direction: 'horizontal', xPosition: 'start', yPosition: 'start' },
     });
     const parentContainer = new ContainerCtor({ label: 'host' });
+    const store = createStore(root);
 
     // First render with background
     const styles1 = createStyleManager({ 'panel.background.color:': '#eeeeee' });
-    boxTreeToPixi({ root, parentContainer, styleTree: styles1 });
+    boxTreeToPixi({ root, parentContainer, styleTree: styles1, store });
     expect(parentContainer.children[0].children.find(c => c.label === '$$background')).toBeDefined();
 
     // Second render without background
     const styles2 = createStyleManager({});
-    boxTreeToPixi({ root, parentContainer, styleTree: styles2 });
+    boxTreeToPixi({ root, parentContainer, styleTree: styles2, store });
     expect(parentContainer.children[0].children.find(c => c.label === '$$background')).toBeDefined();
   });
 });

@@ -171,6 +171,7 @@ export const BoxCellData = z.object({
   location: RectStatic.optional(),
   absolute: z.boolean(),
   variant: z.string().optional(),
+  verbs: z.array(z.string()).optional(),
   states: z.array(z.string()).optional(),
   content: BoxContent.optional(),
   name: z.string(),
@@ -252,13 +253,18 @@ export type BoxPixiRendererManifest = {
   byPath?: Record<string, BoxPixiRendererOverride>;
 };
 
+export type BoxPixiObserverMessage =
+  | { action: 'invalidate' }
+  | { action: string; [key: string]: unknown };
+
 export type BoxPixiOptions = {
   root: BoxPreparedCellType;
   app?: Application;
   parentContainer?: Container;
-  store?: BoxStore;
-  styleTree?: BoxStyleManagerLike;
+  store: BoxStore;
+  styleTree?: BoxStyleManagerLike[];
   renderers?: BoxPixiRendererManifest;
+  observer?: (message: BoxPixiObserverMessage) => void;
 };
 
 export const Axes = z.enum([AXIS_Y, AXIS_X]);

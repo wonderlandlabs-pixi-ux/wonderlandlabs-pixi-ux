@@ -13,7 +13,7 @@ export type BoxSvgOptions = {
     title?: string;
     padding?: number;
     showInsets?: boolean;
-    styleTree: BoxStyleManagerLike;
+    styleTree: BoxStyleManagerLike[];
 };
 
 function escapeHtml(input: string): string {

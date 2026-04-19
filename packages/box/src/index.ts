@@ -1,5 +1,5 @@
 export { BoxStore } from './BoxStore.js';
-export { prepareBoxCellTree } from './BoxStore.js';
+export { prepareBoxCellTree } from './helpers.js';
 export { ComputeAxis } from './ComputeAxis.js';
 export { InsetDigest } from './InsetDigest.js';
 export { boxTreeToPixi } from './toPixi.js';

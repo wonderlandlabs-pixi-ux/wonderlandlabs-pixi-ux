@@ -1,5 +1,5 @@
 import { beforeAll, describe, expect, it, vi } from 'vitest';
-import { prepareBoxCellTree } from '../src/BoxStore.js';
+import { BoxStore, prepareBoxCellTree } from '../src/BoxStore.js';
 
 let ContainerCtor: typeof import('pixi.js').Container;
 let boxTreeToPixi: typeof import('../src/toPixi.js').boxTreeToPixi;
@@ -9,6 +9,12 @@ beforeAll(async () => {
   ({ Container: ContainerCtor } = await import('pixi.js'));
   ({ boxTreeToPixi } = await import('../src/toPixi.js'));
 });
+
+function createStore(root: ReturnType<typeof prepareBoxCellTree>) {
+  const store = new BoxStore({ value: root });
+  store.update();
+  return store;
+}
 
 describe('toPixi renderGroup handling', () => {
   it('does NOT make the root a renderGroup by default', () => {
@@ -20,7 +26,8 @@ describe('toPixi renderGroup handling', () => {
       align: { direction: 'horizontal', xPosition: 'start', yPosition: 'start' },
     });
 
-    const rendered = boxTreeToPixi({ root });
+    const store = createStore(root);
+    const rendered = boxTreeToPixi({ root, store });
     expect(rendered.isRenderGroup).toBe(false);
   });
 
@@ -34,7 +41,8 @@ describe('toPixi renderGroup handling', () => {
       renderGroup: true,
     });
 
-    const rendered = boxTreeToPixi({ root });
+    const store = createStore(root);
+    const rendered = boxTreeToPixi({ root, store });
     expect(rendered.isRenderGroup).toBe(true);
   });
 
@@ -56,7 +64,8 @@ describe('toPixi renderGroup handling', () => {
       ]
     });
 
-    const rendered = boxTreeToPixi({ root });
+    const store = createStore(root);
+    const rendered = boxTreeToPixi({ root, store });
     const child = rendered.children.find(c => c.label === root.children![0].id) as any;
     expect(child).toBeDefined();
     expect(child.isRenderGroup).toBe(false);
@@ -81,7 +90,8 @@ describe('toPixi renderGroup handling', () => {
       ]
     });
 
-    const rendered = boxTreeToPixi({ root });
+    const store = createStore(root);
+    const rendered = boxTreeToPixi({ root, store });
     const child = rendered.children.find(c => c.label === root.children![0].id) as any;
     expect(child).toBeDefined();
     expect(child.isRenderGroup).toBe(true);

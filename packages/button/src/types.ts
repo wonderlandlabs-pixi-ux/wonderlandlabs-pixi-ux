@@ -7,6 +7,7 @@ const ButtonState = z.object({
     variant: ButtonVariant,
     label: z.string().optional(),
     icon: z.string().optional(),
+    status: z.set(z.string()).optional(),
     isDisabled: z.boolean().optional(),
     isHovered: z.boolean().optional(),
     size: z.object({
@@ -23,9 +24,9 @@ export type EventFn = () => void;
 
 export const ButtonOptions = z.object({
     handlers: z.record(z.string(), z.function()),
-    app: z.object({}),
-    styleTree: z.object({}).optional(),
-    styleDef: z.object({}).optional(),
+    app: z.any(),
+    styleTree: z.any().optional(),
+    styleDef: z.any().optional(),
 });
 
 export type ButtonOptionsType = z.infer<typeof ButtonOptions>;

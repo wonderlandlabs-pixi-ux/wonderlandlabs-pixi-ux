@@ -1,11 +1,12 @@
 import {
     BoxStore,
     boxTreeToPixi,
+    type BoxStyleManagerLike,
+    type BoxPixiObserverMessage,
     type BoxPixiRenderInput,
     type BoxPixiRendererOverride,
 } from '@wonderlandlabs-pixi-ux/box';
 import {TickerForest} from '@wonderlandlabs-pixi-ux/ticker-forest';
-import type {StyleTree} from '@wonderlandlabs-pixi-ux/style-tree';
 import {
     Application,
     Container,
@@ -25,7 +26,7 @@ type ButtonRendererManifest = {
 
 export class ButtonStore extends TickerForest<ButtonStateType> {
     #boxStore: BoxStore;
-    #styleTree: StyleTree;
+    #styleTree: BoxStyleManagerLike[];
     #renderer: ButtonRendererManifest;
     #options: ButtonOptionsType;
     #boundHosts = new WeakSet<Container>();
@@ -35,7 +36,7 @@ export class ButtonStore extends TickerForest<ButtonStateType> {
             x: value.size?.x ?? 0,
             y: value.size?.y ?? 0,
         });
-        super({value: {...value, isHovered: value.isHovered ?? false}}, {
+        super({value: normalizeButtonState(value)}, {
             app: options.app as unknown as Application,
             container,
         });
@@ -62,8 +63,8 @@ export class ButtonStore extends TickerForest<ButtonStateType> {
 
     containerPostRenderer(input: BoxPixiRenderInput): Container {
         const currentContainer = input.local.currentContainer!;
-        currentContainer.eventMode = this.value.isDisabled ? 'none' : 'static';
-        currentContainer.cursor = this.value.isDisabled ? 'default' : 'pointer';
+        currentContainer.eventMode = this.hasStatus('disabled') ? 'none' : 'static';
+        currentContainer.cursor = this.hasStatus('disabled') ? 'default' : 'pointer';
         currentContainer.hitArea = new Rectangle(0, 0, input.local.localLocation.w, input.local.localLocation.h);
 
         if (!this.#boundHosts.has(currentContainer)) {
@@ -76,20 +77,46 @@ export class ButtonStore extends TickerForest<ButtonStateType> {
         return currentContainer;
     }
 
+    hasStatus(name: string): boolean {
+        return this.value.status?.has(name) ?? false;
+    }
+
+    setStatus(name: string, enabled: boolean): void {
+        const next = new Set(this.value.status ?? []);
+        const hasChanged = enabled ? !next.has(name) : next.has(name);
+
+        if (!hasChanged) {
+            return;
+        }
+
+        if (enabled) {
+            next.add(name);
+        } else {
+            next.delete(name);
+        }
+
+        if (name === 'disabled' && enabled) {
+            next.delete('hover');
+        }
+
+        this.set('status', next);
+        this.dirty();
+    }
+
     onPointerOver(): void {
-        if (!this.value.isDisabled && !this.value.isHovered) {
-            this.set('isHovered', true);
+        if (!this.hasStatus('disabled') && !this.hasStatus('hover')) {
+            this.setStatus('hover', true);
         }
     }
 
     onPointerOut(): void {
-        if (this.value.isHovered) {
-            this.set('isHovered', false);
+        if (this.hasStatus('hover')) {
+            this.setStatus('hover', false);
         }
     }
 
     onPointerTap(): void {
-        if (!this.value.isDisabled) {
+        if (!this.hasStatus('disabled')) {
             this.#getHandler('click', 'tap')();
         }
     }
@@ -104,6 +131,12 @@ export class ButtonStore extends TickerForest<ButtonStateType> {
         return () => {};
     }
 
+    observeBox(input: BoxPixiObserverMessage): void {
+        if (input.action === 'invalidate') {
+            window.setTimeout(this.$.dirty, 0);
+        }
+    }
+
     resolve() {
         this.#boxStore.mutate((draft) => {
             Object.assign(draft, makeStoreConfig(this.value, this.#styleTree).value);
@@ -116,6 +149,23 @@ export class ButtonStore extends TickerForest<ButtonStateType> {
             store: this.#boxStore,
             styleTree: this.#styleTree,
             renderers: this.#renderer,
+            observer: this.$.observeBox,
         } as never);
     }
+}
+
+function normalizeButtonState(value: ButtonStateType): ButtonStateType {
+    const status = new Set(value.status ?? []);
+    if (value.isDisabled) {
+        status.add('disabled');
+    }
+    if (value.isHovered) {
+        status.add('hover');
+    }
+    return {
+        ...value,
+        status,
+        isDisabled: undefined,
+        isHovered: undefined,
+    };
 }
