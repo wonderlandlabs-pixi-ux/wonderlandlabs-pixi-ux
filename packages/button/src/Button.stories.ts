@@ -1,8 +1,11 @@
 import type {Meta, StoryObj} from '@storybook/html';
 import {Application, Color} from 'pixi.js';
-import {fromJSON} from '@wonderlandlabs-pixi-ux/style-tree';
+import {fromJSON, digestJSON} from '@wonderlandlabs-pixi-ux/style-tree';
 import {ButtonStore} from './ButtonStore.js';
 import defaultStyles from './defaultStyles.json' with {type: 'json'};
+import storyStyles from './storyStyles.json' with {type: 'json'};
+import capsuleStyles from './capsuleStyles.json' with {type: 'json'};
+import warnStyles from './warnStyles.json' with {type: 'json'};
 
 const PLACEHOLDER_ICON = '/icons/demo-icon.png';
 const STORY_BACKGROUND = new Color('#f6f1e7').toNumber();
@@ -13,58 +16,16 @@ function color(value: string | number): number {
 
 function createStoryStyleTree() {
     const tree = fromJSON(defaultStyles);
-
-    tree.set('container.background.color', ['text'], undefined);
-    tree.set('container.border.width', ['text'], 0);
-    tree.set('container.content.gap', ['text'], 8);
-
-    tree.set('container.background.width', ['button'], 180);
-    tree.set('container.background.height', ['button'], 48);
-    tree.set('container.background.width', ['text'], 180);
-    tree.set('container.background.height', ['text'], 40);
-    tree.set('container.background.width', ['icon-vert'], 110);
-    tree.set('container.background.height', ['icon-vert'], 120);
-    tree.set('container.background.width', ['avatar'], 72);
-    tree.set('container.background.height', ['avatar'], 72);
-
-    tree.set('icon.size.width', ['button'], 28);
-    tree.set('icon.size.height', ['button'], 28);
-    tree.set('icon.size.width', ['text'], 24);
-    tree.set('icon.size.height', ['text'], 24);
-    tree.set('icon.size.width', ['icon-vert'], 40);
-    tree.set('icon.size.height', ['icon-vert'], 40);
-    tree.set('icon.size.width', ['avatar'], 36);
-    tree.set('icon.size.height', ['avatar'], 36);
-
-    tree.set('container.content.gap', ['button'], 10);
-    tree.set('container.content.gap', ['icon-vert'], 8);
-
-    tree.set('container.background.color', ['hover'], color('#EAF4FF'));
-    tree.set('container.border.color', ['hover'], color('#3B82F6'));
-    tree.set('container.border.width', ['hover'], 1);
-
+    digestJSON(tree, storyStyles);
     return tree;
 }
 
 function createCapsuleOverrideTree() {
-    const tree = fromJSON({});
-    tree.set('container.background.color', ['button'], color('#183a37'));
-    tree.set('container.border.color', ['button'], color('#183a37'));
-    tree.set('container.border.radius', ['button'], 24);
-    tree.set('label.font.color', ['button'], color('#f7f4ea'));
-    tree.set('icon.size.width', ['button'], 24);
-    tree.set('icon.size.height', ['button'], 24);
-    return tree;
+    return fromJSON(capsuleStyles);
 }
 
 function createWarnOverrideTree() {
-    const tree = fromJSON({});
-    tree.set('container.background.color', ['button'], color('#f4d6a0'));
-    tree.set('container.border.color', ['button'], color('#c27c2c'));
-    tree.set('label.font.color', ['button'], color('#5c3414'));
-    tree.set('container.border.radius', ['button'], 14);
-    tree.set('container.background.color', ['hover'], color('#f7dfb5'));
-    return tree;
+    return fromJSON(warnStyles);
 }
 
 function showAlert(message: string) {
@@ -122,7 +83,7 @@ export const AlertButtons: Story = {
                     variant: 'icon-vert',
                     label: 'Profile',
                     icon: PLACEHOLDER_ICON,
-                    size: {x: 560, y: 24, width: 120, height: 128},
+                    size: {x: 560, y: 24, width: 80, height: 80},
                 }, {
                     app,
                     styleTree,

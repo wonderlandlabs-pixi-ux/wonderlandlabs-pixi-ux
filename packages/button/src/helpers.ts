@@ -125,6 +125,23 @@ function makeContainerCell(
     const height = value.size?.height ?? resolveContainerHeight(value, styleTree);
     const padding = resolvePadding(value, styleTree);
 
+    const inset: { scope: string; value: number }[] = [];
+    if (Array.isArray(padding)) {
+        if (padding.length === 2) {
+            inset.push({scope: 'top', value: padding[0]});
+            inset.push({scope: 'bottom', value: padding[0]});
+            inset.push({scope: 'left', value: padding[1]});
+            inset.push({scope: 'right', value: padding[1]});
+        } else if (padding.length === 4) {
+            inset.push({scope: 'top', value: padding[0]});
+            inset.push({scope: 'right', value: padding[1]});
+            inset.push({scope: 'bottom', value: padding[2]});
+            inset.push({scope: 'left', value: padding[3]});
+        }
+    } else if (padding > 0) {
+        inset.push({scope: INSET_SCOPE_ALL, value: padding});
+    }
+
     return {
         id: 'button-background',
         name: 'container',
@@ -142,9 +159,9 @@ function makeContainerCell(
             xPosition: POS_CENTER,
             yPosition: POS_CENTER,
         },
-        insets: padding > 0 ? [{
+        insets: inset.length > 0 ? [{
             role: 'padding',
-            inset: [{scope: INSET_SCOPE_ALL, value: padding}],
+            inset,
         }] : undefined,
         gap: input.gap && input.gap > 0 ? input.gap : undefined,
         children: input.children,
@@ -214,7 +231,18 @@ function makeLabelCell(
 }
 
 function resolveContentWidth(value: ButtonStateType, styleTree: BoxStyleManagerLike[]): number {
-    return Math.max(0, (value.size?.width ?? resolveContainerWidth(value, styleTree)) - resolvePadding(value, styleTree) * 2);
+    const padding = resolvePadding(value, styleTree);
+    let horizontalPadding = 0;
+    if (Array.isArray(padding)) {
+        if (padding.length === 2) {
+            horizontalPadding = padding[1] * 2;
+        } else if (padding.length === 4) {
+            horizontalPadding = padding[1] + padding[3];
+        }
+    } else {
+        horizontalPadding = padding * 2;
+    }
+    return Math.max(0, (value.size?.width ?? resolveContainerWidth(value, styleTree)) - horizontalPadding);
 }
 
 function resolveContainerWidth(value: ButtonStateType, styleTree: BoxStyleManagerLike[]): number {
@@ -222,30 +250,42 @@ function resolveContainerWidth(value: ButtonStateType, styleTree: BoxStyleManage
 }
 
 function resolveContainerHeight(value: ButtonStateType, styleTree: BoxStyleManagerLike[]): number {
-    return resolveStyleNumber(styleTree, 'container.background.height', styleVerbs(value), value.variant === BTYPE_AVATAR ? 150 : 40);
+    return resolveStyleNumber(styleTree, 'container.background.height', styleVerbs(value), 40);
 }
 
-function resolvePadding(value: ButtonStateType, styleTree: BoxStyleManagerLike[]): number {
-    return resolveStyleNumber(styleTree, 'container.background.padding', styleVerbs(value), value.variant === BTYPE_AVATAR ? 15 : 4);
+function resolvePadding(value: ButtonStateType, styleTree: BoxStyleManagerLike[]): number | number[] {
+    const query = {nouns: ['container', 'background', 'padding'], states: styleVerbs(value)};
+    let resolvedValue: unknown = undefined;
+    for (let index = styleTree.length - 1; index >= 0; index -= 1) {
+        const layer = styleTree[index];
+        resolvedValue = layer.matchHierarchy
+            ? layer.matchHierarchy(query)
+            : layer.match(query);
+        if (resolvedValue !== undefined) {
+            break;
+        }
+    }
+
+    if (Array.isArray(resolvedValue)) {
+        return resolvedValue.filter((v) => typeof v === 'number') as number[];
+    }
+    return typeof resolvedValue === 'number' && Number.isFinite(resolvedValue) ? resolvedValue : 4;
 }
 
 function resolveGap(value: ButtonStateType, styleTree: BoxStyleManagerLike[]): number {
-    if (value.variant === BTYPE_ICON_VERT || value.variant === BTYPE_AVATAR) {
-        return resolveStyleNumber(styleTree, 'container.content.gap', styleVerbs(value), 8);
-    }
     return resolveStyleNumber(styleTree, 'container.content.gap', styleVerbs(value), 6);
 }
 
 function resolveIconWidth(value: ButtonStateType, styleTree: BoxStyleManagerLike[]): number {
-    return resolveStyleNumber(styleTree, 'icon.size.width', styleVerbs(value), resolveStyleNumber(styleTree, 'icon.size.size', styleVerbs(value), value.variant === BTYPE_AVATAR ? 24 : 16));
+    return resolveStyleNumber(styleTree, 'icon.size.width', styleVerbs(value), resolveStyleNumber(styleTree, 'icon.size.size', styleVerbs(value), 16));
 }
 
 function resolveIconHeight(value: ButtonStateType, styleTree: BoxStyleManagerLike[]): number {
-    return resolveStyleNumber(styleTree, 'icon.size.height', styleVerbs(value), resolveStyleNumber(styleTree, 'icon.size.size', styleVerbs(value), value.variant === BTYPE_AVATAR ? 24 : 16));
+    return resolveStyleNumber(styleTree, 'icon.size.height', styleVerbs(value), resolveStyleNumber(styleTree, 'icon.size.size', styleVerbs(value), 16));
 }
 
 function resolveLabelHeight(value: ButtonStateType, styleTree: BoxStyleManagerLike[]): number {
-    return resolveStyleNumber(styleTree, 'label.size', styleVerbs(value), value.variant === BTYPE_AVATAR ? 24 : 14);
+    return resolveStyleNumber(styleTree, 'label.size', styleVerbs(value), 14);
 }
 
 function resolveAvatarInnerSize(value: ButtonStateType, styleTree: BoxStyleManagerLike[]): number {
@@ -258,8 +298,18 @@ function resolveAvatarInnerSize(value: ButtonStateType, styleTree: BoxStyleManag
         value.size?.width ?? resolveContainerWidth(value, styleTree),
         value.size?.height ?? resolveContainerHeight(value, styleTree),
     );
-    const padding = resolvePadding(value, styleTree) * 2;
-    return Math.max(0, Math.min(contentSize, containerSize - padding));
+    const padding = resolvePadding(value, styleTree);
+    let totalPadding = 0;
+    if (Array.isArray(padding)) {
+        if (padding.length === 2) {
+            totalPadding = padding[0] * 2;
+        } else if (padding.length === 4) {
+            totalPadding = padding[0] + padding[2];
+        }
+    } else {
+        totalPadding = padding * 2;
+    }
+    return Math.max(0, Math.min(contentSize, containerSize - totalPadding));
 }
 
 function resolveStyleNumber(
@@ -303,6 +353,9 @@ function resolveStatus(value: ButtonStateType): Set<string> {
     }
     if (value.isHovered) {
         status.add('hover');
+    }
+    if (value.variant) {
+        status.add(value.variant);
     }
     return status;
 }

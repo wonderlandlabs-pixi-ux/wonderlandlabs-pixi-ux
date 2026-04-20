@@ -7,15 +7,25 @@
       },
       "padding": {
         "$*": 4,
-        "$avatar": 15
+        "$avatar": 15,
+        "$icon-vert": 8
       },
       "width": {
         "$*": 200,
-        "$avatar": 150
+        "$avatar": 150,
+        "$icon-vert": 60
       },
       "height": {
         "$*": 40,
-        "$avatar": 150
+        "$avatar": 150,
+        "$icon-vert": 80
+      }
+    },
+    "content": {
+      "gap": {
+        "$*": 6,
+        "$icon-vert": 4,
+        "$avatar": 8
       }
     },
     "border": {

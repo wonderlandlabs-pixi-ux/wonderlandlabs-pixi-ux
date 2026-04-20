@@ -1,0 +1,37 @@
+{
+  "container": {
+    "background": {
+      "color": {
+        "$button": "#183a37"
+      },
+      "padding": {
+        "$button": [0, 40]
+      }
+    },
+    "border": {
+      "color": {
+        "$button": "#183a37"
+      },
+      "radius": {
+        "$button": 24
+      }
+    }
+  },
+  "label": {
+    "font": {
+      "color": {
+        "$button": "#f7f4ea"
+      }
+    }
+  },
+  "icon": {
+    "size": {
+      "width": {
+        "$button": 24
+      },
+      "height": {
+        "$button": 24
+      }
+    }
+  }
+}
