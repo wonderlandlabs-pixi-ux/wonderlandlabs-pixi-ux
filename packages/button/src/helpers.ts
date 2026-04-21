@@ -6,11 +6,6 @@ import {
     POS_CENTER,
 } from '@wonderlandlabs-pixi-ux/box';
 import {
-    CanvasTextMetrics,
-    TextStyle,
-    type TextStyleFontStyle,
-    type TextStyleFontWeight,
-    type TextStyleOptions,
 } from 'pixi.js';
 import type {ButtonOptionsType, ButtonStateType} from "./types.js";
 import {BTYPE_AVATAR, BTYPE_BASE, BTYPE_VERTICAL, BTYPE_TEXT} from "./constants.js";
@@ -131,18 +126,11 @@ function makeContainerCell(
     const padding = resolvePadding(value, styleTree);
     const preferredWidth = value.size?.width ?? resolveContainerWidth(value, styleTree);
     const preferredHeight = value.size?.height ?? resolveContainerHeight(value, styleTree);
-    const horizontalPadding = resolveHorizontalPadding(padding);
-    const verticalPadding = resolveVerticalPadding(padding);
-    const childrenWidth = input.direction === DIR_HORIZ
-        ? input.children.reduce((total, child) => total + (child.dim?.w ?? 0), 0) + (Math.max(0, input.children.length - 1) * (input.gap ?? 0))
-        : input.children.reduce((max, child) => Math.max(max, child.dim?.w ?? 0), 0);
-    const childrenHeight = input.direction === DIR_VERT
-        ? input.children.reduce((total, child) => total + (child.dim?.h ?? 0), 0) + (Math.max(0, input.children.length - 1) * (input.gap ?? 0))
-        : input.children.reduce((max, child) => Math.max(max, child.dim?.h ?? 0), 0);
-    const width = Math.max(preferredWidth, childrenWidth + horizontalPadding);
-    const height = Math.max(preferredHeight, childrenHeight + verticalPadding);
 
-    const inset: { scope: string; value: number }[] = [];
+    const inset: Array<{
+        scope: 'top' | 'right' | 'bottom' | 'left' | 'all';
+        value: number;
+    }> = [];
     if (Array.isArray(padding)) {
         if (padding.length === 2) {
             inset.push({scope: 'top', value: padding[0]});
@@ -163,13 +151,14 @@ function makeContainerCell(
         id: 'button-background',
         name: 'container',
         absolute: true,
+        layoutStrategy: 'bloat',
         variant: value.variant,
         verbs: styleVerbs(value),
         dim: {
             x: 0,
             y: 0,
-            w: width,
-            h: height,
+            w: preferredWidth,
+            h: preferredHeight,
         },
         align: {
             direction: input.direction,
@@ -232,7 +221,7 @@ function makeLabelCell(
         name: 'label',
         absolute: false,
         dim: {
-            w: Math.max(0, Math.max(width, measureLabelWidth(value, styleTree))),
+            w: Math.max(0, width),
             h: Math.max(0, height),
         },
         align: {
@@ -254,25 +243,20 @@ function resolveContentWidth(value: ButtonStateType, styleTree: BoxStyleManagerL
 }
 
 function resolveContainerWidth(value: ButtonStateType, styleTree: BoxStyleManagerLike[]): number {
-    return resolveStyleNumber(styleTree, 'container.background.width', styleVerbs(value), 200);
+    return resolveStyleNumber(styleTree, 'container.background.width', styleVerbs(value), 200, value.variant);
 }
 
 function resolveContainerHeight(value: ButtonStateType, styleTree: BoxStyleManagerLike[]): number {
-    return resolveStyleNumber(styleTree, 'container.background.height', styleVerbs(value), 40);
+    return resolveStyleNumber(styleTree, 'container.background.height', styleVerbs(value), 40, value.variant);
 }
 
 function resolvePadding(value: ButtonStateType, styleTree: BoxStyleManagerLike[]): number | number[] {
-    const query = {nouns: ['container', 'background', 'padding'], states: styleVerbs(value)};
-    let resolvedValue: unknown = undefined;
-    for (let index = styleTree.length - 1; index >= 0; index -= 1) {
-        const layer = styleTree[index];
-        resolvedValue = layer.matchHierarchy
-            ? layer.matchHierarchy(query)
-            : layer.match(query);
-        if (resolvedValue !== undefined) {
-            break;
-        }
-    }
+    const resolvedValue = resolveStyleValue(
+        styleTree,
+        'container.background.padding',
+        styleVerbs(value),
+        value.variant,
+    );
 
     if (Array.isArray(resolvedValue)) {
         return resolvedValue.filter((v) => typeof v === 'number') as number[];
@@ -281,15 +265,15 @@ function resolvePadding(value: ButtonStateType, styleTree: BoxStyleManagerLike[]
 }
 
 function resolveGap(value: ButtonStateType, styleTree: BoxStyleManagerLike[]): number {
-    return resolveStyleNumber(styleTree, 'container.content.gap', styleVerbs(value), 6);
+    return resolveStyleNumber(styleTree, 'container.content.gap', styleVerbs(value), 6, value.variant);
 }
 
 function resolveIconWidth(value: ButtonStateType, styleTree: BoxStyleManagerLike[]): number {
-    return resolveStyleNumber(styleTree, 'icon.size.width', styleVerbs(value), resolveStyleNumber(styleTree, 'icon.size.size', styleVerbs(value), 16));
+    return resolveStyleNumber(styleTree, 'icon.size.width', styleVerbs(value), resolveStyleNumber(styleTree, 'icon.size.size', styleVerbs(value), 16, value.variant), value.variant);
 }
 
 function resolveIconHeight(value: ButtonStateType, styleTree: BoxStyleManagerLike[]): number {
-    return resolveStyleNumber(styleTree, 'icon.size.height', styleVerbs(value), resolveStyleNumber(styleTree, 'icon.size.size', styleVerbs(value), 16));
+    return resolveStyleNumber(styleTree, 'icon.size.height', styleVerbs(value), resolveStyleNumber(styleTree, 'icon.size.size', styleVerbs(value), 16, value.variant), value.variant);
 }
 
 function resolveLabelHeight(value: ButtonStateType, styleTree: BoxStyleManagerLike[]): number {
@@ -298,7 +282,8 @@ function resolveLabelHeight(value: ButtonStateType, styleTree: BoxStyleManagerLi
         styleTree,
         'label.font.size',
         states,
-        resolveStyleNumber(styleTree, 'label.size', states, 14),
+        resolveStyleNumber(styleTree, 'label.size', states, 14, value.variant),
+        value.variant,
     );
 }
 
@@ -317,54 +302,22 @@ function resolveAvatarInnerSize(value: ButtonStateType, styleTree: BoxStyleManag
     return Math.max(0, Math.min(contentSize, containerSize - totalPadding));
 }
 
-function measureLabelWidth(value: ButtonStateType, styleTree: BoxStyleManagerLike[]): number {
-    if (!value.label) {
-        return 0;
-    }
-
-    const metrics = CanvasTextMetrics.measureText(value.label, new TextStyle(resolveLabelTextStyle(styleTree, styleVerbs(value))));
-    return Number.isFinite(metrics.width) ? metrics.width : 0;
-}
-
-function resolveLabelTextStyle(styleTree: BoxStyleManagerLike[], states: string[]): TextStyleOptions {
-    const fontFamilyValue = resolveStyleValue(styleTree, 'label.font', states)
-        ?? resolveStyleValue(styleTree, 'label.font.family', states);
-    const fontSize = resolveStyleNumber(
-        styleTree,
-        'label.font.size',
-        states,
-        resolveStyleNumber(styleTree, 'label.size', states, 14),
-    );
-    const fill = resolveStyleValue(styleTree, 'label.font.color', states);
-    const fontWeight = resolveStyleValue(styleTree, 'label.font.weight', states);
-    const fontStyle = resolveStyleValue(styleTree, 'label.font.style', states);
-
-    return {
-        fontFamily: Array.isArray(fontFamilyValue)
-            ? fontFamilyValue.join(', ')
-            : typeof fontFamilyValue === 'string'
-                ? fontFamilyValue
-                : 'Arial',
-        fontSize,
-        fill: typeof fill === 'string' || typeof fill === 'number' ? fill : '#000000',
-        fontWeight: typeof fontWeight === 'string' ? fontWeight as TextStyleFontWeight : undefined,
-        fontStyle: typeof fontStyle === 'string' ? fontStyle as TextStyleFontStyle : undefined,
-    };
-}
-
-function resolveStyleValue(
+export function resolveStyleValue(
     styleTree: BoxStyleManagerLike[],
     nouns: string,
     states: string[],
+    variant?: string,
 ): unknown {
-    const query = {nouns: nouns.split('.'), states};
-    for (let index = styleTree.length - 1; index >= 0; index -= 1) {
-        const layer = styleTree[index];
-        const value = layer.matchHierarchy
-            ? layer.matchHierarchy(query)
-            : layer.match(query);
-        if (value !== undefined) {
-            return value;
+    const nounList = nouns.split('.');
+    for (const query of buttonStyleQueries(nounList, states, variant)) {
+        for (let index = styleTree.length - 1; index >= 0; index -= 1) {
+            const layer = styleTree[index];
+            const value = layer.matchHierarchy
+                ? layer.matchHierarchy(query)
+                : layer.match(query);
+            if (value !== undefined) {
+                return value;
+            }
         }
     }
     return undefined;
@@ -396,28 +349,48 @@ function resolveVerticalPadding(padding: number | number[]): number {
     return padding * 2;
 }
 
-function resolveStyleNumber(
+export function resolveStyleNumber(
     styleTree: BoxStyleManagerLike[],
     nouns: string,
     states: string[],
     fallback: number,
+    variant?: string,
 ): number {
-    const query = {nouns: nouns.split('.'), states};
-    let value: unknown = undefined;
-    for (let index = styleTree.length - 1; index >= 0; index -= 1) {
-        const layer = styleTree[index];
-        value = layer.matchHierarchy
-            ? layer.matchHierarchy(query)
-            : layer.match(query);
-        if (value !== undefined) {
-            break;
-        }
-    }
+    const value = resolveStyleValue(styleTree, nouns, states, variant);
     return typeof value === 'number' && Number.isFinite(value) ? value : fallback;
 }
 
 function styleVerbs(value: ButtonStateType): string[] {
     return Array.from(resolveStatus(value));
+}
+
+function buttonStyleQueries(
+    nouns: string[],
+    states: string[],
+    variant?: string,
+): Array<{ nouns: string[]; states: string[] }> {
+    const queries: Array<{ nouns: string[]; states: string[] }> = [];
+
+    if (variant) {
+        queries.push({
+            nouns: buttonVariantNouns(nouns, variant),
+            states,
+        });
+    }
+
+    queries.push({nouns, states});
+
+    return queries;
+}
+
+function buttonVariantNouns(nouns: string[], variant: string): string[] {
+    if (nouns.length === 0) {
+        return nouns;
+    }
+    if (nouns[0] === 'container' && nouns.length > 1) {
+        return [nouns[0], nouns[1], variant, ...nouns.slice(2)];
+    }
+    return [nouns[0], variant, ...nouns.slice(1)];
 }
 
 function toStyleLayers<TInput, TOutput>(
@@ -431,15 +404,13 @@ function toStyleLayers<TInput, TOutput>(
 }
 
 function resolveStatus(value: ButtonStateType): Set<string> {
-    const status = new Set(value.status ?? []);
-    if (value.isDisabled) {
-        status.add('disabled');
-    }
-    if (value.isHovered) {
-        status.add('hover');
-    }
-    if (value.variant) {
-        status.add(`${value.variant}?`);
-    }
-    return status;
+    const state = value.isDisabled
+        ? 'disabled'
+        : value.isHovered
+            ? 'hover'
+            : (value.state ?? 'start');
+    return new Set([
+        state,
+        ...(value.modifiers ?? []),
+    ]);
 }

@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { StyleTree } from './StyleTree';
 
 describe('StyleTree', () => {
@@ -58,6 +58,42 @@ describe('StyleTree', () => {
       });
 
       expect(result).toBe(8);
+    });
+  });
+
+  describe('query caching', () => {
+    it('reuses cached best-match lookups for identical queries', () => {
+      tree = new StyleTree({ cacheLimit: 30 });
+      tree.set('button.text', ['hover'], 'blue');
+      const spy = vi.spyOn(tree, 'findAllMatches');
+
+      expect(tree.findBestMatch({ nouns: ['button', 'text'], states: ['hover'] })?.value).toBe('blue');
+      expect(tree.findBestMatch({ nouns: ['button', 'text'], states: ['hover'] })?.value).toBe('blue');
+
+      expect(spy).toHaveBeenCalledTimes(1);
+    });
+
+    it('evicts old query results when cache limit is exceeded', () => {
+      tree = new StyleTree({ cacheLimit: 1 });
+      tree.set('button.text', ['hover'], 'blue');
+      const spy = vi.spyOn(tree, 'findAllMatches');
+
+      tree.findBestMatch({ nouns: ['button', 'text'], states: ['hover'] });
+      tree.findBestMatch({ nouns: ['button', 'text'], states: ['active'] });
+      tree.findBestMatch({ nouns: ['button', 'text'], states: ['hover'] });
+
+      expect(spy).toHaveBeenCalledTimes(3);
+    });
+
+    it('disables query caching entirely when cacheLimit is 0', () => {
+      tree = new StyleTree({ cacheLimit: 0 });
+      tree.set('button.text', ['hover'], 'blue');
+      const spy = vi.spyOn(tree, 'findAllMatches');
+
+      tree.findBestMatch({ nouns: ['button', 'text'], states: ['hover'] });
+      tree.findBestMatch({ nouns: ['button', 'text'], states: ['hover'] });
+
+      expect(spy).toHaveBeenCalledTimes(2);
     });
   });
 
@@ -243,23 +279,26 @@ describe('StyleTree', () => {
       it('should treat query states ending in ? as optional and prefer matches that include them', () => {
         tree.set('button', ['disabled'], 'generic-disabled');
         tree.set('button', ['button', 'disabled'], 'variant-disabled');
+        tree.set('button', ['button'], 'variant-base');
 
         const matches = tree.findAllMatches({ nouns: ['button'], states: ['button?', 'disabled'] });
 
         expect(matches[0].value).toBe('variant-disabled');
-        expect(matches[0].score).toBe(102);
+        expect(matches[0].score).toBe(111);
         expect(matches[1].value).toBe('generic-disabled');
-        expect(matches[1].score).toBe(101);
+        expect(matches[1].score).toBe(110);
+        expect(matches[2].value).toBe('variant-base');
+        expect(matches[2].score).toBe(101);
       });
 
-      it('should reject explicit optional-only matches that miss required query states', () => {
+      it('should still allow optional-only matches as lower-priority fallbacks', () => {
         tree.set('button', ['button'], 'variant-only');
         tree.set('button', ['disabled'], 'generic-disabled');
 
         const matches = tree.findAllMatches({ nouns: ['button'], states: ['button?', 'disabled'] });
 
-        expect(matches.some((match) => match.value === 'variant-only')).toBe(false);
         expect(matches[0].value).toBe('generic-disabled');
+        expect(matches[1].value).toBe('variant-only');
       });
     });
   });

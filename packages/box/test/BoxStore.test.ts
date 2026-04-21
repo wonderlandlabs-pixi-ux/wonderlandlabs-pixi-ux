@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
-import { BoxStore, prepareBoxCellTree } from '../src/BoxStore.js';
+import { BoxStore } from '../src/BoxStore.js';
+import { prepareBoxCellTree } from '../src/helpers.js';
 import type { BoxCellType } from '../src/types.js';
 import { DIR_HORIZ, POS_START, SIZE_FRACTION } from '../src/constants.js';
 
@@ -126,9 +127,9 @@ describe('BoxStore prep', () => {
 
     store.update();
 
-    expect(store.value.children?.map((child) => child.location)).toEqual([
+    expect(store.layoutValue.children?.map((child) => child.location)).toEqual([
       { x: 10, y: 20, w: 80, h: 20 },
-      { x: 35, y: 35, w: 90, h: 40 },
+      { x: 25, y: 15, w: 90, h: 40 },
       { x: 90, y: 20, w: 100, h: 30 },
     ]);
   });
@@ -165,9 +166,9 @@ describe('BoxStore prep', () => {
 
     store.update();
 
-    expect(store.value.children?.map((child) => child.location)).toEqual([
+    expect(store.layoutValue.children?.map((child) => child.location)).toEqual([
       { x: 10, y: 20, w: 60, h: 20 },
-      { x: 210, y: 30, w: 50, h: 20 },
+      { x: 200, y: 10, w: 50, h: 20 },
       { x: 70, y: 20, w: 240, h: 20 },
     ]);
   });

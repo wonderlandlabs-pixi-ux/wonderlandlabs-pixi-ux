@@ -1,6 +1,6 @@
 import { cellLayers } from './helpers.js';
 import { resolveStyleValue, styleContextForCell, type BoxStyleContext } from './styleHelpers.js';
-import type { BoxCellType, BoxStyleManagerLike, RectStaticType } from './types.js';
+import type { BoxLayoutCellType, BoxStyleManagerLike, RectStaticType } from './types.js';
 
 type SvgPalette = {
     fill: string;
@@ -26,7 +26,7 @@ function escapeHtml(input: string): string {
 }
 
 function paletteFor(
-    cell: BoxCellType,
+    cell: BoxLayoutCellType,
     options: BoxSvgOptions,
     context?: BoxStyleContext,
 ): SvgPalette {
@@ -59,7 +59,7 @@ function paletteFor(
     };
 }
 
-function boundsOf(cell: BoxCellType): { maxX: number; maxY: number } {
+function boundsOf(cell: BoxLayoutCellType): { maxX: number; maxY: number } {
     const location = cell.location;
     const base = {
         maxX: location ? location.x + location.w : 0,
@@ -76,7 +76,7 @@ function boundsOf(cell: BoxCellType): { maxX: number; maxY: number } {
 }
 
 function renderCell(
-    cell: BoxCellType,
+    cell: BoxLayoutCellType,
     depth: number,
     options: BoxSvgOptions,
     parentContext?: BoxStyleContext,
@@ -120,7 +120,7 @@ function renderCell(
     return outerRect + insetRects + label + children;
 }
 
-export function boxTreeToSVG(root: BoxCellType, options: BoxSvgOptions): string {
+export function boxTreeToSVG(root: BoxLayoutCellType, options: BoxSvgOptions): string {
     const location = root.location;
     if (!location) {
         return '';
@@ -131,7 +131,7 @@ export function boxTreeToSVG(root: BoxCellType, options: BoxSvgOptions): string 
     const bounds = boundsOf(root);
     const width = bounds.maxX + padding;
     const height = bounds.maxY + padding + titleHeight;
-    const shiftedRoot: BoxCellType = titleHeight === 0
+    const shiftedRoot: BoxLayoutCellType = titleHeight === 0
         ? root
         : shiftTree(root, titleHeight);
 
@@ -146,12 +146,10 @@ export function boxTreeToSVG(root: BoxCellType, options: BoxSvgOptions): string 
     ].join('');
 }
 
-function shiftTree(cell: BoxCellType, deltaY: number): BoxCellType {
+function shiftTree(cell: BoxLayoutCellType, deltaY: number): BoxLayoutCellType {
     return {
         ...cell,
-        location: cell.location
-            ? { ...cell.location, y: cell.location.y + deltaY }
-            : undefined,
+        location: { ...cell.location, y: cell.location.y + deltaY },
         children: cell.children?.map((child) => shiftTree(child, deltaY)),
     };
 }
@@ -161,13 +159,15 @@ export function computedBoxesToSVG(
     children: RectStaticType[],
     options: BoxSvgOptions & { childNames?: string[] },
 ): string {
-    const root: BoxCellType = {
+    const root: BoxLayoutCellType = {
+        id: 'parent',
         name: 'parent',
         absolute: true,
         dim: parent,
         location: parent,
         align: { direction: 'horizontal', xPosition: 'start', yPosition: 'start' },
         children: children.map((child, index) => ({
+            id: `child-${index}`,
             name: options.childNames?.[index] ?? `#${index}`,
             absolute: false,
             dim: { w: child.w, h: child.h },

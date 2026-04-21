@@ -77,6 +77,8 @@ export interface StyleTreeOptions {
   autoSortStates?: boolean;
   /** Whether to normalize interCaps nouns into dot-separated parts (default: true) */
   normalizeInterCaps?: boolean;
+  /** Number of retrieval query results to memoize per tree (default: 30, 0 disables caching) */
+  cacheLimit?: number;
 }
 
 /**

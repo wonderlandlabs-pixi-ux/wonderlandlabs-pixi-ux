@@ -32,12 +32,14 @@ export class StyleTree {
   // Map<nounPath, Map<stateKey, value>>
   private styles: Map<string, Map<string, any>> = new Map();
   private options: Required<StyleTreeOptions>;
+  private cache: Map<string, unknown> = new Map();
 
   constructor(options: StyleTreeOptions = {}) {
     this.options = {
       validateKeys: options.validateKeys ?? true,
       autoSortStates: options.autoSortStates ?? true,
       normalizeInterCaps: options.normalizeInterCaps ?? true,
+      cacheLimit: options.cacheLimit ?? 30,
     };
   }
 
@@ -76,6 +78,7 @@ export class StyleTree {
     }
 
     stateMap.set(stateKey, value);
+    this.clearCache();
   }
 
   /**
@@ -110,9 +113,11 @@ export class StyleTree {
    * @returns Style value or undefined
    */
   get(nouns: string, states: string[]): any {
-    const { nounKey, stateKey } = this.buildKeys(nouns, states);
-    const stateMap = this.styles.get(nounKey);
-    return stateMap?.get(stateKey);
+    return this.withCache(`get:${this.serializeExactQuery(nouns, states)}`, () => {
+      const { nounKey, stateKey } = this.buildKeys(nouns, states);
+      const stateMap = this.styles.get(nounKey);
+      return stateMap?.get(stateKey);
+    });
   }
 
   /**
@@ -122,9 +127,11 @@ export class StyleTree {
    * @returns True if exists
    */
   has(nouns: string, states: string[]): boolean {
-    const { nounKey, stateKey } = this.buildKeys(nouns, states);
-    const stateMap = this.styles.get(nounKey);
-    return stateMap?.has(stateKey) ?? false;
+    return this.withCache(`has:${this.serializeExactQuery(nouns, states)}`, () => {
+      const { nounKey, stateKey } = this.buildKeys(nouns, states);
+      const stateMap = this.styles.get(nounKey);
+      return stateMap?.has(stateKey) ?? false;
+    });
   }
 
   /**
@@ -235,24 +242,26 @@ export class StyleTree {
    * style exists. Example: ["button", "icon"] -> fallback ["icon"].
    */
   matchHierarchy(query: StyleQuery): any {
-    const normalizedQuery: StyleQuery = {
-      nouns: this.normalizeNounQuery(query.nouns),
-      states: query.states,
-    };
+    return this.withCache(`matchHierarchy:${this.serializeQuery(query)}`, () => {
+      const normalizedQuery: StyleQuery = {
+        nouns: this.normalizeNounQuery(query.nouns),
+        states: query.states,
+      };
 
-    const hierarchical = this.match(normalizedQuery);
-    if (hierarchical !== undefined) {
-      return hierarchical;
-    }
+      const hierarchical = this.match(normalizedQuery);
+      if (hierarchical !== undefined) {
+        return hierarchical;
+      }
 
-    const leaf = normalizedQuery.nouns[normalizedQuery.nouns.length - 1];
-    if (!leaf || normalizedQuery.nouns.length <= 1) {
-      return undefined;
-    }
+      const leaf = normalizedQuery.nouns[normalizedQuery.nouns.length - 1];
+      if (!leaf || normalizedQuery.nouns.length <= 1) {
+        return undefined;
+      }
 
-    return this.match({
-      nouns: [leaf],
-      states: normalizedQuery.states,
+      return this.match({
+        nouns: [leaf],
+        states: normalizedQuery.states,
+      });
     });
   }
 
@@ -262,8 +271,10 @@ export class StyleTree {
    * @returns Best match with score details or undefined
    */
   findBestMatch(query: StyleQuery): StyleMatch | undefined {
-    const matches = this.findAllMatches(query);
-    return matches.length > 0 ? matches[0] : undefined;
+    return this.withCache(`findBestMatch:${this.serializeQuery(query)}`, () => {
+      const matches = this.findAllMatches(query);
+      return matches.length > 0 ? matches[0] : undefined;
+    });
   }
 
   /**
@@ -272,44 +283,46 @@ export class StyleTree {
    * @returns Array of matches sorted by score
    */
   findAllMatches(query: StyleQuery): StyleMatch[] {
-    const targetNouns = this.normalizeNounQuery(query.nouns);
-    const targetStates = query.states;
-    const normalizedTargetStates = normalizeStates(targetStates);
+    return this.withCache(`findAllMatches:${this.serializeQuery(query)}`, () => {
+      const targetNouns = this.normalizeNounQuery(query.nouns);
+      const targetStates = query.states;
+      const normalizedTargetStates = normalizeStates(targetStates);
 
-    const matches: StyleMatch[] = [];
+      const matches: StyleMatch[] = [];
 
-    // Iterate through all noun paths and their state maps
-    for (const [nounKey, stateMap] of this.styles.entries()) {
-      const patternNouns = nounKey.split('.');
+      // Iterate through all noun paths and their state maps
+      for (const [nounKey, stateMap] of this.styles.entries()) {
+        const patternNouns = nounKey.split('.');
 
-      // Check each state variant for this noun path
-      for (const [stateKey, value] of stateMap.entries()) {
-        const patternStates = stateKey === '' ? [] : stateKey.split('-');
+        // Check each state variant for this noun path
+        for (const [stateKey, value] of stateMap.entries()) {
+          const patternStates = stateKey === '' ? [] : stateKey.split('-');
 
-        const matchResult = calculateMatchScore(
-          patternNouns,
-          patternStates,
-          targetNouns,
-          normalizedTargetStates
-        );
+          const matchResult = calculateMatchScore(
+            patternNouns,
+            patternStates,
+            targetNouns,
+            normalizedTargetStates
+          );
 
-        if (matchResult) {
-          const fullKey = stateKey ? `${nounKey}:${stateKey}` : nounKey;
-          matches.push({
-            key: fullKey,
-            value,
-            score: matchResult.score,
-            matchingNouns: matchResult.matchingNouns,
-            matchingStates: matchResult.matchingStates,
-          });
+          if (matchResult) {
+            const fullKey = stateKey ? `${nounKey}:${stateKey}` : nounKey;
+            matches.push({
+              key: fullKey,
+              value,
+              score: matchResult.score,
+              matchingNouns: matchResult.matchingNouns,
+              matchingStates: matchResult.matchingStates,
+            });
+          }
         }
       }
-    }
 
-    // Sort by score (highest first)
-    matches.sort((a, b) => b.score - a.score);
+      // Sort by score (highest first)
+      matches.sort((a, b) => b.score - a.score);
 
-    return matches;
+      return matches;
+    });
   }
 
   static fromJSON(json: any, options: DigestOptions = {}): StyleTree {
@@ -330,6 +343,49 @@ export class StyleTree {
 
   toJSON(options: { statePrefix?: string } = {}): any {
     return exportToJSON(this, options);
+  }
+
+  clearCache(): void {
+    this.cache.clear();
+  }
+
+  private serializeQuery(query: StyleQuery): string {
+    return this.serializeQueryParts(this.normalizeNounQuery(query.nouns), query.states);
+  }
+
+  private serializeExactQuery(nouns: string, states: string[]): string {
+    return this.serializeQueryParts(this.normalizeNounQuery([nouns]), states);
+  }
+
+  private serializeQueryParts(nouns: string[], states: string[]): string {
+    const stateParts = this.options.autoSortStates ? normalizeStates(states) : [...states];
+    return `${nouns.join('.')}$${stateParts.join('.')}`;
+  }
+
+  private withCache<T>(key: string, compute: () => T): T {
+    if (this.options.cacheLimit <= 0) {
+      return compute();
+    }
+
+    if (this.cache.has(key)) {
+      const value = this.cache.get(key) as T;
+      this.cache.delete(key);
+      this.cache.set(key, value);
+      return value;
+    }
+
+    const value = compute();
+    this.cache.set(key, value);
+
+    while (this.cache.size > this.options.cacheLimit) {
+      const oldest = this.cache.keys().next().value;
+      if (oldest === undefined) {
+        break;
+      }
+      this.cache.delete(oldest);
+    }
+
+    return value;
   }
 }
 

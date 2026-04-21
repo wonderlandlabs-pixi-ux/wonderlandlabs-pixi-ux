@@ -1,36 +1,44 @@
 {
   "container": {
     "background": {
-      "color": {
-        "$button": "#183a37"
-      },
-      "padding": {
-        "$button": [0, 40]
+      "base": {
+        "color": {
+          "$*": "#183a37"
+        },
+        "padding": {
+          "$*": [0, 40]
+        }
       }
     },
     "border": {
-      "color": {
-        "$button": "#183a37"
-      },
-      "radius": {
-        "$button": 24
+      "base": {
+        "color": {
+          "$*": "#183a37"
+        },
+        "radius": {
+          "$*": 24
+        }
       }
     }
   },
   "label": {
-    "font": {
-      "color": {
-        "$button": "#f7f4ea"
+    "base": {
+      "font": {
+        "color": {
+          "$*": "#f7f4ea"
+        }
       }
     }
   },
   "icon": {
-    "size": {
-      "width": {
-        "$button": 24
-      },
-      "height": {
-        "$button": 24
+    "base": {
+      "size": {
+        "width": {
+          "$*": 24
+        },
+        "height": {
+          "$*": 24
+        }
       }
     }
   }

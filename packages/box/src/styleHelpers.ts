@@ -34,31 +34,15 @@ export function resolveStyleValue<T = unknown>(
         ...(options.extraNouns ?? []),
         ...propertyPath,
     ];
-    const baseObjectNouns = [...context.nouns, ...(options.extraNouns ?? [])];
-    const localObjectNouns = [
-        ...(context.nouns.length > 0 ? [context.nouns[context.nouns.length - 1]] : []),
-        ...(options.extraNouns ?? []),
-    ];
     const states = options.states ?? context.states;
     const variant = context.variant;
     const leaf = baseNouns[baseNouns.length - 1];
     const withVariant = variant && baseNouns.length > 0
-        ? [baseNouns[0], variant, ...baseNouns.slice(1)]
+        ? insertVariantNoun(baseNouns, variant)
         : undefined;
     const localWithVariant = variant && localNouns.length > 0
-        ? [localNouns[0], variant, ...localNouns.slice(1)]
+        ? insertVariantNoun(localNouns, variant)
         : undefined;
-    const withObjectVariant = variant && baseObjectNouns.length > 0
-        ? [baseObjectNouns[0], variant, ...baseObjectNouns.slice(1)]
-        : undefined;
-    const localObjectWithVariant = variant && localObjectNouns.length > 0
-        ? [localObjectNouns[0], variant, ...localObjectNouns.slice(1)]
-        : undefined;
-    const objectSuffixes = nounSuffixes(baseObjectNouns);
-    const objectSuffixVariants = variant
-        ? objectSuffixes.map((suffix) => [suffix[0], variant, ...suffix.slice(1)])
-        : [];
-
     const queries = [
         ...(withVariant ? [{ nouns: withVariant, states }] : []),
         { nouns: baseNouns, states },
@@ -74,18 +58,12 @@ export function resolveStyleValue<T = unknown>(
         }
     }
 
-    const objectQueries = [
-        ...(withObjectVariant ? [{ nouns: withObjectVariant, states }] : []),
-        ...(baseObjectNouns.length > 0 ? [{ nouns: baseObjectNouns, states }] : []),
-        ...objectSuffixVariants.map((nouns) => ({ nouns, states })),
-        ...objectSuffixes.map((nouns) => ({ nouns, states })),
-        ...(localObjectWithVariant ? [{ nouns: localObjectWithVariant, states }] : []),
-        ...(localObjectNouns.length > 0 ? [{ nouns: localObjectNouns, states }] : []),
-    ];
-
-    for (const query of objectQueries) {
-        const result = resolveLayeredStyleValue(styles, query);
-        const nestedValue = getNestedValue(result, propertyPath);
+    for (const candidate of objectLookupCandidates(context, propertyPath, options.extraNouns ?? [], variant)) {
+        const result = resolveLayeredStyleValue(styles, {
+            nouns: candidate.nouns,
+            states,
+        });
+        const nestedValue = getNestedValue(result, candidate.remainder);
         if (nestedValue !== undefined) {
             return nestedValue as T;
         }
@@ -116,8 +94,104 @@ function nounSuffixes(nouns: string[]): string[][] {
     return suffixes;
 }
 
+function objectLookupCandidates(
+    context: BoxStyleContext,
+    propertyPath: string[],
+    extraNouns: string[],
+    variant?: string,
+): Array<{ nouns: string[]; remainder: string[] }> {
+    const basePrefixes = objectPrefixes([...context.nouns, ...extraNouns], propertyPath);
+    const localPrefixes = objectPrefixes(
+        [
+            ...(context.nouns.length > 0 ? [context.nouns[context.nouns.length - 1]] : []),
+            ...extraNouns,
+        ],
+        propertyPath,
+    );
+    const candidates = [
+        ...decorateObjectPrefixes(basePrefixes, variant),
+        ...decorateObjectPrefixes(localPrefixes, variant),
+    ];
+    const seen = new Set<string>();
+
+    return candidates.filter((candidate) => {
+        const key = `${candidate.nouns.join('.')}:${candidate.remainder.join('.')}`;
+        if (seen.has(key)) {
+            return false;
+        }
+        seen.add(key);
+        return true;
+    });
+}
+
+function objectPrefixes(
+    baseNouns: string[],
+    propertyPath: string[],
+): Array<{ nouns: string[]; remainder: string[] }> {
+    const prefixes: Array<{ nouns: string[]; remainder: string[] }> = [];
+
+    for (let index = propertyPath.length - 1; index >= 0; index -= 1) {
+        prefixes.push({
+            nouns: [...baseNouns, ...propertyPath.slice(0, index)],
+            remainder: propertyPath.slice(index),
+        });
+    }
+
+    prefixes.push({
+        nouns: baseNouns,
+        remainder: propertyPath,
+    });
+
+    return prefixes.filter((prefix) => prefix.nouns.length > 0);
+}
+
+function decorateObjectPrefixes(
+    prefixes: Array<{ nouns: string[]; remainder: string[] }>,
+    variant?: string,
+): Array<{ nouns: string[]; remainder: string[] }> {
+    const result: Array<{ nouns: string[]; remainder: string[] }> = [];
+
+    for (const prefix of prefixes) {
+        if (variant && prefix.nouns.length > 0) {
+            result.push({
+                nouns: insertVariantObjectNoun(prefix.nouns, variant),
+                remainder: prefix.remainder,
+            });
+        }
+        result.push(prefix);
+        for (const suffix of nounSuffixes(prefix.nouns)) {
+            if (variant && suffix.length > 0) {
+                result.push({
+                    nouns: insertVariantObjectNoun(suffix, variant),
+                    remainder: prefix.remainder,
+                });
+            }
+            result.push({
+                nouns: suffix,
+                remainder: prefix.remainder,
+            });
+        }
+    }
+
+    return result;
+}
+
 function mergeStates(parentStates: string[], localStates: string[]): string[] {
     return Array.from(new Set([...parentStates, ...localStates]));
+}
+
+function insertVariantNoun(nouns: string[], variant: string): string[] {
+    if (nouns[0] === 'container' && nouns.length > 1) {
+        return [nouns[0], nouns[1], variant, ...nouns.slice(2)];
+    }
+    return [nouns[0], variant, ...nouns.slice(1)];
+}
+
+function insertVariantObjectNoun(nouns: string[], variant: string): string[] {
+    if (nouns[0] === 'container' && nouns.length > 1) {
+        return [nouns[0], nouns[1], variant, ...nouns.slice(2)];
+    }
+    return [nouns[0], variant, ...nouns.slice(1)];
 }
 
 function resolveLayeredStyleValue(

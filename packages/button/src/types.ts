@@ -7,7 +7,9 @@ const ButtonState = z.object({
     variant: ButtonVariant,
     label: z.string().optional(),
     icon: z.string().optional(),
-    status: z.set(z.string()).optional(),
+    state: z.string().optional(),
+    modifiers: z.array(z.string()).optional(),
+    isDebug: z.boolean().optional(),
     isDisabled: z.boolean().optional(),
     isHovered: z.boolean().optional(),
     size: z.object({

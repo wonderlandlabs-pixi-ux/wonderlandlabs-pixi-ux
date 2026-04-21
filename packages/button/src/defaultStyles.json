@@ -1,55 +1,91 @@
 {
   "container": {
     "background": {
-      "color": {
-        "$*": "#FFFFFF",
-        "$dark": "#000000"
-      },
-      "gradient": {
-        "$base": {
-          "direction": "vertical",
-          "colors": [
-            "#D9D9D9",
-            "#FFFFFF",
-            "#BFBFBF"
-          ]
-        }
-      },
       "padding": {
-        "$*": 4,
-        "$avatar": 15,
-        "$vertical": 8
+        "$*": 4
       },
       "width": {
-        "$*": 200,
-        "$avatar": 150,
-        "$vertical": 60
+        "$*": 200
       },
       "height": {
-        "$*": 40,
-        "$avatar": 150,
-        "$vertical": 80
+        "$*": 40
+      },
+      "$*": {
+        "color": "#FFFFFF"
+      },
+      "$dark": {
+        "color": "#000000"
+      },
+      "base": {
+        "$start": {
+          "gradient": {
+            "direction": "vertical",
+            "colors": [
+              "#D9D9D9",
+              "#FFFFFF",
+              "#BFBFBF"
+            ]
+          }
+        }
+      },
+      "avatar": {
+        "padding": {
+          "$*": 15
+        },
+        "width": {
+          "$*": 150
+        },
+        "height": {
+          "$*": 150
+        }
+      },
+      "vertical": {
+        "padding": {
+          "$*": 8
+        },
+        "width": {
+          "$*": 60
+        },
+        "height": {
+          "$*": 80
+        }
       }
     },
     "content": {
       "gap": {
-        "$*": 6,
-        "$vertical": 4,
-        "$avatar": 8
+        "$*": 6
+      },
+      "vertical": {
+        "gap": {
+          "$*": 4
+        }
+      },
+      "avatar": {
+        "gap": {
+          "$*": 8
+        }
       }
     },
     "border": {
       "width": {
-        "$*": 1,
-        "$avatar": 0
+        "$*": 1
       },
       "color": {
-        "$*": "#000000",
-        "$dark": "#FFFFFF"
+        "$*": "#000000"
       },
       "radius": {
-        "$*": 10,
-        "$avatar": 100
+        "$*": 10
+      },
+      "$dark": {
+        "color": "#FFFFFF"
+      },
+      "avatar": {
+        "width": {
+          "$*": 0
+        },
+        "radius": {
+          "$*": 100
+        }
       }
     }
   },
@@ -70,8 +106,12 @@
       }
     },
     "size": {
-      "$*": 14,
-      "$avatar": 24
+      "$*": 14
+    },
+    "avatar": {
+      "size": {
+        "$*": 24
+      }
     }
   },
   "icon": {
@@ -81,16 +121,26 @@
     },
     "size": {
       "width": {
-        "$*": 16,
-        "$avatar": 24
+        "$*": 16
       },
       "height": {
-        "$*": 16,
-        "$avatar": 24
+        "$*": 16
       },
       "size": {
-        "$*": 16,
-        "$avatar": 24
+        "$*": 16
+      }
+    },
+    "avatar": {
+      "size": {
+        "width": {
+          "$*": 24
+        },
+        "height": {
+          "$*": 24
+        },
+        "size": {
+          "$*": 24
+        }
       }
     }
   }

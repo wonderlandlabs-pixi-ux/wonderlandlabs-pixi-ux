@@ -18,7 +18,7 @@
   },
   "dependencies": {
     "@wonderlandlabs-pixi-ux/button": "1.2.6",
-    "@wonderlandlabs-pixi-ux/style-tree": "1.2.6",
+    "@wonderlandlabs-pixi-ux/style-tree": "1.2.8",
     "@wonderlandlabs-pixi-ux/ticker-forest": "1.2.6",
     "zod": "^4.3.6"
   },

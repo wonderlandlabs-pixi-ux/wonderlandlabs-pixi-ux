@@ -42,6 +42,16 @@ export function normalizeStates(states: string[]): string[] {
   return [...states].sort();
 }
 
+/**
+ * Build a deterministic query cache key from noun/state arrays.
+ * Example: ["a","b","c"] + ["f","d","e"] -> "a.b.c$d.e.f"
+ */
+export function serializeStyleQuery(nouns: string[], states: string[] = []): string {
+  const nounPath = nouns.join('.');
+  const statePath = normalizeStates(states).join('.');
+  return `${nounPath}$${statePath}`;
+}
+
 type QueryStateGroups = {
   required: string[];
   optional: string[];
@@ -125,20 +135,10 @@ export function calculateMatchScore(
   }
   
   const queryStates = splitQueryStates(targetStates);
-  const explicitPatternStates = patternStates.filter((state) => state !== BASE_STATE);
   const candidateStates = normalizeStates([...queryStates.required, ...queryStates.optional]);
-
-  // Optional query states change the fallback contract slightly:
-  // explicit pattern states must still include all required states.
-  if (queryStates.hasOptional && explicitPatternStates.length > 0) {
-    for (const requiredState of queryStates.required) {
-      if (!explicitPatternStates.includes(requiredState)) {
-        return null;
-      }
-    }
-  }
-
   let matchingStates = 0;
+  let matchingRequiredStates = 0;
+  let matchingOptionalStates = 0;
 
   if (patternStates.length === 1 && patternStates[0] === BASE_STATE) {
     // Base state matches anything, but contributes 0 to score
@@ -164,10 +164,17 @@ export function calculateMatchScore(
         return null;
       }
       matchingStates++;
+      if (queryStates.required.includes(patternState)) {
+        matchingRequiredStates++;
+      } else if (queryStates.optional.includes(patternState)) {
+        matchingOptionalStates++;
+      }
     }
   }
   
-  const score = matchingNouns * 100 + matchingStates;
+  const score = queryStates.hasOptional
+    ? matchingNouns * 100 + (matchingRequiredStates * 10) + matchingOptionalStates
+    : matchingNouns * 100 + matchingStates;
   
   return {
     score,

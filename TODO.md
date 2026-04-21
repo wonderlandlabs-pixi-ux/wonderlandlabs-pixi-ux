@@ -18,4 +18,9 @@
 - Add a `rotation` parameter to `box`.
 - Add a `rotationPoint` parameter to `box`.
 - Define how `rotationPoint` interacts with positioning, bounds, and existing layout assumptions before implementation.
+- Add a `wrap` layout strategy for `box`.
+- Define `wrap` as: lay out children first from a top-left origin, then wrap the parent box around the final child extents.
+- Decide how `wrap` should interact with `bloat`, absolute children, padding/insets, and future virtual-box collapsing before implementation.
 - Revisit `BoxTree.children` input types. Consider dropping plain object support in favor of ordered inputs only (`Map` or tuple arrays) so child iteration order is always explicit and not subject to JS object key ordering rules for numeric-like keys.
+- Add Pixi injection seams around `boxTreeToPixi` / button rendering so traversal, measurement, and invalidation order can be tested without deep Pixi mocking.
+- Evaluate adapter or engine patterns that let a non-rendering test harness stub container/text/graphics creation while preserving the real layout/update flow.

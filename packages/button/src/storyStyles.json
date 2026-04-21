@@ -2,52 +2,112 @@
   "container": {
     "background": {
       "color": {
-        "$text": null,
-        "$button,hover": "#EAF4FF"
+        "$text": null
       },
       "width": {
-        "$button": 180,
-        "$text": 180,
-        "$vertical": 80,
-        "$avatar": 72
+        "$*": 180
       },
       "height": {
-        "$button": 48,
-        "$text": 40,
-        "$vertical": 80,
-        "$avatar": 72
+        "$*": 48
+      },
+      "base": {
+        "color": {
+          "$hover": "#EAF4FF"
+        }
+      },
+      "text": {
+        "width": {
+          "$*": 180
+        },
+        "height": {
+          "$*": 40
+        }
+      },
+      "vertical": {
+        "width": {
+          "$*": 80
+        },
+        "height": {
+          "$*": 80
+        }
+      },
+      "avatar": {
+        "width": {
+          "$*": 72
+        },
+        "height": {
+          "$*": 72
+        }
       }
     },
     "border": {
-      "width": {
-        "$text": 0,
-        "$button,hover": 1
+      "text": {
+        "width": {
+          "$*": 0
+        }
       },
-      "color": {
-        "$button,hover": "#3B82F6"
+      "base": {
+        "width": {
+          "$hover": 1
+        },
+        "color": {
+          "$hover": "#3B82F6"
+        }
       }
     },
     "content": {
       "gap": {
-        "$text": 8,
-        "$button": 10,
-        "$vertical": 8
+        "$*": 10
+      },
+      "text": {
+        "gap": {
+          "$*": 8
+        }
+      },
+      "vertical": {
+        "gap": {
+          "$*": 8
+        }
       }
     }
   },
   "icon": {
     "size": {
       "width": {
-        "$button": 28,
-        "$text": 24,
-        "$vertical": 40,
-        "$avatar": 36
+        "$*": 28
       },
       "height": {
-        "$button": 28,
-        "$text": 24,
-        "$vertical": 40,
-        "$avatar": 36
+        "$*": 28
+      }
+    },
+    "text": {
+      "size": {
+        "width": {
+          "$*": 24
+        },
+        "height": {
+          "$*": 24
+        }
+      }
+    },
+    "vertical": {
+      "size": {
+        "width": {
+          "$*": 40
+        },
+        "height": {
+          "$*": 40
+        }
+      }
+    },
+    "avatar": {
+      "size": {
+        "width": {
+          "$*": 36
+        },
+        "height": {
+          "$*": 36
+        }
       }
     }
   }

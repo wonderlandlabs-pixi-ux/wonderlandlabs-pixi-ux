@@ -21,6 +21,7 @@ import {
     validateRendererResult,
 } from './toPixi.helpers.js';
 import type {
+    BoxLayoutCellType,
     BoxPreparedCellType,
     BoxPixiNodeContext,
     BoxPixiOptions,
@@ -40,14 +41,26 @@ type ContentExtent = {
 };
 
 export function boxTreeToPixi(options: BoxPixiOptions): Container {
+    if (options.store.isDebug) {
+        console.info('[boxTreeToPixi] start', {
+            id: options.root.id,
+            name: options.root.name,
+        });
+    }
     drainKillList(options);
     const textMeasures = new Map<string, {w: number; h: number}>();
     const rendered = renderPixiNode({
         cell: options.root,
         parentContainer: options.parentContainer ?? options.app?.stage,
     }, options, textMeasures);
-    if (options.store.applyTextMeasures(textMeasures)) {
+    if (options.store.recordTextMeasures(textMeasures)) {
         options.observer?.({action: 'invalidate'});
+    }
+    if (options.store.isDebug) {
+        console.info('[boxTreeToPixi] complete', {
+            id: options.root.id,
+            name: options.root.name,
+        });
     }
     return rendered;
 }
@@ -129,7 +142,7 @@ function renderPixiNode(
 
 function renderChildren(
     container: Container,
-    cell: BoxPreparedCellType,
+    cell: BoxLayoutCellType,
     options: BoxPixiOptions,
     context: BoxStyleContext,
     textMeasures: Map<string, {w: number; h: number}>,
@@ -168,14 +181,24 @@ function finalizeDefaultPixiNode(
         textMeasures.set(input.context.cell.id, {w: contentExtent.w, h: contentExtent.h});
     }
 
+    const backgroundStyle = resolveStyleValue<Record<string, unknown> | undefined>(
+        input.options.styleTree,
+        context,
+        ['background'],
+    );
+    const backgroundGradient = backgroundStyle?.gradient ?? resolveGradientStyle(input.options.styleTree, context);
     const fillColor = resolvePixiColor(
-        resolveStyleValue(input.options.styleTree, context, ['background', 'color'])
+        backgroundStyle?.color
+        ?? resolveStyleValue(input.options.styleTree, context, ['background', 'color'])
     );
     const fillGradient = resolvePixiGradient(
-        resolveStyleValue(input.options.styleTree, context, ['background', 'gradient']),
+        backgroundGradient,
         localLocation,
     );
-    const fillAlpha = resolveNumericStyle(resolveStyleValue(input.options.styleTree, context, ['background', 'alpha'])) ?? 1;
+    const fillAlpha = resolveNumericStyle(
+        backgroundStyle?.alpha
+        ?? resolveStyleValue(input.options.styleTree, context, ['background', 'alpha'])
+    ) ?? 1;
     const borderRadius = Math.max(
         0,
         Math.min(
@@ -239,6 +262,32 @@ function finalizeDefaultPixiNode(
         currentContainer!.mask.clear();
         currentContainer!.mask = null;
     }
+}
+
+function resolveGradientStyle(
+    styles: BoxPixiOptions['styleTree'],
+    context: BoxStyleContext,
+): Record<string, unknown> | undefined {
+    const direction = resolveStyleValue(styles, context, ['background', 'gradient', 'direction']);
+    const colors = resolveStyleValue(styles, context, ['background', 'gradient', 'colors']);
+    const from = resolveStyleValue(styles, context, ['background', 'gradient', 'from']);
+    const to = resolveStyleValue(styles, context, ['background', 'gradient', 'to']);
+
+    if (
+        direction === undefined
+        && colors === undefined
+        && from === undefined
+        && to === undefined
+    ) {
+        return undefined;
+    }
+
+    return {
+        ...(direction !== undefined ? { direction } : {}),
+        ...(colors !== undefined ? { colors } : {}),
+        ...(from !== undefined ? { from } : {}),
+        ...(to !== undefined ? { to } : {}),
+    };
 }
 
 function renderDefaultContent(

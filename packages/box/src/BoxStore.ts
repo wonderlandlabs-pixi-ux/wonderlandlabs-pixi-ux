@@ -1,7 +1,13 @@
 import {Forest} from '@wonderlandlabs/forestry4';
 import {map, pairwise, Subscription} from 'rxjs';
-import type {BoxCellType, BoxPreparedCellType, BoxStyleManagerLike, RectStaticType} from './types.js';
+import type {BoxCellType, BoxLayoutCellType, BoxPreparedCellType, BoxStyleManagerLike, RectStaticType} from './types.js';
 import {collectRemovedIds, layoutCell, prepareBoxCellTree, rectToAbsolute} from "./helpers.js";
+import {ID_PATH_SEPARATOR} from './constants.js';
+
+type TextMeasureMap = Map<string, {w: number; h: number}>;
+type BoxPathInput = string | string[];
+
+const TEXT_MEASURE_RES_KEY = 'box:text-measures';
 
 type BoxStoreConfig = {
     value: BoxCellType;
@@ -10,7 +16,12 @@ type BoxStoreConfig = {
 export class BoxStore extends Forest<BoxPreparedCellType> {
     #styles: BoxStyleManagerLike[] = [];
     #killSubscription?: Subscription;
+    #debugSubscription?: Subscription;
+    #cacheSubscription?: Subscription;
+    #isDebug = false;
+    #layoutValue?: BoxLayoutCellType;
     public killList = new Set<string>();
+    public locationCache = new Map<string, RectStaticType>();
 
     constructor(config: BoxStoreConfig) {
         super({
@@ -24,28 +35,73 @@ export class BoxStore extends Forest<BoxPreparedCellType> {
             map((value) => value as BoxPreparedCellType),
             pairwise(),
         ).subscribe(this.$.addToKillList);
+        this.#debugSubscription = this.$subject
+            .pipe(map((value) => value as BoxPreparedCellType))
+            .subscribe((value) => {
+                if (this.isDebug) {
+                    console.info('[BoxStore] root emitted', {
+                        rootId: value.id,
+                        rootName: value.name,
+                    });
+                }
+            });
+        this.#cacheSubscription = this.$subject
+            .pipe(map((value) => value as BoxPreparedCellType))
+            .subscribe(() => {
+                this.locationCache.clear();
+                this.#layoutValue = undefined;
+            });
     }
 
     update() {
-        for (let pass = 0; pass < 5; pass += 1) {
-            const next = layoutCell(this.value);
-            if (samePreparedCell(this.value, next)) {
-                break;
-            }
-            this.mutate((draft) => {
-                Object.assign(draft, next);
+        if (this.isDebug) {
+            console.info('[BoxStore.update] start', {
+                id: this.value.id,
+                name: this.value.name,
+            });
+        }
+        const settled = settleLayout(clonePreparedCell(this.value), this.textMeasures);
+        this.#layoutValue = settled;
+        this.locationCache = buildLocationCache(settled);
+        if (this.isDebug) {
+            console.info('[BoxStore.update] complete', {
+                id: this.value.id,
+                name: this.value.name,
             });
         }
     }
 
+    get layoutValue(): BoxLayoutCellType {
+        if (!this.#layoutValue) {
+            const settled = settleLayout(clonePreparedCell(this.value), this.textMeasures);
+            this.#layoutValue = settled;
+            this.locationCache = buildLocationCache(settled);
+        }
+        return this.#layoutValue;
+    }
+
     get location(): RectStaticType {
-        const {dim, location} = this.value;
-        return rectToAbsolute(dim ?? location);
+        return this.layoutValue.location;
     }
 
     get rect(): { x: number; y: number; width: number; height: number } {
         const {x, y, w, h} = this.location;
         return {x, y, width: w, height: h};
+    }
+
+    getLocation(path: BoxPathInput): RectStaticType | undefined {
+        const key = normalizePath(path);
+        return this.locationCache.get(key);
+    }
+
+    setLocation(path: BoxPathInput, location: RectStaticType): void {
+        const key = normalizePath(path);
+        const nextLocation = clonePreparedCell(location);
+        this.locationCache.set(key, nextLocation);
+        const layoutCell = findCellByPath(this.layoutValue, splitPath(path));
+        if (layoutCell) {
+            layoutCell.location = nextLocation;
+        }
     }
 
     get styles(): BoxStyleManagerLike[] {
@@ -55,6 +111,14 @@ export class BoxStore extends Forest<BoxPreparedCellType> {
 
     set styles(styles: BoxStyleManagerLike[] | undefined) {
         this.#styles = styles ?? [];
+    }
+
+    get isDebug(): boolean {
+        return this.#isDebug;
+    }
+
+    set isDebug(value: boolean) {
+        this.#isDebug = value;
     }
 
     get styleStates(): string[] {
@@ -78,31 +142,38 @@ export class BoxStore extends Forest<BoxPreparedCellType> {
         this.killList.clear();
     }
 
-    applyTextMeasures(measures: Map<string, {w: number; h: number}>): boolean {
-        let hasChanges = false;
-        this.mutate((draft) => {
-            hasChanges = applyTextMeasuresToCell(draft, measures) || hasChanges;
-        });
-        if (hasChanges) {
-            this.update();
+    get textMeasures(): TextMeasureMap {
+        return (this.$res.get(TEXT_MEASURE_RES_KEY) as TextMeasureMap | undefined) ?? new Map();
+    }
+
+    recordTextMeasures(measures: TextMeasureMap): boolean {
+        const next = normalizeTextMeasures(measures);
+        const current = this.textMeasures;
+        if (sameTextMeasures(current, next)) {
+            return false;
         }
-        return hasChanges;
+        this.$res.set(TEXT_MEASURE_RES_KEY, next);
+        return true;
     }
 
     complete(): BoxPreparedCellType {
         this.#killSubscription?.unsubscribe();
         this.#killSubscription = undefined;
+        this.#debugSubscription?.unsubscribe();
+        this.#debugSubscription = undefined;
+        this.#cacheSubscription?.unsubscribe();
+        this.#cacheSubscription = undefined;
         this.killList.clear();
+        this.locationCache.clear();
+        this.#layoutValue = undefined;
         return super.complete();
     }
 }
 
-function samePreparedCell(a: BoxPreparedCellType, b: BoxPreparedCellType): boolean {
+function samePreparedCell(a: BoxLayoutCellType, b: BoxLayoutCellType): boolean {
     if (
         a.id !== b.id
         || a.name !== b.name
-        || a.textWidth !== b.textWidth
-        || a.textHeight !== b.textHeight
         || !sameRect(a.location, b.location)
     ) {
         return false;
@@ -127,31 +198,106 @@ function sameRect(a?: RectStaticType, b?: RectStaticType): boolean {
     if (!a || !b) {
         return a === b;
     }
-    return a.x === b.x && a.y === b.y && a.w === b.w && a.h === b.h;
+    return sameNumber(a.x, b.x) && sameNumber(a.y, b.y) && sameNumber(a.w, b.w) && sameNumber(a.h, b.h);
 }
 
-function applyTextMeasuresToCell(
-    cell: BoxPreparedCellType,
-    measures: Map<string, {w: number; h: number}>,
-): boolean {
-    let hasChanges = false;
-    const measure = measures.get(cell.id);
-    if (measure && cell.content?.type === 'text') {
-        const nextWidth = Math.max(0, measure.w);
-        const nextHeight = Math.max(0, measure.h);
-        if (cell.textWidth !== nextWidth) {
-            cell.textWidth = nextWidth;
-            hasChanges = true;
-        }
-        if (cell.textHeight !== nextHeight) {
-            cell.textHeight = nextHeight;
-            hasChanges = true;
-        }
+function sameNumber(a?: number, b?: number, epsilon = 1): boolean {
+    if (a === undefined || b === undefined) {
+        return a === b;
     }
+    return Math.abs(a - b) <= epsilon;
+}
 
+function normalizeMeasure(value: number): number {
+    return Math.max(0, Math.ceil(value));
+}
+
+function clonePreparedCell<T>(value: T): T {
+    return structuredClone(value);
+}
+
+function settleLayout(root: BoxPreparedCellType, textMeasures: TextMeasureMap): BoxLayoutCellType {
+    let working = layoutCell(root, undefined, textMeasures);
+    for (let pass = 0; pass < 5; pass += 1) {
+        const next = layoutCell(working, undefined, textMeasures);
+        if (samePreparedCell(working, next)) {
+            break;
+        }
+        working = next;
+    }
+    return working;
+}
+
+function buildLocationCache(root: BoxLayoutCellType): Map<string, RectStaticType> {
+    const next = new Map<string, RectStaticType>();
+    recordLocations(next, root);
+    return next;
+}
+
+function recordLocations(
+    cache: Map<string, RectStaticType>,
+    cell: BoxLayoutCellType,
+    path: string[] = [],
+): void {
+    const nextPath = [...path, cell.id];
+    if (cell.location) {
+        cache.set(nextPath.join(ID_PATH_SEPARATOR), cell.location);
+    }
     for (const child of cell.children ?? []) {
-        hasChanges = applyTextMeasuresToCell(child, measures) || hasChanges;
+        recordLocations(cache, child, nextPath);
+    }
+}
+
+function normalizeTextMeasures(measures: TextMeasureMap): TextMeasureMap {
+    const next: TextMeasureMap = new Map();
+    measures.forEach((measure, id) => {
+        next.set(id, {
+            w: normalizeMeasure(measure.w),
+            h: normalizeMeasure(measure.h),
+        });
+    });
+    return next;
+}
+
+function sameTextMeasures(a: TextMeasureMap, b: TextMeasureMap): boolean {
+    if (a.size !== b.size) {
+        return false;
+    }
+    for (const [id, measureA] of a.entries()) {
+        const measureB = b.get(id);
+        if (!measureB) {
+            return false;
+        }
+        if (!sameNumber(measureA.w, measureB.w) || !sameNumber(measureA.h, measureB.h)) {
+            return false;
+        }
+    }
+    return true;
+}
+
+function normalizePath(path: BoxPathInput): string {
+    return Array.isArray(path) ? path.join(ID_PATH_SEPARATOR) : path;
+}
+
+function splitPath(path: BoxPathInput): string[] {
+    return Array.isArray(path) ? path : path.split(ID_PATH_SEPARATOR);
+}
+
+function findCellByPath(
+    root: BoxLayoutCellType,
+    ids: string[],
+): BoxLayoutCellType | undefined {
+    if (ids.length === 0 || root.id !== ids[0]) {
+        return undefined;
     }
 
-    return hasChanges;
+    let current: BoxLayoutCellType | undefined = root;
+    for (let index = 1; index < ids.length; index += 1) {
+        current = current?.children?.find((child) => child.id === ids[index]);
+        if (!current) {
+            return undefined;
+        }
+    }
+
+    return current;
 }

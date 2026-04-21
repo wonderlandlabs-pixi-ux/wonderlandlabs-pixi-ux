@@ -1,5 +1,6 @@
 import type {
     BoxCellType,
+    BoxLayoutCellType,
     BoxPreparedCellType,
     BoxLayerType,
     BoxInsetEntryType,
@@ -168,10 +169,7 @@ export function rectLayers(
     return layers;
 }
 
-export function cellLayers(cell: Pick<BoxCellType, 'location' | 'insets'>): BoxLayerType[] {
-    if (!cell.location) {
-        return [];
-    }
+export function cellLayers(cell: Pick<BoxLayoutCellType, 'location' | 'insets'>): BoxLayerType[] {
     return rectLayers(cell.location, cell.insets ?? []);
 }
 
@@ -247,20 +245,25 @@ export function prepareBoxCellTree(
     };
 }
 
-export function layoutCell(cell: BoxPreparedCellType, parentRect?: RectStaticType): BoxPreparedCellType {
-    let ownLocation = cell.location
-        ? rectToAbsolute(cell.location)
-        : rectToAbsolute(effectiveDim(cell), cell.absolute ? undefined : parentRect);
+export function layoutCell(
+    cell: BoxPreparedCellType,
+    parentRect?: RectStaticType,
+    textMeasures: Map<string, {w: number; h: number}> = new Map(),
+    assignedLocation?: RectStaticType,
+): BoxLayoutCellType {
+    let ownLocation = assignedLocation
+        ?? rectToAbsolute(effectiveDim(cell, textMeasures), cell.absolute ? undefined : parentRect);
     const {children, align} = cell;
 
     if (!Array.isArray(children) || children.length === 0) {
         return {
             ...cell,
             location: ownLocation,
+            children: undefined,
         };
     }
 
-    let resolvedChildren = children;
+    let resolvedChildren: BoxLayoutCellType[] = [];
     for (let pass = 0; pass < 5; pass += 1) {
         const childLocations: RectStaticType[] = new Array(children.length);
         const flowChildren = children
@@ -271,7 +274,7 @@ export function layoutCell(cell: BoxPreparedCellType, parentRect?: RectStaticTyp
             const flowChildLocations = new ComputeAxis(
                 align,
                 ownLocation,
-                flowChildren.map(({child}) => effectiveDim(child)),
+                flowChildren.map(({child}) => effectiveDim(child, textMeasures)),
                 {
                     insets: cell.insets,
                     gap: cell.gap,
@@ -287,19 +290,21 @@ export function layoutCell(cell: BoxPreparedCellType, parentRect?: RectStaticTyp
             .map((child, index) => ({child, index}))
             .filter(({child}) => child.absolute)
             .forEach(({child, index}) => {
-                childLocations[index] = child.location
-                    ? rectToAbsolute(child.location)
-                    : rectToParentSpace(effectiveDim(child), ownLocation);
+                childLocations[index] = rectToParentSpace(effectiveDim(child, textMeasures), ownLocation);
             });
 
-        resolvedChildren = children.map((child: BoxPreparedCellType, index: number) => layoutCell({
-            ...child,
-            location: childLocations[index],
-        }, childLocations[index]));
+        resolvedChildren = children.map((child: BoxPreparedCellType, index: number) => layoutCell(
+            child,
+            ownLocation,
+            textMeasures,
+            childLocations[index],
+        ));
 
         const resolvedLocation = cell.crop
             ? ownLocation
-            : expandToFitChildren(ownLocation, resolvedChildren.map((child) => child.location), cell.insets);
+            : cell.layoutStrategy !== 'bloat'
+                ? ownLocation
+                : expandToFitChildren(ownLocation, resolvedChildren.map((child) => child.location), cell.insets);
 
         if (sameRect(ownLocation, resolvedLocation)) {
             ownLocation = resolvedLocation;
@@ -389,15 +394,21 @@ function expandToFitChildren(
     };
 }
 
-function effectiveDim(cell: BoxPreparedCellType): RectPartialType {
+function effectiveDim(
+    cell: BoxPreparedCellType,
+    textMeasures: Map<string, {w: number; h: number}>,
+): RectPartialType {
     if (cell.content?.type !== 'text') {
         return cell.dim;
     }
 
+    const measure = textMeasures.get(cell.id);
+    const baseWidth = typeof cell.dim.w === 'number' ? cell.dim.w : 0;
+    const baseHeight = typeof cell.dim.h === 'number' ? cell.dim.h : 0;
     return {
         ...cell.dim,
-        w: Math.max(sizeToNumber({input: cell.dim.w}) ?? 0, cell.textWidth ?? 0),
-        h: Math.max(sizeToNumber({input: cell.dim.h}) ?? 0, cell.textHeight ?? 0),
+        w: Math.max(baseWidth, measure?.w ?? cell.textWidth ?? 0),
+        h: Math.max(baseHeight, measure?.h ?? cell.textHeight ?? 0),
     };
 }
 

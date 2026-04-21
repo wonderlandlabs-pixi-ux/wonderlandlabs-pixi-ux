@@ -30,6 +30,7 @@ export class ButtonStore extends TickerForest<ButtonStateType> {
     #renderer: ButtonRendererManifest;
     #options: ButtonOptionsType;
     #boundHosts = new WeakSet<Container>();
+    #isUpdatingValue = false;
 
     constructor(value: ButtonStateType, options: ButtonOptionsType) {
         const container = new Container({
@@ -47,7 +48,31 @@ export class ButtonStore extends TickerForest<ButtonStateType> {
 
         this.#boxStore = new BoxStore(makeStoreConfig(this.value, this.#styleTree));
         this.#boxStore.styles = this.#styleTree;
+        this.#boxStore.isDebug = !!this.value.isDebug;
         this.resolve();
+    }
+
+    get isDebug(): boolean {
+        return !!this.value.isDebug;
+    }
+
+    set isDebug(value: boolean) {
+        this.set('isDebug', value);
+        this.#boxStore.isDebug = value;
+    }
+
+    get isUpdating(): boolean {
+        return this.#isUpdatingValue;
+    }
+
+    set isUpdating(value: boolean) {
+        if (this.#isUpdatingValue === value) {
+            return;
+        }
+        this.#isUpdatingValue = value;
+        if (this.isDebug) {
+            console.info('[ButtonStore] isUpdating changed', {value});
+        }
     }
 
     #makeRendererManifest(): ButtonRendererManifest {
@@ -78,28 +103,15 @@ export class ButtonStore extends TickerForest<ButtonStateType> {
     }
 
     hasStatus(name: string): boolean {
-        return this.value.status?.has(name) ?? false;
+        return this.value.state === name;
     }
 
     setStatus(name: string, enabled: boolean): void {
-        const next = new Set(this.value.status ?? []);
-        const hasChanged = enabled ? !next.has(name) : next.has(name);
-
-        if (!hasChanged) {
+        const next = nextState(this.value.state, name, enabled);
+        if (next === this.value.state) {
             return;
         }
-
-        if (enabled) {
-            next.add(name);
-        } else {
-            next.delete(name);
-        }
-
-        if (name === 'disabled' && enabled) {
-            next.delete('hover');
-        }
-
-        this.set('status', next);
+        this.set('state', next);
         this.dirty();
     }
 
@@ -138,34 +150,79 @@ export class ButtonStore extends TickerForest<ButtonStateType> {
     }
 
     resolve() {
-        this.#boxStore.mutate((draft) => {
-            Object.assign(draft, makeStoreConfig(this.value, this.#styleTree).value);
-        });
-        this.#boxStore.update();
-        boxTreeToPixi({
-            root: this.#boxStore.value,
-            app: this.#options.app as unknown as Application,
-            parentContainer: this.container,
-            store: this.#boxStore,
-            styleTree: this.#styleTree,
-            renderers: this.#renderer,
-            observer: this.$.observeBox,
-        } as never);
+        if (this.isUpdating) {
+            if (this.isDebug) {
+                console.info('[ButtonStore.resolve] skipped while updating', {
+                    state: this.value.state,
+                    modifiers: this.value.modifiers ?? [],
+                });
+            }
+            return;
+        }
+
+        if (this.isDebug) {
+            console.info('[ButtonStore.resolve] start', {
+                state: this.value.state,
+                modifiers: this.value.modifiers ?? [],
+            });
+        }
+        this.isUpdating = true;
+        try {
+            this.#boxStore.mutate((draft) => {
+                Object.assign(draft, makeStoreConfig(this.value, this.#styleTree).value);
+            });
+            this.#boxStore.update();
+            boxTreeToPixi({
+                root: this.#boxStore.layoutValue,
+                app: this.#options.app as unknown as Application,
+                parentContainer: this.container,
+                store: this.#boxStore,
+                styleTree: this.#styleTree,
+                renderers: this.#renderer,
+                observer: this.$.observeBox,
+            } as never);
+        } finally {
+            this.isUpdating = false;
+            if (this.isDebug) {
+                console.info('[ButtonStore.resolve] complete', {
+                    state: this.value.state,
+                    modifiers: this.value.modifiers ?? [],
+                });
+            }
+        }
     }
 }
 
 function normalizeButtonState(value: ButtonStateType): ButtonStateType {
-    const status = new Set(value.status ?? []);
-    if (value.isDisabled) {
-        status.add('disabled');
-    }
-    if (value.isHovered) {
-        status.add('hover');
-    }
+    const state = normalizeInteractionState(value);
     return {
         ...value,
-        status,
+        state,
+        modifiers: value.modifiers ? Array.from(new Set(value.modifiers)) : undefined,
         isDisabled: undefined,
         isHovered: undefined,
     };
+}
+
+function normalizeInteractionState(value: ButtonStateType): string {
+    if (value.isDisabled || value.state === 'disabled') {
+        return 'disabled';
+    }
+    if (value.isHovered || value.state === 'hover') {
+        return 'hover';
+    }
+    return 'start';
+}
+
+function nextState(current: string | undefined, name: string, enabled: boolean): string {
+    if (name === 'disabled') {
+        return enabled ? 'disabled' : 'start';
+    }
+    if (name === 'hover') {
+        if (current === 'disabled') {
+            return 'disabled';
+        }
+        return enabled ? 'hover' : 'start';
+    }
+    return enabled ? name : (current === name ? 'start' : (current ?? 'start'));
 }

@@ -194,11 +194,11 @@ export type BoxGradientType = z.infer<typeof BoxGradient>;
 export const BoxCellData = z.object({
   id: z.string().optional(),
   dim: RectPartial,
-  location: RectStatic.optional(),
   textWidth: z.number().optional(),
   textHeight: z.number().optional(),
   absolute: z.boolean(),
   crop: z.boolean().optional(),
+  layoutStrategy: z.string().optional(),
   variant: z.string().optional(),
   verbs: z.array(z.string()).optional(),
   states: z.array(z.string()).optional(),
@@ -224,6 +224,11 @@ export type BoxPreparedCellType = BoxPreparedCellDataType & {
   children?: BoxPreparedCellType[];
 };
 
+export type BoxLayoutCellType = Omit<BoxPreparedCellType, 'children'> & {
+  location: RectStaticType;
+  children?: BoxLayoutCellType[];
+};
+
 // Backward-compatible aliases while the package migrates to the data/node naming split.
 export const BoxCell = BoxCellData;
 export type BoxCellType = BoxCellNodeType;
@@ -245,14 +250,14 @@ export type BoxLayerType = {
 };
 
 export type BoxPixiNodeContext = {
-  cell: BoxPreparedCellType;
+  cell: BoxLayoutCellType;
   parentContainer?: Container;
   parentContext?: {
     nouns: string[];
     states: string[];
     variant?: string;
   };
-  parentCell?: BoxPreparedCellType;
+  parentCell?: BoxLayoutCellType;
 };
 
 export type BoxPixiRenderInput = {
@@ -287,7 +292,7 @@ export type BoxPixiObserverMessage =
   | { action: string; [key: string]: unknown };
 
 export type BoxPixiOptions = {
-  root: BoxPreparedCellType;
+  root: BoxLayoutCellType;
   app?: Application;
   parentContainer?: Container;
   store: BoxStore;

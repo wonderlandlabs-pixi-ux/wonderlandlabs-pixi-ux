@@ -1,8 +1,8 @@
 import { Color, Container, FillGradient, Graphics, Sprite, Text, TextStyle, Texture, type ColorSource, type TextStyleOptions } from 'pixi.js';
 import { z } from 'zod';
-import type { BoxGradientType, RectStaticType } from './types.js';
+import type { BoxGradientType, BoxSizeType, RectStaticType } from './types.js';
 import { sizeToNumber } from './helpers.js';
-import { DIR_HORIZ_S, DIR_VERT_S } from './constants.js';
+import { DIR_HORIZ_S, DIR_VERT_S, SIZE_PCT } from './constants.js';
 
 export const GRAPHICS_LABEL = '$$background';
 export const CONTENT_LABEL = '$$content';
@@ -187,6 +187,20 @@ export function resolvePixiGradient(
   }
 
   const gradient = parsed.data as BoxGradientType;
+  if (!gradient.from && !gradient.to && gradient.direction) {
+    return new FillGradient({
+      type: 'linear',
+      textureSpace: 'local',
+      start: gradient.direction === 'vertical'
+        ? { x: 0, y: 0 }
+        : { x: 0, y: 0 },
+      end: gradient.direction === 'vertical'
+        ? { x: 0, y: 1 }
+        : { x: 1, y: 0 },
+      colorStops: normalizeGradientStops(gradient.colors),
+    });
+  }
+
   const from = gradient.from ?? defaultGradientPoint(gradient.direction, 'from');
   const to = gradient.to ?? defaultGradientPoint(gradient.direction, 'to');
   const fromX = sizeToNumber({ input: from.x, parentContainer: rect, direction: DIR_HORIZ_S }) ?? 0;
@@ -229,11 +243,22 @@ function normalizeGradientStops(
 function defaultGradientPoint(
   direction: 'horizontal' | 'vertical' | undefined,
   end: 'from' | 'to',
-): { x: number; y: number } {
-  if (direction === 'vertical') {
-    return end === 'from' ? { x: 0, y: 0 } : { x: 0, y: 100 };
+): { x: BoxSizeType; y: BoxSizeType } {
+  if (end === 'from') {
+    return { x: 0, y: 0 };
   }
-  return end === 'from' ? { x: 0, y: 0 } : { x: 100, y: 0 };
+
+  if (direction === 'vertical') {
+    return {
+      x: 0,
+      y: { value: 100, unit: SIZE_PCT },
+    };
+  }
+
+  return {
+    x: { value: 100, unit: SIZE_PCT },
+    y: 0,
+  };
 }
 
 export function resolveNumericStyle(input: unknown): number | undefined {

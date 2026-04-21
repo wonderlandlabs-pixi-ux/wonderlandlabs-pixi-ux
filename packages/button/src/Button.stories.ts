@@ -190,7 +190,7 @@ export const AlertStates: Story = {
                     variant: BTYPE_BASE,
                     label: 'Disabled',
                     icon: PLACEHOLDER_ICON,
-                    status: new Set(['disabled']),
+                    state: 'disabled',
                     size: {x: 260, y: 40, width: 190, height: 52},
                 }, {
                     app,
@@ -247,6 +247,7 @@ export const SubmitFlow: Story = {
                 variant: BTYPE_BASE,
                 label: 'Submit',
                 icon: PLACEHOLDER_ICON,
+                isDebug: true,
                 size: {x: 40, y: 48, width: 220, height: 52},
             }, {
                 app,
@@ -268,6 +269,7 @@ export const SubmitFlow: Story = {
             const disabledHint = new ButtonStore({
                 variant: BTYPE_TEXT,
                 label: 'Click Submit to see the temporary disabled state.',
+                isDebug: true,
                 size: {x: 300, y: 54, width: 420, height: 36},
             }, {
                 app,
@@ -341,7 +343,7 @@ export const PartialThemeOverrides: Story = {
                     variant: BTYPE_BASE,
                     label: 'Disabled Uses Base + Override',
                     icon: PLACEHOLDER_ICON,
-                    status: new Set(['disabled']),
+                    state: 'disabled',
                     size: {x: 40, y: 130, width: 300, height: 52},
                 }, {
                     app,
@@ -361,47 +363,68 @@ export const PartialThemeOverrides: Story = {
 };
 
 function createDesignerOverrideJSON(args: DesignerArgs) {
-    const variantKey = `$${args.variant}`;
-    const hoverKey = `$${args.variant},hover`;
     const hasBackground = args.variant !== BTYPE_TEXT;
     return {
         container: {
             background: {
-                width: {[variantKey]: args.width},
-                height: {[variantKey]: args.height},
-                padding: {[variantKey]: [args.paddingY, args.paddingX]},
-                color: {
-                    [variantKey]: hasBackground ? color(args.backgroundColor) : null,
-                    [hoverKey]: hasBackground ? color(args.hoverBackgroundColor) : null,
+                [args.variant]: {
+                    "$*": {
+                        width: args.width,
+                        height: args.height,
+                        padding: [args.paddingY, args.paddingX],
+                        color: hasBackground ? color(args.backgroundColor) : null,
+                    },
+                    "$hover": {
+                        gradient: hasBackground ? null : undefined,
+                        color: hasBackground ? color(args.hoverBackgroundColor) : null,
+                    },
                 },
             },
             border: {
-                color: {
-                    [variantKey]: color(args.borderColor),
-                    [hoverKey]: color(args.hoverBorderColor),
+                [args.variant]: {
+                    "$*": {
+                        color: color(args.borderColor),
+                        width: hasBackground ? args.borderWidth : 0,
+                        radius: args.borderRadius,
+                    },
+                    "$hover": {
+                        color: color(args.hoverBorderColor),
+                        width: hasBackground ? args.borderWidth : 0,
+                    },
                 },
-                width: {
-                    [variantKey]: hasBackground ? args.borderWidth : 0,
-                    [hoverKey]: hasBackground ? args.borderWidth : 0,
-                },
-                radius: {[variantKey]: args.borderRadius},
             },
             content: {
-                gap: {[variantKey]: args.gap},
+                [args.variant]: {
+                    "$*": {
+                        gap: args.gap,
+                    },
+                },
             },
         },
         label: {
-            font: {
-                color: {[variantKey]: color(args.labelColor)},
-                size: {[variantKey]: args.fontSize},
-                alpha: {'$disabled': args.disabledLabelAlpha},
+            [args.variant]: {
+                "$*": {
+                    font: {
+                        color: color(args.labelColor),
+                    },
+                    size: args.fontSize,
+                },
+            },
+            "$disabled": {
+                font: {
+                    alpha: args.disabledLabelAlpha,
+                },
             },
         },
         icon: {
             alpha: {'$disabled': args.disabledLabelAlpha},
-            size: {
-                width: {[variantKey]: args.iconSize},
-                height: {[variantKey]: args.iconSize},
+            [args.variant]: {
+                "$*": {
+                    size: {
+                        width: args.iconSize,
+                        height: args.iconSize,
+                    },
+                },
             },
         },
     };
@@ -475,7 +498,7 @@ export const Designer: StoryObj<DesignerArgs> = {
                 variant: args.variant,
                 label: args.label || undefined,
                 icon: args.iconUrl || undefined,
-                status: args.disabled ? new Set(['disabled']) : undefined,
+                state: args.disabled ? 'disabled' : 'start',
                 size: {
                     x: 80,
                     y: args.variant === BTYPE_VERTICAL ? 36 : 60,

@@ -1,24 +1,30 @@
 {
   "container": {
     "background": {
-      "color": {
-        "$button": "#f4d6a0",
-        "$button,hover": "#f7dfb5"
+      "base": {
+        "color": {
+          "$*": "#f4d6a0",
+          "$hover": "#f7dfb5"
+        }
       }
     },
     "border": {
-      "color": {
-        "$button": "#c27c2c"
-      },
-      "radius": {
-        "$button": 14
+      "base": {
+        "color": {
+          "$*": "#c27c2c"
+        },
+        "radius": {
+          "$*": 14
+        }
       }
     }
   },
   "label": {
-    "font": {
-      "color": {
-        "$button": "#5c3414"
+    "base": {
+      "font": {
+        "color": {
+          "$*": "#5c3414"
+        }
       }
     }
   }

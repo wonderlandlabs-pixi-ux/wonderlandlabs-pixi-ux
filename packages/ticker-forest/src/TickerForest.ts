@@ -256,9 +256,14 @@ export abstract class TickerForest<T> extends Forest<T> {
 
     private onTick() {
         if (this.isDirty) {
-            this.resolve();
-            getSharedRenderHelper(this.application).request();
-            this.#clean();
+            try {
+                this.resolve();
+                getSharedRenderHelper(this.application).request();
+            } catch (error) {
+                console.error(`[${this.constructor.name}] resolve failed`, error);
+            } finally {
+                this.#clean();
+            }
         }
     };
 

@@ -1,7 +1,7 @@
 import type { StorybookConfig } from '@storybook/html-vite';
 import { mergeConfig } from 'vite';
 import { existsSync, readdirSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const storybookDir = fileURLToPath(new URL('.', import.meta.url));
@@ -31,14 +31,14 @@ function resolveWorkspaceAliases() {
 const config: StorybookConfig = {
   stories: ['../packages/*/src/**/*.stories.@(js|jsx|mjs|ts|tsx)'],
   addons: [],
+
   framework: {
-    name: '@storybook/html-vite',
+    name: getAbsolutePath("@storybook/html-vite"),
     options: {},
   },
-  docs: {
-    autodocs: false,
-  },
+
   staticDirs: ['./public'],
+
   async viteFinal(config) {
     return mergeConfig(config, {
       resolve: {
@@ -46,7 +46,11 @@ const config: StorybookConfig = {
         extensions: ['.ts', '.tsx', '.js', '.jsx'],
       },
     });
-  },
+  }
 };
 
 export default config;
+
+function getAbsolutePath(value: string): any {
+  return dirname(fileURLToPath(import.meta.resolve(`${value}/package.json`)));
+}

@@ -9,7 +9,7 @@ import {
     TextStyle,
     Texture,
 } from 'pixi.js';
-import { StyleTree } from '@wonderlandlabs-pixi-ux/style-tree';
+import { fromJSON, StyleTree } from '@wonderlandlabs-pixi-ux/style-tree';
 import {
     BoxStore,
     DIR_HORIZ,
@@ -26,6 +26,7 @@ import {
     type BoxPixiRendererManifest,
     type BoxPixiRendererOverride,
 } from './index.js';
+import boxPixiStoryStyles from './boxPixiStoryStyles.json' with {type: 'json'};
 
 type Story = StoryObj;
 
@@ -147,7 +148,7 @@ async function renderPixiLayout(config: PixiStoryConfig, mount: HTMLElement): Pr
     store.styles = config.styles;
     store.update();
     boxTreeToPixi({
-        root: store.value,
+        root: store.layoutValue,
         app,
         styleTree: config.styles,
         renderers: config.renderers,
@@ -156,81 +157,7 @@ async function renderPixiLayout(config: PixiStoryConfig, mount: HTMLElement): Pr
 }
 
 function createPixiStoryStyles(): StyleTree[] {
-    const styles = new StyleTree();
-
-    styles.set('scene.background.color', [], '#f7f5f1');
-    styles.set('scene.border.color', [], '#dccfc0');
-    styles.set('scene.border.alpha', [], 1);
-
-    styles.set('hero.background.color', [], '#f2e3d6');
-    styles.set('hero.border.color', [], '#d9b89f');
-    styles.set('hero.border.alpha', [], 1);
-
-    styles.set('hero-photo.background.color', [], '#ead7c4');
-    styles.set('hero-photo.border.color', [], '#cfad8f');
-    styles.set('hero-photo.border.alpha', [], 1);
-
-    styles.set('catalog.background.color', [], '#fbfaf8');
-    styles.set('catalog.border.color', [], '#e1d7ca');
-    styles.set('catalog.border.alpha', [], 1);
-
-    styles.set('card.background.color', [], '#fffdfa');
-    styles.set('card.border.color', [], '#d7c8b5');
-    styles.set('card.border.alpha', [], 1);
-
-    styles.set('photo.background.color', [], '#efe2d0');
-    styles.set('photo.border.color', [], '#d2b89a');
-    styles.set('photo.border.alpha', [], 1);
-
-    styles.set('details.background.color', [], '#fffdf9');
-    styles.set('details.border.color', [], '#e1d7ca');
-    styles.set('details.border.alpha', [], 1);
-
-    styles.set('cta.background.color', [], '#1f5c4d');
-    styles.set('cta.border.color', [], '#17483c');
-    styles.set('cta.border.alpha', [], 1);
-    styles.set('eyebrow.font.family', [], 'Courier New');
-    styles.set('eyebrow.font.size', [], 11);
-    styles.set('eyebrow.font.weight', [], '700');
-    styles.set('eyebrow.font.color', [], '#8b5e34');
-    styles.set('eyebrow.font.letterSpacing', [], 2);
-
-    styles.set('title.font.family', [], 'Georgia');
-    styles.set('title.font.size', [], 26);
-    styles.set('title.font.weight', [], '700');
-    styles.set('title.font.color', [], '#14213d');
-    styles.set('title.font.wordWrap', [], true);
-    styles.set('title.font.lineHeight', [], 26);
-
-    styles.set('price.font.family', [], 'Georgia');
-    styles.set('price.font.size', [], 22);
-    styles.set('price.font.weight', [], '700');
-    styles.set('price.font.color', [], '#1f5c4d');
-
-    styles.set('body.font.family', [], 'Arial');
-    styles.set('body.font.size', [], 14);
-    styles.set('body.font.color', [], '#46546b');
-    styles.set('body.font.wordWrap', [], true);
-    styles.set('body.font.lineHeight', [], 20);
-
-    styles.set('bullet-mark.font.family', [], 'Arial');
-    styles.set('bullet-mark.font.size', [], 13);
-    styles.set('bullet-mark.font.weight', [], '700');
-    styles.set('bullet-mark.font.color', [], '#46546b');
-
-    styles.set('bullet-text.font.family', [], 'Arial');
-    styles.set('bullet-text.font.size', [], 13);
-    styles.set('bullet-text.font.color', [], '#46546b');
-    styles.set('bullet-text.font.wordWrap', [], true);
-    styles.set('bullet-text.font.lineHeight', [], 18);
-
-    styles.set('cta.font.family', [], 'Arial');
-    styles.set('cta.font.size', [], 15);
-    styles.set('cta.font.weight', [], '700');
-    styles.set('cta.font.color', [], '#f9f6f1');
-    styles.set('cta.font.align', [], 'center');
-
-    return [styles];
+    return [fromJSON(boxPixiStoryStyles)];
 }
 
 function createPixiStoryRenderers(): BoxPixiRendererManifest {
@@ -900,4 +827,176 @@ export const ProductComparisonStrip: Story = {
         styles: createPixiStoryStyles(),
         renderers: createPixiStoryRenderers(),
     }),
+};
+
+export const BoxDebugLoop: Story = {
+    render: () => {
+        const wrapper = document.createElement('div');
+        wrapper.style.display = 'flex';
+        wrapper.style.gap = '16px';
+        wrapper.style.alignItems = 'flex-start';
+
+        const canvasWrap = document.createElement('div');
+        canvasWrap.style.width = '720px';
+        canvasWrap.style.minHeight = '260px';
+        canvasWrap.style.borderRadius = '18px';
+        canvasWrap.style.overflow = 'hidden';
+        canvasWrap.style.border = '1px solid rgba(20, 33, 61, 0.08)';
+        canvasWrap.style.boxShadow = '0 24px 70px rgba(20, 33, 61, 0.16)';
+        canvasWrap.style.background = '#f7f5f1';
+
+        const controls = document.createElement('div');
+        controls.style.display = 'flex';
+        controls.style.flexDirection = 'column';
+        controls.style.gap = '12px';
+        controls.style.width = '360px';
+
+        const rerender = document.createElement('button');
+        rerender.textContent = 'Render Again';
+        rerender.style.padding = '8px 12px';
+
+        const widen = document.createElement('button');
+        widen.textContent = 'Widen Label';
+        widen.style.padding = '8px 12px';
+
+        const panel = document.createElement('pre');
+        panel.style.width = '100%';
+        panel.style.height = '360px';
+        panel.style.margin = '0';
+        panel.style.padding = '12px';
+        panel.style.overflow = 'auto';
+        panel.style.border = '1px solid #d1d5db';
+        panel.style.borderRadius = '8px';
+        panel.style.background = '#ffffff';
+        panel.style.color = '#111827';
+        panel.style.fontSize = '12px';
+        panel.style.lineHeight = '1.4';
+
+        controls.appendChild(rerender);
+        controls.appendChild(widen);
+        controls.appendChild(panel);
+        wrapper.appendChild(canvasWrap);
+        wrapper.appendChild(controls);
+
+        const lines: string[] = [];
+        const writeLine = (...parts: unknown[]) => {
+            const message = parts.map((part) => {
+                if (typeof part === 'string') {
+                    return part;
+                }
+                try {
+                    return JSON.stringify(part);
+                } catch {
+                    return String(part);
+                }
+            }).join(' ');
+            lines.push(`${new Date().toLocaleTimeString()} ${message}`);
+            if (lines.length > 120) {
+                lines.shift();
+            }
+            panel.textContent = lines.join('\n');
+            panel.scrollTop = panel.scrollHeight;
+        };
+
+        const app = new Application();
+        let store: BoxStore | undefined;
+        let labelText = 'Debug Label';
+        const originalInfo = console.info.bind(console);
+        console.info = (...args: unknown[]) => {
+            const first = args[0];
+            if (
+                typeof first === 'string'
+                && (
+                    first.startsWith('[BoxStore')
+                    || first.startsWith('[boxTreeToPixi]')
+                )
+            ) {
+                writeLine(...args);
+            }
+            originalInfo(...args);
+        };
+
+        function makeRoot(): BoxCellType {
+            return {
+                id: 'debug-root',
+                name: 'container',
+                absolute: true,
+                dim: {x: 40, y: 40, w: 220, h: 56},
+                align: {
+                    direction: DIR_HORIZ,
+                    xPosition: POS_CENTER,
+                    yPosition: POS_CENTER,
+                },
+                insets: [{
+                    role: 'padding',
+                    inset: [{scope: INSET_SCOPE_ALL, value: 12}],
+                }],
+                children: [
+                    {
+                        id: 'debug-label',
+                        name: 'label',
+                        absolute: false,
+                        dim: {w: 120, h: 22},
+                        align: {
+                            direction: DIR_HORIZ,
+                            xPosition: POS_CENTER,
+                            yPosition: POS_CENTER,
+                        },
+                        content: {
+                            type: 'text',
+                            value: labelText,
+                        },
+                    },
+                ],
+            };
+        }
+
+        function renderStore() {
+            if (!store) {
+                return;
+            }
+            store.mutate((draft) => {
+                Object.assign(draft, makeRoot());
+            });
+            store.update();
+            boxTreeToPixi({
+                root: store.layoutValue,
+                app,
+                parentContainer: app.stage,
+                store,
+                styleTree: createPixiStoryStyles(),
+                renderers: createPixiStoryRenderers(),
+            });
+        }
+
+        app.init({
+            width: 720,
+            height: 260,
+            backgroundColor: 0xf6f1e7,
+            antialias: true,
+        }).then(() => {
+            canvasWrap.appendChild(app.canvas);
+            store = new BoxStore({value: makeRoot()});
+            store.isDebug = true;
+            renderStore();
+
+            rerender.onclick = () => {
+                writeLine('[Story] manual render');
+                renderStore();
+            };
+
+            widen.onclick = () => {
+                labelText += ' more text';
+                writeLine('[Story] widen label', {labelText});
+                renderStore();
+            };
+        });
+
+        wrapper.addEventListener('DOMNodeRemoved', () => {
+            console.info = originalInfo;
+            store?.complete();
+        });
+
+        return wrapper;
+    },
 };

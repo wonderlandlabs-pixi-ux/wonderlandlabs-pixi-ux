@@ -91,7 +91,7 @@ describe('helpers', () => {
                 w: {value: 50, unit: SIZE_PCT},
                 h: {value: 50, unit: SIZE_PCT}
             }, SAMPLE_PARENT)).toEqual({
-                x: 85, y: 30, w: 150, h: 100
+                x: 75, y: 10, w: 150, h: 100
             });
         });
     });

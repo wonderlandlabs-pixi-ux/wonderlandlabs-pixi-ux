@@ -147,8 +147,8 @@ function valueCell(value: unknown): string {
 }
 
 function renderStoreSvg(store: BoxStore): string {
-    const root = store.value;
-    return boxTreeToSVG({ ...root, location: store.location }, {
+    const root = store.layoutValue;
+    return boxTreeToSVG(root, {
         title: 'BoxStore Layout',
         styleTree: [storyStyles],
     });
@@ -213,7 +213,7 @@ function renderScenarioStory(scenario: BoxStoreScenario): HTMLElement {
     const rootCell = withStoryBorders(boxForScenario(scenario));
     const store = new BoxStore({ value: rootCell });
     store.update();
-    const locations = store.value.children?.map((child) => child.location).filter(Boolean) ?? [];
+    const locations = store.layoutValue.children?.map((child) => child.location).filter(Boolean) ?? [];
 
     const dimRows = scenario.dims.map((dim, index) => `
         <tr>
@@ -318,7 +318,7 @@ function renderScenarioStory(scenario: BoxStoreScenario): HTMLElement {
         <div class="scenario-story">
             <div class="scenario-layout">
                 <section class="panel">
-                    ${boxTreeToSVG({ ...store.value, location: store.location }, {
+                    ${boxTreeToSVG(store.layoutValue, {
                         title: scenario.name,
                         styleTree: [storyStyles],
                     })}
