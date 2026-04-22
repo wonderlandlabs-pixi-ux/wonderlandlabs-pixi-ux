@@ -1,6 +1,6 @@
 {
   "name": "@wonderlandlabs-pixi-ux/root-container",
-  "version": "1.2.6",
+  "version": "1.2.8",
   "description": "Root container with centered origin and zoom/pan support",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -18,8 +18,8 @@
     "vitest": "^4.0.18"
   },
   "dependencies": {
-    "@wonderlandlabs-pixi-ux/observe-drag": "1.2.6",
-    "@wonderlandlabs-pixi-ux/utils": "1.2.6",
+    "@wonderlandlabs-pixi-ux/observe-drag": "1.2.8",
+    "@wonderlandlabs-pixi-ux/utils": "1.2.8",
     "pixi.js": "8.16.0"
   },
   "engines": {

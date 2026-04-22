@@ -1,6 +1,6 @@
 {
   "name": "@wonderlandlabs-pixi-ux/monorepo",
-  "version": "1.2.6",
+  "version": "1.2.8",
   "description": "monorepo with grid, panel, drag packages, and other utilities for wonderlandlabs-pixi-ux",
   "private": true,
   "workspaces": [
