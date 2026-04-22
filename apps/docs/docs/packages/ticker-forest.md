@@ -2,10 +2,10 @@
 title: ticker-forest
 description: Package README for @wonderlandlabs-pixi-ux/ticker-forest
 ---
-
 # @wonderlandlabs-pixi-ux/ticker-forest
 
-Repository: [https://github.com/wonderlandlabs-pixi-ux/wonderlandlabs-pixi-ux/tree/main/packages/ticker-forest](https://github.com/wonderlandlabs-pixi-ux/wonderlandlabs-pixi-ux/tree/main/packages/ticker-forest)
+Repository: [https://github.com/wonderlandlabs-pixi-ux/wonderlandlabs-pixi-ux](https://github.com/wonderlandlabs-pixi-ux/wonderlandlabs-pixi-ux)
+
 
 Abstract base class for Forestry state management that synchronizes state changes with PixiJS rendering via the ticker pattern.
 
@@ -139,11 +139,11 @@ Cleanup method to remove ticker listeners. Subclasses should call `super.cleanup
 
 MIT
 
-# APPENDIX: Beyond PIXI
+# APPENDIX: Beyond PIXI 
 
 This library was originally wrote to solve a technical problem
 in PIXI. however it is also useful in any high performance animation
-to establish a common pattern:
+to establish a common pattern: 
 
 1. Data changes flag parts of a tree as "dirty" / need re-rendering
 2. Inside an animation loop the visuals are updated immediately before showing a frame
@@ -152,21 +152,21 @@ This is a useful economy; for instance say the positin of a sprite is changed
 three or four times. There is no reason to recompute the sprite four times, -- only
 once, _before the next frame is rendered_. That is, instead of data changes immediately
 triggering a regeneration of the visuals it just notes that visual regeneration is _needed_
-and is performed each frame, unless the visuals have not changed.
+and is performed each frame, unless the visuals have not changed. 
 
-Box, one of the immediate use cases of ticker-forest, was designed to
+Box, one of the immediate use cases of ticker-forest, was designed to 
 create a "flex-like" api for Pixi, for convenience in design;
-however, once the pixi elements were stripped (for ease of
+however, once the pixi elements were stripped (for ease of 
 rapid development) it became clear that the math and utility of Box
 was not purely confined to Pixi but could be used in any system with a render
-tree.
+tree. 
 
-To this end, we are redesigning the ticker-forest class to be
+To this end, we are redesigning the ticker-forest class to be 
 pixi-friendly, but to mainly depend on the concept fo a ticker to which
-render events can be added (or removed).
+render events can be added (or removed). 
 
-So, you can add render events to any system (svg, dom) and use the Box
-system to contain generic descriptors for styling, size, and position of a
+So, you can add render events to any system (svg, dom) and use the Box 
+system to contain generic descriptors for styling, size, and position of a 
 rectangular container in a 2d space. However while it is useable in Pixi,
 your render engine can be any 2d render system you wish, and the TickerForest
 class while it does depend on the Ticker interface can be used in any visualization

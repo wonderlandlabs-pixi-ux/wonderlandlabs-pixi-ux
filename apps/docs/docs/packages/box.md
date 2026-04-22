@@ -4,10 +4,11 @@ description: The `@wonderlandlabs-pixi-ux/box` package
 ---
 # @wonderlandlabs-pixi-ux/box
 
-Repository: [https://github.com/wonderlandlabs-pixi-ux/wonderlandlabs-pixi-ux/tree/main/packages/box](https://github.com/wonderlandlabs-pixi-ux/wonderlandlabs-pixi-ux/tree/main/packages/box)
+Repository: [https://github.com/wonderlandlabs-pixi-ux/wonderlandlabs-pixi-ux](https://github.com/wonderlandlabs-pixi-ux/wonderlandlabs-pixi-ux)
 
-`box` is a render-agnostic layout tree. It gives you deterministic 2D layout (area, alignment, constraints, ordering)
-without tying your state to Pixi objects.
+
+`box` is a render-agnostic layout tree. It gives you deterministic 2D layout
+for area, alignment, constraints, and ordering without tying your state to Pixi objects.
 
 ## Installation
 
@@ -74,11 +75,14 @@ layout.toggleGlobalVerb('disabled');
 layout.getChild('icon')?.toggleModeVerb('selected');
 ```
 
-:::warning Children Ordering
-`children` config can currently be provided as either a `Map` or a plain object. If child order matters, prefer `Map`.
+## Children Ordering
 
-Plain object input is normalized with `Object.entries(...)`, so normal string keys keep creation order, but numeric-like keys such as `"0"`, `"1"`, `"2"` follow JavaScript object key ordering rules before conversion. `Map` preserves insertion order exactly.
-:::
+`children` config can currently be provided as either a `Map` or a plain object.
+If child order matters, prefer `Map`.
+
+Plain object input is normalized with `Object.entries(...)`, so normal string keys keep creation order,
+but numeric-like keys such as `"0"`, `"1"`, and `"2"` follow JavaScript object key ordering rules before conversion.
+`Map` preserves insertion order exactly.
 
 ## Ux Assignment
 
@@ -110,15 +114,16 @@ layout.styles = styles;
 Each node has a `styleName` and optional state verbs:
 
 - `styleName`: style noun for the node
-- `modeVerb`: node-local states (hover, selected, active, ...)
-- `globalVerb`: root-wide states shared by descendants (disabled, readonly, ...)
+- `modeVerb`: node-local states such as `hover`, `selected`, or `active`
+- `globalVerb`: root-wide states shared by descendants such as `disabled` or `readonly`
 
 When you call `resolveStyle(styleManager, extraStates?)`, `BoxTree` queries:
 
-1. Hierarchical path first (`button.icon`, `toolbar.button.label`, ...)
-2. Atomic fallback (`icon`, `label`, ...)
+1. Hierarchical path first such as `button.icon` or `toolbar.button.label`
+2. Atomic fallback such as `icon` or `label`
 
 With combined states:
+
 - `globalVerb + modeVerb + extraStates`
 
 ## Default Ux
@@ -127,37 +132,17 @@ Use `BoxUxPixi` for default Pixi rendering.
 
 It:
 
-- Creates a container when none is provided
-- Uses public `content: MapEnhanced` (`Map<string, unknown>`)
-- `content.$box` points to the owning box
-- Exposes `ux.getContainer(key): unknown` for child UX handoff:
-  - `ROOT_CONTAINER`, `BACKGROUND_CONTAINER`, `CHILD_CONTAINER`, `CONTENT_CONTAINER`, `OVERLAY_CONTAINER`, `STROKE_CONTAINER`
-- Exposes `ux.attach(targetContainer?)`:
-  - attaches root container to `targetContainer`
-  - if omitted, uses `ux.app?.stage`
-- Creates default layers by key when absent:
-  - `BOX_RENDER_CONTENT_ORDER.BACKGROUND = 0`
-  - `BOX_RENDER_CONTENT_ORDER.CHILDREN = 50`
-  - `BOX_RENDER_CONTENT_ORDER.CONTENT = 75`
-  - `BOX_RENDER_CONTENT_ORDER.OVERLAY = 100`
-- Layer order can be looked up/extended by name:
-  - `BOX_UX_ORDER` map
-  - `setUxOrder(name, zIndex)` (throws on duplicate z-index)
-  - `getUxOrder(name)`
-- Clears/rebuilds the children layer each render cycle
-- Draws background from style props:
-  - `[stylePath].bgColor`
-  - `[stylePath].bgAlpha`
-  - `[stylePath].bgStrokeColor`
-  - `[stylePath].bgStrokeAlpha`
-  - `[stylePath].bgStrokeSize`
-- Exposes `ux.generateStyleMap(box)`:
-  - `fill: { color, alpha }`
-  - `stroke: { color, alpha, width }`
-- Honors `box.isVisible`:
-  - `false` detaches (hides) container and keeps render content
-  - `true` reuses existing layers on next render
-- Iterates content map and injects non-empty items sorted by `zIndex`
+- creates a container when none is provided
+- uses public `content: MapEnhanced` (`Map<string, unknown>`)
+- sets `content.$box` to the owning box
+- exposes `ux.getContainer(key)` for child UX handoff
+- exposes `ux.attach(targetContainer?)`
+- creates default layers keyed by `BOX_RENDER_CONTENT_ORDER`
+- lets you extend layer ordering via `BOX_UX_ORDER`, `setUxOrder(...)`, and `getUxOrder(...)`
+- clears and rebuilds the children layer each render cycle
+- draws background and stroke from resolved style props
+- honors `box.isVisible` without discarding render content
+- injects non-empty content items sorted by `zIndex`
 
 ```ts
 import { Graphics } from 'pixi.js';
@@ -188,7 +173,7 @@ root.render();
 ux.attach(app.stage);
 
 const custom = new Graphics();
-custom.zIndex = 76; // 75 is reserved for CONTENT
+custom.zIndex = 76;
 custom.visible = true;
 ux.content.set('CUSTOM', custom);
 ux.content.get('OVERLAY')?.visible = true;
@@ -197,16 +182,14 @@ ux.content.get('OVERLAY')?.visible = true;
 ## Override Points
 
 `BoxUxBase` is the renderer-agnostic lifecycle base.
-`BoxUxPixi` extends it with Pixi-specific containers/graphics/content behavior.
+`BoxUxPixi` extends it with Pixi-specific container, graphics, and content behavior.
 
 Build custom rendering by returning your own UX object from `assignUx((box) => ...)`:
 
-- extend `BoxUxBase` for a non-Pixi renderer, or
-- extend `BoxUxPixi` for Pixi customization.
+- extend `BoxUxBase` for a non-Pixi renderer
+- extend `BoxUxPixi` for Pixi customization
 
-See dedicated page:
-
-- [Box Styles and Composition](./box-styles-composition)
+See [README.STYLES.md](/packages/box-styles-composition) for the renderer-facing contract.
 
 ## Optional Pixi Geometry Preview
 
@@ -226,14 +209,14 @@ const graphics = await boxTreeToPixi(layout, {
 ## Public API Snapshot
 
 - `BoxTree`
-- `BoxUx` (UX object type)
+- `BoxUx`
 - `BoxUxMapFn`
-- `BoxRenderer` (legacy alias of `BoxUx`)
-- `BoxRenderMapFn` (legacy alias of `BoxUxMapFn`)
+- `BoxRenderer`
+- `BoxRenderMapFn`
 - `MapEnhanced`
 - `BoxUxBase`
 - `BoxUxPixi`
-- `BoxTreeRenderer` (legacy alias of `BoxUxPixi`)
+- `BoxTreeRenderer`
 - `BOX_UX_ORDER`, `getUxOrder`, `setUxOrder`
 - `BOX_RENDER_CONTENT_ORDER`
 - `createBoxTreeState`
@@ -245,3 +228,19 @@ const graphics = await boxTreeToPixi(layout, {
 - `boxTreeToSvg`
 - `pathToString`, `pathString`, `combinePaths`
 - `ALIGN`, `AXIS`, `UNIT_BASIS`, `SIZE_MODE`, `SIZE_MODE_INPUT`
+
+## Status
+
+This package is mid-refactor.
+
+The active architecture is the simplified `BoxStore` and `ComputeAxis` path in `src/`.
+Older `BoxTree`-style code still exists under `src/_deprecated`, but it is not the current direction.
+
+## Test Artifacts
+
+The `ComputeAxis` tests generate:
+
+- SVG diagrams for layout inspection
+- HTML tables for readable scenario metadata
+
+These artifacts are written under `packages/box/test/artifacts` and are ignored by the package-level `.gitignore`.

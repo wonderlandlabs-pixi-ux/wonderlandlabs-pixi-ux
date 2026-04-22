@@ -4,7 +4,8 @@ description: Package README for @wonderlandlabs-pixi-ux/window
 ---
 # @wonderlandlabs-pixi-ux/window
 
-Repository: [https://github.com/wonderlandlabs-pixi-ux/wonderlandlabs-pixi-ux/tree/main/packages/window](https://github.com/wonderlandlabs-pixi-ux/wonderlandlabs-pixi-ux/tree/main/packages/window)
+Repository: [https://github.com/wonderlandlabs-pixi-ux/wonderlandlabs-pixi-ux](https://github.com/wonderlandlabs-pixi-ux/wonderlandlabs-pixi-ux)
+
 
 `window` packages desktop-style behaviors like selection, drag, resize, and titlebars into reusable stores.
 It is designed for multi-panel Pixi tools where users manipulate independent UI surfaces.
@@ -41,6 +42,10 @@ windows.addWindow('notes', {
   height: 280,
   isDraggable: true,
   isResizeable: true,
+  closable: true,
+  onClose: ({ id }) => {
+    console.log(`Closed ${id}`);
+  },
   titlebar: { title: 'Notes' },
 });
 ```
@@ -54,13 +59,42 @@ windows.addWindow('notes', {
 - `WindowStore` converts between frame-space and window-local coordinates before mutating window state.
 - If your consumer layout is transformed, perform conversion in the consumer layer.
 
+## Label Styling
+
+Window title text is styled from `window.label.*` style properties:
+
+- `window.label.font.size`
+- `window.label.font.family`
+- `window.label.font.color`
+- `window.label.font.alpha`
+- `window.label.font.visible`
+
+Default label style: `10px Helvetica` with black text.
+
+```ts
+windows.addWindow('notes', {
+  titlebar: { title: 'Notes' },
+  customStyle: {
+    label: {
+      font: {
+        size: 12,
+        family: 'Arial',
+        color: { r: 1, g: 1, b: 1 },
+        alpha: 1,
+        visible: true,
+      },
+    },
+  },
+});
+```
+
 ## Overview
 
 This package provides draggable, resizable windows with titlebars, managed through a centralized `WindowsManager`. Each window is a `WindowStore` that extends `TickerForest` for synchronized PixiJS rendering.
 
 ## Titlebar Mechanics
 
-See [/packages/window-titlebar-dynamics](/packages/window-titlebar-dynamics) for the current titlebar model, including:
+See [TITLEBAR_DYNAMICS.md](/packages/window-titlebar-dynamics) for the current titlebar model, including:
 
 - the renderer frame of reference
 - the explicit `counter-scale` child layer used by `CounterScalingTitlebar`

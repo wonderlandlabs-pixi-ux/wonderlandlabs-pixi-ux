@@ -1,5 +1,8 @@
 # @wonderlandlabs-pixi-ux/window
 
+`window` packages desktop-style behaviors like selection, drag, resize, and titlebars into reusable stores.
+It is designed for multi-panel Pixi tools where users manipulate independent UI surfaces.
+
 A window management system for PixiJS applications using Forestry state management.
 
 ## Installation
@@ -162,7 +165,7 @@ app.stage (or your root container)
 For runtime content changes (toolbar clicks, async results, external events), use this flow:
 
 1. Mutate store state (including custom fields) on the relevant `WindowStore` / `TitlebarStore`.
-2. Mark the store dirty by calling `dirty()` on the store.
+2. Request a ticker-frame refresh by calling `dirty()` on the store.
 3. Use `windowContentRenderer` and/or `titlebarContentRenderer` to upsert `Graphics`/`Container`/`Text` nodes into
    the provided `contentContainer` during the refresh cycle.
 

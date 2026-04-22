@@ -4,10 +4,11 @@ description: Package README for @wonderlandlabs-pixi-ux/caption
 ---
 # @wonderlandlabs-pixi-ux/caption
 
-Repository: [https://github.com/wonderlandlabs-pixi-ux/wonderlandlabs-pixi-ux/tree/main/packages/caption](https://github.com/wonderlandlabs-pixi-ux/wonderlandlabs-pixi-ux/tree/main/packages/caption)
+Repository: [https://github.com/wonderlandlabs-pixi-ux/wonderlandlabs-pixi-ux](https://github.com/wonderlandlabs-pixi-ux/wonderlandlabs-pixi-ux)
+
 
 `caption` is for dialogue and annotation UI where readability and pointer geometry matter.
-It packages speech and thought bubble variants into one API so you can drop narrative UI into scenes quickly.
+It packages speech and thought-bubble variants into one API so you can drop narrative UI into scenes quickly.
 
 Caption bubbles for PixiJS with:
 

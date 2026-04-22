@@ -1,5 +1,8 @@
 # @wonderlandlabs-pixi-ux/resizer
 
+`resizer` adds editor-style handles so users can adjust bounds directly on screen.
+It standardizes rectangle updates and release callbacks for windowing and design-tool workflows.
+
 Resize handles for PixiJS containers.
 
 ## Installation

@@ -1,63 +1,233 @@
 # @wonderlandlabs-pixi-ux/box
 
-`box` is a small parent-driven layout model for rectangular children.
+`box` is a render-agnostic layout tree. It gives you deterministic 2D layout
+for area, alignment, constraints, and ordering without tying your state to Pixi objects.
 
-The current implementation is centered around:
+## Installation
 
-- [`BoxStore`](/Users/bingomanatee/Documents/repos/wonderlandlabs-pixi-ux/packages/box/src/BoxStore.ts)
-- [`ComputeAxis`](/Users/bingomanatee/Documents/repos/wonderlandlabs-pixi-ux/packages/box/src/ComputeAxis.ts)
+```bash
+yarn add @wonderlandlabs-pixi-ux/box
+```
 
-## Current Model
+## Basic Usage
 
-- The parent owns alignment.
-- Children provide dimensions.
-- Child `x` / `y` are not part of the happy-path alignment flow.
-- Width and height are computed from the parent container.
-- All units are relative to the parent in the dimension they address.
+```ts
+import {
+  ALIGN,
+  BoxTree,
+  UNIT_BASIS,
+} from '@wonderlandlabs-pixi-ux/box';
 
-That means:
+const layout = new BoxTree({
+  id: 'root',
+  styleName: 'button',
+  globalVerb: [],
+  area: {
+    x: 60,
+    y: 50,
+    width: { mode: UNIT_BASIS.PX, value: 720 },
+    height: { mode: UNIT_BASIS.PX, value: 340 },
+    px: 's',
+    py: 's',
+  },
+  align: {
+    x: ALIGN.START,
+    y: ALIGN.START,
+    direction: 'column',
+  },
+  children: {
+    header: {
+      styleName: 'header',
+      area: {
+        x: 0,
+        y: 0,
+        width: { mode: UNIT_BASIS.PERCENT, value: 1 },
+        height: { mode: UNIT_BASIS.PX, value: 60 },
+        px: 's',
+        py: 's',
+      },
+      align: { x: 's', y: 's', direction: 'row' },
+    },
+    icon: {
+      styleName: 'icon',
+      modeVerb: ['hover'],
+      area: {
+        x: 0,
+        y: 0,
+        width: { mode: UNIT_BASIS.PX, value: 24 },
+        height: { mode: UNIT_BASIS.PX, value: 24 },
+        px: 's',
+        py: 's',
+      },
+      align: { x: 's', y: 's', direction: 'column' },
+    },
+  },
+});
 
-- width-like values resolve against the parent width
-- height-like values resolve against the parent height
-- percent values are always percentages of the parent dimension
-- absolute pixel values are still interpreted within the parent container
+layout.toggleGlobalVerb('disabled');
+layout.getChild('icon')?.toggleModeVerb('selected');
+```
 
-## Flow
+## Children Ordering
 
-The current layout pass is:
+`children` config can currently be provided as either a `Map` or a plain object.
+If child order matters, prefer `Map`.
 
-1. Resolve the main-axis spans for the children.
-2. Complete unresolved fractional spans.
-3. Place children from the parent alignment and the resolved spans.
-4. Recurse into child boxes using the computed location rectangles.
+Plain object input is normalized with `Object.entries(...)`, so normal string keys keep creation order,
+but numeric-like keys such as `"0"`, `"1"`, and `"2"` follow JavaScript object key ordering rules before conversion.
+`Map` preserves insertion order exactly.
 
-`ComputeAxis` currently handles:
+## Ux Assignment
 
-- absolute pixel dimensions
-- percentage dimensions
-- fractional dimensions on the main axis by weighted remainder distribution
-- fractional dimensions on the cross axis by resolving to the largest resolved peer span
-- cross-axis `fill`
-- parent-owned start / center / end alignment
+`BoxTree` defaults to the built-in Pixi UX map. Override with `assignUx(ux, applyToChildren?)`:
 
-## Styles
+```ts
+import { BoxUxPixi } from '@wonderlandlabs-pixi-ux/box';
 
-`BoxStore` also exposes style context for renderers:
+layout.styles = styles;
+layout.assignUx((box) => new BoxUxPixi(box));
+layout.render();
+```
 
-- `styles`
-- `variant`
-- `styleStates`
-- `styleNouns`
-- `resolveStyle(...)`
+`addChild()` inherits the UX map function from its parent.
 
-See [`README.STYLES.md`](/Users/bingomanatee/Documents/repos/wonderlandlabs-pixi-ux/packages/box/README.STYLES.md) for the renderer-facing contract.
+Constructor shortcut:
+
+```ts
+const layout = new BoxTree({
+  id: 'root',
+  area: { x: 0, y: 0, width: 200, height: 100 },
+  ux: (box) => new BoxUxPixi(box),
+});
+layout.styles = styles;
+```
+
+## Style Resolution
+
+Each node has a `styleName` and optional state verbs:
+
+- `styleName`: style noun for the node
+- `modeVerb`: node-local states such as `hover`, `selected`, or `active`
+- `globalVerb`: root-wide states shared by descendants such as `disabled` or `readonly`
+
+When you call `resolveStyle(styleManager, extraStates?)`, `BoxTree` queries:
+
+1. Hierarchical path first such as `button.icon` or `toolbar.button.label`
+2. Atomic fallback such as `icon` or `label`
+
+With combined states:
+
+- `globalVerb + modeVerb + extraStates`
+
+## Default Ux
+
+Use `BoxUxPixi` for default Pixi rendering.
+
+It:
+
+- creates a container when none is provided
+- uses public `content: MapEnhanced` (`Map<string, unknown>`)
+- sets `content.$box` to the owning box
+- exposes `ux.getContainer(key)` for child UX handoff
+- exposes `ux.attach(targetContainer?)`
+- creates default layers keyed by `BOX_RENDER_CONTENT_ORDER`
+- lets you extend layer ordering via `BOX_UX_ORDER`, `setUxOrder(...)`, and `getUxOrder(...)`
+- clears and rebuilds the children layer each render cycle
+- draws background and stroke from resolved style props
+- honors `box.isVisible` without discarding render content
+- injects non-empty content items sorted by `zIndex`
+
+```ts
+import { Graphics } from 'pixi.js';
+import {
+  BOX_RENDER_CONTENT_ORDER,
+  BoxTree,
+  BoxUxPixi,
+} from '@wonderlandlabs-pixi-ux/box';
+import { fromJSON } from '@wonderlandlabs-pixi-ux/style-tree';
+
+const styles = fromJSON({
+  panel: {
+    bgColor: { $*: 0x2d3a45 },
+    bgStrokeColor: { $*: 0x8fd3ff },
+    bgStrokeSize: { $*: 2 },
+  },
+});
+
+const root = new BoxTree({
+  id: 'root',
+  styleName: 'panel',
+  area: { x: 20, y: 20, width: 220, height: 120 },
+});
+
+root.styles = styles;
+const ux = new BoxUxPixi(root);
+root.render();
+ux.attach(app.stage);
+
+const custom = new Graphics();
+custom.zIndex = 76;
+custom.visible = true;
+ux.content.set('CUSTOM', custom);
+ux.content.get('OVERLAY')?.visible = true;
+```
+
+## Override Points
+
+`BoxUxBase` is the renderer-agnostic lifecycle base.
+`BoxUxPixi` extends it with Pixi-specific container, graphics, and content behavior.
+
+Build custom rendering by returning your own UX object from `assignUx((box) => ...)`:
+
+- extend `BoxUxBase` for a non-Pixi renderer
+- extend `BoxUxPixi` for Pixi customization
+
+See [README.STYLES.md](./README.STYLES.md) for the renderer-facing contract.
+
+## Optional Pixi Geometry Preview
+
+```ts
+import { boxTreeToPixi } from '@wonderlandlabs-pixi-ux/box';
+
+const graphics = await boxTreeToPixi(layout, {
+  includeRoot: true,
+  fill: 0x2d3a45,
+  fillAlpha: 0.35,
+  stroke: 0x8fd3ff,
+  strokeAlpha: 0.9,
+  strokeWidth: 2,
+});
+```
+
+## Public API Snapshot
+
+- `BoxTree`
+- `BoxUx`
+- `BoxUxMapFn`
+- `BoxRenderer`
+- `BoxRenderMapFn`
+- `MapEnhanced`
+- `BoxUxBase`
+- `BoxUxPixi`
+- `BoxTreeRenderer`
+- `BOX_UX_ORDER`, `getUxOrder`, `setUxOrder`
+- `BOX_RENDER_CONTENT_ORDER`
+- `createBoxTreeState`
+- `resolveTreeMeasurement`
+- `resolveMeasurementPx`
+- `resolveConstraintValuePx`
+- `applyAxisConstraints`
+- `boxTreeToPixi`
+- `boxTreeToSvg`
+- `pathToString`, `pathString`, `combinePaths`
+- `ALIGN`, `AXIS`, `UNIT_BASIS`, `SIZE_MODE`, `SIZE_MODE_INPUT`
 
 ## Status
 
 This package is mid-refactor.
 
-The active architecture is the simplified `BoxStore` / `ComputeAxis` path in `src/`.
-Older `BoxTree`-style code still exists under [`src/_deprecated`](/Users/bingomanatee/Documents/repos/wonderlandlabs-pixi-ux/packages/box/src/_deprecated), but it is not the current direction.
+The active architecture is the simplified `BoxStore` and `ComputeAxis` path in `src/`.
+Older `BoxTree`-style code still exists under `src/_deprecated`, but it is not the current direction.
 
 ## Test Artifacts
 
@@ -66,4 +236,4 @@ The `ComputeAxis` tests generate:
 - SVG diagrams for layout inspection
 - HTML tables for readable scenario metadata
 
-These artifacts are written under [`packages/box/test/artifacts`](/Users/bingomanatee/Documents/repos/wonderlandlabs-pixi-ux/packages/box/test/artifacts) and are ignored by the package-level `.gitignore`.
+These artifacts are written under `packages/box/test/artifacts` and are ignored by the package-level `.gitignore`.

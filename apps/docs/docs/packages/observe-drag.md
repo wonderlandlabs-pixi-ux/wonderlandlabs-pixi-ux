@@ -2,10 +2,10 @@
 title: observe-drag
 description: Package README for @wonderlandlabs-pixi-ux/observe-drag
 ---
-
 # @wonderlandlabs-pixi-ux/observe-drag
 
-Repository: [https://github.com/wonderlandlabs-pixi-ux/wonderlandlabs-pixi-ux/tree/main/packages/observe-drag](https://github.com/wonderlandlabs-pixi-ux/wonderlandlabs-pixi-ux/tree/main/packages/observe-drag)
+Repository: [https://github.com/wonderlandlabs-pixi-ux/wonderlandlabs-pixi-ux](https://github.com/wonderlandlabs-pixi-ux/wonderlandlabs-pixi-ux)
+
 
 `observe-drag` enforces a single active drag owner via a module-level pointer lock by default.
 
@@ -20,7 +20,6 @@ Repository: [https://github.com/wonderlandlabs-pixi-ux/wonderlandlabs-pixi-ux/tr
 7. If an app with `render()` is provided, drag moves trigger a throttled render (default `30ms`, configurable via `renderThrottleMs`) and drag terminal events (`pointerup`, `pointerupoutside`, `pointercancel`) force a final render.
 
 ## Usage
-
 `dragDecorator` wraps your listeners and handles Pixi container movement with default assumptions:
 
 1. target is a Pixi `Container`-like object (`position`, optional `parent.toLocal`)
@@ -93,14 +92,6 @@ const sub = observeDown(
 );
 ```
 
-### Optional Zero-Arg Decorator
-
-```ts
-const sub = observeDown(target, dragDecorator(), {dragTarget: boxContainer});
-
-sub.unsubscribe();
-```
-
 ## Notes
 
 - You do not need to re-subscribe after each `pointerup`; one subscription handles repeated drag cycles.
@@ -111,6 +102,9 @@ sub.unsubscribe();
 - Subscription options support `dragTarget` (static), `getDragTarget(downEvent, context)` (dynamic), and `abortTime` (watchdog timeout in ms; `0` disables it).
 - Factory options support `activePointer$` so you can provide your own lock instead of using the default module singleton.
 - Factory options also support `stage` (when `app` is not provided), optional `app` for drag render calls, and `renderThrottleMs` to tune render throttle (default `30`).
+- Drag render throttling uses an app-scoped shared helper cache (`WeakMap`), so multiple drag/zoom consumers on the same app share one throttle stream.
+- The first shared helper retrieval/config for a given app wins; later retrievals use that same timing profile.
+- Shared helper internals live for the app lifetime and auto-clean on `app.destroy(...)`.
 - `dragDecorator()` provides default Pixi container dragging using parent-local coordinates, then delegates to your wrapped listeners.
 - `dragDecorator()` works with no parameters.
 - `dragTargetDecorator()` is deprecated and remains as a compatibility wrapper.

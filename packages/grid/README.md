@@ -1,7 +1,9 @@
 # @wonderlandlabs-pixi-ux/grid
 
-Grid/artboard renderer for PixiJS using `GridManager`.
+`grid` gives users a stable spatial reference for editors, maps, and canvas tools.
+It keeps grid rendering and zoom/pan behavior in sync so large workspaces stay navigable.
 
+Grid/artboard renderer for PixiJS using `GridManager`.
 
 ## Installation
 
@@ -96,7 +98,7 @@ grid.cleanup();
 
 ## Cache Mode
 
-`GridManager` supports an optional cache mode for the grid container.
+`GridManager` supports an optional cache mode for the grid container:
 
 - `cache.enabled` (default `true`): enables Pixi `cacheAsTexture` for the grid container.
 - `cache.resolution` (default `2`): base cache texture resolution multiplier (scaled by zoom).

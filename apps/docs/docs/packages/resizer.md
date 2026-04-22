@@ -4,7 +4,8 @@ description: Package README for @wonderlandlabs-pixi-ux/resizer
 ---
 # @wonderlandlabs-pixi-ux/resizer
 
-Repository: [https://github.com/wonderlandlabs-pixi-ux/wonderlandlabs-pixi-ux/tree/main/packages/resizer](https://github.com/wonderlandlabs-pixi-ux/wonderlandlabs-pixi-ux/tree/main/packages/resizer)
+Repository: [https://github.com/wonderlandlabs-pixi-ux/wonderlandlabs-pixi-ux](https://github.com/wonderlandlabs-pixi-ux/wonderlandlabs-pixi-ux)
+
 
 `resizer` adds editor-style handles so users can adjust bounds directly on screen.
 It standardizes rectangle updates and release callbacks for windowing and design-tool workflows.

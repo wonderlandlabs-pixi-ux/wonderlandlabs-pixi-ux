@@ -2,6 +2,9 @@
 
 Docusaurus docs app for the `@wonderlandlabs-pixi-ux` monorepo.
 
+Package pages under `apps/docs/docs/packages/*.md` are generated from `packages/*/README.md`.
+Use `yarn workspace @wonderlandlabs-pixi-ux/docs sync:package-docs` to refresh them manually.
+
 ## Run
 
 ```bash

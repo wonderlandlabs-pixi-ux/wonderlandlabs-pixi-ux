@@ -1,5 +1,8 @@
 # @wonderlandlabs-pixi-ux/button
 
+`button` turns low-level Pixi interaction into a reusable UI primitive.
+It combines layout from `box` and visual state rules from `style-tree` so hover, active, and disabled behavior stays consistent.
+
 Composable Pixi button store built on nested `BoxStore` layout from `@wonderlandlabs-pixi-ux/box` and styled through `@wonderlandlabs-pixi-ux/style-tree`.
 
 ## Installation

@@ -4,7 +4,8 @@ description: Package README for @wonderlandlabs-pixi-ux/toolbar
 ---
 # @wonderlandlabs-pixi-ux/toolbar
 
-Repository: [https://github.com/wonderlandlabs-pixi-ux/wonderlandlabs-pixi-ux/tree/main/packages/toolbar](https://github.com/wonderlandlabs-pixi-ux/wonderlandlabs-pixi-ux/tree/main/packages/toolbar)
+Repository: [https://github.com/wonderlandlabs-pixi-ux/wonderlandlabs-pixi-ux](https://github.com/wonderlandlabs-pixi-ux/wonderlandlabs-pixi-ux)
+
 
 `toolbar` helps you compose action surfaces quickly from reusable button definitions.
 It is useful for editor and HUD interfaces where spacing, ordering, and styling need to stay consistent.

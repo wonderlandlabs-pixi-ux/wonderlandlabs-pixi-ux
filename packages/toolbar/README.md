@@ -1,5 +1,8 @@
 # @wonderlandlabs-pixi-ux/toolbar
 
+`toolbar` helps you compose action surfaces quickly from reusable button definitions.
+It is useful for editor and HUD interfaces where spacing, ordering, and styling need to stay consistent.
+
 Toolbar composition store that manages multiple `ButtonStore` instances.
 
 ## Installation

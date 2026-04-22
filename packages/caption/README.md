@@ -1,5 +1,8 @@
 # @wonderlandlabs-pixi-ux/caption
 
+`caption` is for dialogue and annotation UI where readability and pointer geometry matter.
+It packages speech and thought-bubble variants into one API so you can drop narrative UI into scenes quickly.
+
 Caption bubbles for PixiJS with:
 
 - rectangular text boxes with optional corner radius

@@ -1,6 +1,14 @@
 # @wonderlandlabs-pixi-ux/utils
 
+`utils` holds shared helpers that other Pixi UX packages use for render scheduling and scale-aware point reads.
+
 Shared utility helpers for the `@wonderlandlabs-pixi-ux/*` packages.
+
+## Installation
+
+```bash
+yarn add @wonderlandlabs-pixi-ux/utils
+```
 
 ## `getSharedRenderHelper(app, options?)`
 
@@ -74,3 +82,16 @@ Example timeline (`throttleMs: 30`, `leading: true`, `trailing: false`):
 - `t=8ms` `request()` -> skipped
 - `t=20ms` `request()` -> skipped
 - `t=31ms` `request()` -> render now
+
+## `readScalePoint(displayObject)`
+
+Reads a display object's effective world scale into a point-like `{ x, y }` value.
+
+Use it when layout or interaction code needs the actual resolved scale instead of a configured local scale.
+
+```ts
+import { readScalePoint } from '@wonderlandlabs-pixi-ux/utils';
+
+const scale = readScalePoint(container);
+console.log(scale.x, scale.y);
+```

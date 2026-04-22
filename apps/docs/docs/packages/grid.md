@@ -4,7 +4,8 @@ description: Package README for @wonderlandlabs-pixi-ux/grid
 ---
 # @wonderlandlabs-pixi-ux/grid
 
-Repository: [https://github.com/wonderlandlabs-pixi-ux/wonderlandlabs-pixi-ux/tree/main/packages/grid](https://github.com/wonderlandlabs-pixi-ux/wonderlandlabs-pixi-ux/tree/main/packages/grid)
+Repository: [https://github.com/wonderlandlabs-pixi-ux/wonderlandlabs-pixi-ux](https://github.com/wonderlandlabs-pixi-ux/wonderlandlabs-pixi-ux)
+
 
 `grid` gives users a stable spatial reference for editors, maps, and canvas tools.
 It keeps grid rendering and zoom/pan behavior in sync so large workspaces stay navigable.
