@@ -17,16 +17,12 @@ describe('button style resolution', () => {
         ).toBe(60);
     });
 
-    it('resolves the base resting gradient and omits it on hover', () => {
-        expect(
-            resolveStyleValue(styles, 'container.background.gradient.direction', ['start'], BTYPE_BASE),
-        ).toBe('vertical');
-        expect(
-            resolveStyleValue(styles, 'container.background.gradient.colors', ['start'], BTYPE_BASE),
-        ).toEqual(['#D9D9D9', '#FFFFFF', '#BFBFBF']);
-        expect(
-            resolveStyleValue(styles, 'container.background.gradient.direction', ['hover'], BTYPE_BASE),
-        ).toBeUndefined();
+    it('stores the base resting fill as a gradient object and omits it on hover', () => {
+        expect(defaultStyles.container.background.base.$start.fill).toEqual({
+            direction: 'vertical',
+            colors: ['#D9D9D9', '#FFFFFF', '#BFBFBF'],
+        });
+        expect(defaultStyles.container.background.base.$hover?.fill).toBeUndefined();
     });
 
     it('resolves generic disabled alpha for label and icon', () => {

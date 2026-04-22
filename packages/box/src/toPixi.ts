@@ -13,7 +13,7 @@ import {
     ensureText,
     fitSpriteToRect,
     insetRoundRect,
-    resolvePixiGradient,
+    resolvePixiFill,
     resolveNumericStyle,
     resolvePixiColor,
     resolveAlignedOffset,
@@ -186,15 +186,12 @@ function finalizeDefaultPixiNode(
         context,
         ['background'],
     );
-    const backgroundGradient = backgroundStyle?.gradient ?? resolveGradientStyle(input.options.styleTree, context);
-    const fillColor = resolvePixiColor(
-        backgroundStyle?.color
-        ?? resolveStyleValue(input.options.styleTree, context, ['background', 'color'])
-    );
-    const fillGradient = resolvePixiGradient(
-        backgroundGradient,
+    const fillPaint = resolvePixiFill(
+        backgroundStyle?.fill,
         localLocation,
     );
+    const fillColor = fillPaint.color;
+    const fillGradient = fillPaint.gradient;
     const fillAlpha = resolveNumericStyle(
         backgroundStyle?.alpha
         ?? resolveStyleValue(input.options.styleTree, context, ['background', 'alpha'])
@@ -206,9 +203,7 @@ function finalizeDefaultPixiNode(
             Math.min(effectiveWidth, effectiveHeight) / 2,
         ),
     );
-    const baseBorderColor = resolvePixiColor(
-        resolveStyleValue(input.options.styleTree, context, ['border', 'color'])
-    );
+    const baseBorderColor = resolvePixiColor(resolveStyleValue(input.options.styleTree, context, ['border', 'color']));
     const baseBorderWidth = resolveNumericStyle(
         resolveStyleValue(input.options.styleTree, context, ['border', 'width'])
     ) ?? 0;
@@ -262,32 +257,6 @@ function finalizeDefaultPixiNode(
         currentContainer!.mask.clear();
         currentContainer!.mask = null;
     }
-}
-
-function resolveGradientStyle(
-    styles: BoxPixiOptions['styleTree'],
-    context: BoxStyleContext,
-): Record<string, unknown> | undefined {
-    const direction = resolveStyleValue(styles, context, ['background', 'gradient', 'direction']);
-    const colors = resolveStyleValue(styles, context, ['background', 'gradient', 'colors']);
-    const from = resolveStyleValue(styles, context, ['background', 'gradient', 'from']);
-    const to = resolveStyleValue(styles, context, ['background', 'gradient', 'to']);
-
-    if (
-        direction === undefined
-        && colors === undefined
-        && from === undefined
-        && to === undefined
-    ) {
-        return undefined;
-    }
-
-    return {
-        ...(direction !== undefined ? { direction } : {}),
-        ...(colors !== undefined ? { colors } : {}),
-        ...(from !== undefined ? { from } : {}),
-        ...(to !== undefined ? { to } : {}),
-    };
 }
 
 function renderDefaultContent(

@@ -30,10 +30,11 @@ function paletteFor(
     options: BoxSvgOptions,
     context?: BoxStyleContext,
 ): SvgPalette {
+    const backgroundStyle = context
+        ? resolveStyleValue<Record<string, unknown> | undefined>(options.styleTree, context, ['background'])
+        : undefined;
     const styleBackground = context
-        ? svgColor(
-            resolveStyleValue(options.styleTree, context, ['background', 'color'])
-        )
+        ? svgFillColor(backgroundStyle?.fill)
         : undefined;
     const styleBorder = context
         ? svgColor(
@@ -48,7 +49,7 @@ function paletteFor(
         : undefined;
 
     if (!styleBackground || !styleBorder) {
-        throw new Error(`toSVG requires styleTree values for background.color and border.color on "${cell.name}"`);
+        throw new Error(`toSVG requires styleTree values for background.fill and border.color on "${cell.name}"`);
     }
 
     return {
@@ -199,6 +200,33 @@ function svgColor(input: unknown): string | undefined {
             return `rgb(${toByte(maybeRgb.r)}, ${toByte(maybeRgb.g)}, ${toByte(maybeRgb.b)})`;
         }
     }
+    return undefined;
+}
+
+function svgFillColor(input: unknown): string | undefined {
+    const direct = svgColor(input);
+    if (direct) {
+        return direct;
+    }
+
+    if (!input || typeof input !== 'object') {
+        return undefined;
+    }
+
+    const maybeGradient = input as { colors?: unknown };
+    if (!Array.isArray(maybeGradient.colors) || maybeGradient.colors.length === 0) {
+        return undefined;
+    }
+
+    const firstStop = maybeGradient.colors[0];
+    if (typeof firstStop === 'string' || typeof firstStop === 'number') {
+        return svgColor(firstStop);
+    }
+
+    if (typeof firstStop === 'object' && firstStop !== null && 'color' in firstStop) {
+        return svgColor((firstStop as { color?: unknown }).color);
+    }
+
     return undefined;
 }
 

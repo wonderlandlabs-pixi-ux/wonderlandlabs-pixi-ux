@@ -191,6 +191,26 @@ export const BoxGradient = z.object({
 });
 export type BoxGradientType = z.infer<typeof BoxGradient>;
 
+export const BoxRgbColor = z.object({
+  r: z.number(),
+  g: z.number(),
+  b: z.number(),
+});
+export type BoxRgbColorType = z.infer<typeof BoxRgbColor>;
+
+export const BoxSolidFill = z.union([
+  z.string(),
+  z.number(),
+  BoxRgbColor,
+]);
+export type BoxSolidFillType = z.infer<typeof BoxSolidFill>;
+
+export const BoxFill = z.union([
+  BoxSolidFill,
+  BoxGradient,
+]);
+export type BoxFillType = z.infer<typeof BoxFill>;
+
 export const BoxCellData = z.object({
   id: z.string().optional(),
   dim: RectPartial,

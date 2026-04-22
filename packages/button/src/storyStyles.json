@@ -1,7 +1,7 @@
 {
   "container": {
     "background": {
-      "color": {
+      "fill": {
         "$text": null
       },
       "width": {
@@ -11,7 +11,7 @@
         "$*": 48
       },
       "base": {
-        "color": {
+        "fill": {
           "$hover": "#EAF4FF"
         }
       },

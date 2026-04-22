@@ -372,11 +372,10 @@ function createDesignerOverrideJSON(args: DesignerArgs) {
                         width: args.width,
                         height: args.height,
                         padding: [args.paddingY, args.paddingX],
-                        color: hasBackground ? color(args.backgroundColor) : null,
+                        fill: hasBackground ? color(args.backgroundColor) : null,
                     },
                     "$hover": {
-                        gradient: hasBackground ? null : undefined,
-                        color: hasBackground ? color(args.hoverBackgroundColor) : null,
+                        fill: hasBackground ? color(args.hoverBackgroundColor) : null,
                     },
                 },
             },

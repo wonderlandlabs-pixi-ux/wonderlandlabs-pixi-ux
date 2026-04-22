@@ -1,30 +1,12 @@
 import './setupNavigator';
 import { describe, expect, it } from 'vitest';
-import { fromJSON, type StyleTree } from '@wonderlandlabs-pixi-ux/style-tree';
+import { fromJSON } from '@wonderlandlabs-pixi-ux/style-tree';
 import { ToolbarStore } from '../src/ToolbarStore';
-import toolbarDefaultStyles from '../src/styles/toolbar.default.json';
 
 type QueuedTick = {
   fn: () => void;
   context?: unknown;
 };
-
-const BUTTON_COUNT = 3;
-const GAP = 8;
-const CONTAINER_PADDING = 8;
-const STYLE_TREE = fromJSON(toolbarDefaultStyles);
-
-function getStyleNumber(
-  styleTree: StyleTree,
-  nouns: string[],
-  states: string[] = []
-): number {
-  const value = styleTree.match({ nouns, states });
-  if (typeof value !== 'number') {
-    throw new Error(`Expected numeric style value for ${nouns.join('.')} with states [${states.join(',')}]`);
-  }
-  return value;
-}
 
 type TickerHost = {
   ticker: {
@@ -59,7 +41,36 @@ function createMockTickerHost(): { host: TickerHost; flushTicker: (maxTicks?: nu
   return { host, flushTicker };
 }
 
-function createToolbar(orientation: 'horizontal' | 'vertical'): {
+function createToolbarStyle() {
+  return fromJSON({
+    container: {
+      background: {
+        vertical: {
+          '$*': { fill: '#dddddd' },
+          padding: {
+            '$*': [4, 4],
+          },
+        },
+      },
+    },
+    icon: {
+      vertical: {
+        size: {
+          width: {
+            '$*': 40,
+            '$hover': 80,
+          },
+          height: {
+            '$*': 40,
+            '$hover': 80,
+          },
+        },
+      },
+    },
+  });
+}
+
+function createToolbar(orientation: 'horizontal' | 'vertical', fillButtons = false): {
   toolbar: ToolbarStore;
   flushTicker: () => void;
 } {
@@ -68,12 +79,14 @@ function createToolbar(orientation: 'horizontal' | 'vertical'): {
   const toolbar = new ToolbarStore({
     id: `toolbar-${orientation}`,
     orientation,
-    spacing: GAP,
-    padding: CONTAINER_PADDING,
+    spacing: 8,
+    padding: 8,
+    fillButtons,
+    style: createToolbarStyle(),
     buttons: [
-      { id: 'one', mode: 'iconVertical' },
-      { id: 'two', mode: 'iconVertical' },
-      { id: 'three', mode: 'iconVertical' },
+      { id: 'one', variant: 'vertical', icon: '/icons/demo-icon.png' },
+      { id: 'two', variant: 'vertical', icon: '/icons/demo-icon.png' },
+      { id: 'three', variant: 'vertical', icon: '/icons/demo-icon.png' },
     ],
   }, host as never);
 
@@ -86,223 +99,90 @@ function createToolbar(orientation: 'horizontal' | 'vertical'): {
 describe('ToolbarStore layout dimensions', () => {
   it('computes horizontal toolbar size from child widths, gaps, and padding', () => {
     const { toolbar } = createToolbar('horizontal');
-    const [one, two, three] = toolbar.getButtons();
-    const iconSizeX = getStyleNumber(STYLE_TREE, ['button', 'icon', 'vertical', 'icon', 'size', 'x']);
-    const iconSizeY = getStyleNumber(STYLE_TREE, ['button', 'icon', 'vertical', 'icon', 'size', 'y']);
-    const paddingX = getStyleNumber(STYLE_TREE, ['button', 'icon', 'vertical', 'padding', 'x']);
-    const paddingY = getStyleNumber(STYLE_TREE, ['button', 'icon', 'vertical', 'padding', 'y']);
-    const buttonWidth = iconSizeX + paddingX * 2;
-    const buttonHeight = iconSizeY + paddingY * 2;
 
-    expect(one.rect.width).toBe(buttonWidth);
-    expect(two.rect.width).toBe(buttonWidth);
-    expect(three.rect.width).toBe(buttonWidth);
-    expect(one.rect.height).toBe(buttonHeight);
+    const one = toolbar.getButtonRect('one')!;
+    const two = toolbar.getButtonRect('two')!;
+    const three = toolbar.getButtonRect('three')!;
 
-    expect(one.rect.x).toBe(0);
-    expect(two.rect.x).toBe(buttonWidth + GAP);
-    expect(three.rect.x).toBe((buttonWidth + GAP) * 2);
+    expect(one.width).toBe(48);
+    expect(two.width).toBe(48);
+    expect(three.width).toBe(48);
+    expect(one.height).toBe(48);
 
-    const expectedWidth =
-      BUTTON_COUNT * buttonWidth
-      + (BUTTON_COUNT - 1) * GAP
-      + CONTAINER_PADDING * 2;
-    const expectedHeight = buttonHeight + CONTAINER_PADDING * 2;
+    expect(one.x).toBe(8);
+    expect(two.x).toBe(64);
+    expect(three.x).toBe(120);
 
-    expect(toolbar.rect.width).toBe(expectedWidth);
-    expect(toolbar.rect.height).toBe(expectedHeight);
+    expect(toolbar.rect.width).toBe(176);
+    expect(toolbar.rect.height).toBe(64);
   });
 
   it('computes vertical toolbar size from child heights, gaps, and padding', () => {
     const { toolbar } = createToolbar('vertical');
-    const [one, two, three] = toolbar.getButtons();
-    const iconSizeX = getStyleNumber(STYLE_TREE, ['button', 'icon', 'vertical', 'icon', 'size', 'x']);
-    const iconSizeY = getStyleNumber(STYLE_TREE, ['button', 'icon', 'vertical', 'icon', 'size', 'y']);
-    const paddingX = getStyleNumber(STYLE_TREE, ['button', 'icon', 'vertical', 'padding', 'x']);
-    const paddingY = getStyleNumber(STYLE_TREE, ['button', 'icon', 'vertical', 'padding', 'y']);
-    const buttonWidth = iconSizeX + paddingX * 2;
-    const buttonHeight = iconSizeY + paddingY * 2;
 
-    expect(one.rect.width).toBe(buttonWidth);
-    expect(two.rect.width).toBe(buttonWidth);
-    expect(three.rect.width).toBe(buttonWidth);
-    expect(one.rect.height).toBe(buttonHeight);
+    const one = toolbar.getButtonRect('one')!;
+    const two = toolbar.getButtonRect('two')!;
+    const three = toolbar.getButtonRect('three')!;
 
-    expect(one.rect.y).toBe(0);
-    expect(two.rect.y).toBe(buttonHeight + GAP);
-    expect(three.rect.y).toBe((buttonHeight + GAP) * 2);
+    expect(one.width).toBe(48);
+    expect(two.width).toBe(48);
+    expect(three.width).toBe(48);
+    expect(one.height).toBe(48);
 
-    const expectedWidth = buttonWidth + CONTAINER_PADDING * 2;
-    const expectedHeight =
-      BUTTON_COUNT * buttonHeight
-      + (BUTTON_COUNT - 1) * GAP
-      + CONTAINER_PADDING * 2;
+    expect(one.y).toBe(8);
+    expect(two.y).toBe(64);
+    expect(three.y).toBe(120);
 
-    expect(toolbar.rect.width).toBe(expectedWidth);
-    expect(toolbar.rect.height).toBe(expectedHeight);
-  });
-
-  it('applies uniform spacing between vertically stacked buttons with different heights', () => {
-    const { host, flushTicker } = createMockTickerHost();
-    const spacing = 12;
-    const padding = 8;
-    const styleTree = fromJSON({
-      button: {
-        padding: {
-          '$*': { x: 4, y: 4 },
-        },
-        icon: {
-          '$*': { size: { x: 40, y: 40 }, alpha: 1 },
-        },
-        big: {
-          icon: {
-            '$*': { size: { x: 64, y: 64 }, alpha: 1 },
-          },
-        },
-      },
-    });
-
-    const toolbar = new ToolbarStore({
-      id: 'toolbar-vertical-variable-heights',
-      orientation: 'vertical',
-      spacing,
-      padding,
-      style: styleTree,
-      buttons: [
-        { id: 'one', mode: 'icon' },
-        { id: 'two', mode: 'icon', variant: 'big' },
-        { id: 'three', mode: 'icon' },
-      ],
-    }, host as never);
-
-    toolbar.kickoff();
-    flushTicker();
-
-    const [one, two, three] = toolbar.getButtons();
-
-    expect(one.rect.height).toBe(48);
-    expect(two.rect.height).toBe(72);
-    expect(three.rect.height).toBe(48);
-
-    expect(one.rect.y).toBe(0);
-    expect(two.rect.y).toBe(one.rect.height + spacing);
-    expect(three.rect.y).toBe(one.rect.height + spacing + two.rect.height + spacing);
-
-    const expectedToolbarHeight =
-      one.rect.height
-      + spacing
-      + two.rect.height
-      + spacing
-      + three.rect.height
-      + padding * 2;
-    expect(toolbar.rect.height).toBe(expectedToolbarHeight);
+    expect(toolbar.rect.width).toBe(64);
+    expect(toolbar.rect.height).toBe(176);
   });
 
   it('reflows vertical positions when a child button height changes after initial layout', () => {
-    const { host, flushTicker } = createMockTickerHost();
-    const spacing = 10;
-    const padding = 8;
-    const styleTree = fromJSON({
-      button: {
-        padding: {
-          '$*': { x: 4, y: 4 },
-        },
-        icon: {
-          '$*': { size: { x: 40, y: 40 }, alpha: 1 },
-          '$hover': { size: { x: 80, y: 80 }, alpha: 1 },
-        },
-      },
+    const { toolbar, flushTicker } = createToolbar('vertical');
+    const two = toolbar.getButton('two')!;
+
+    two.set('size', {
+      ...(two.value.size ?? {}),
+      width: 0,
+      height: 88,
     });
-
-    const toolbar = new ToolbarStore({
-      id: 'toolbar-vertical-reflow',
-      orientation: 'vertical',
-      spacing,
-      padding,
-      style: styleTree,
-      buttons: [
-        { id: 'one', mode: 'icon' },
-        { id: 'two', mode: 'icon' },
-        { id: 'three', mode: 'icon' },
-      ],
-    }, host as never);
-
-    toolbar.kickoff();
+    two.dirty();
+    flushTicker();
     flushTicker();
 
-    const [one, two, three] = toolbar.getButtons();
+    const one = toolbar.getButtonRect('one')!;
+    const resizedTwo = toolbar.getButtonRect('two')!;
+    const three = toolbar.getButtonRect('three')!;
 
-    const initialOneHeight = one.rect.height;
-    const initialTwoHeight = two.rect.height;
-    const initialThreeY = three.rect.y;
-    expect(initialOneHeight).toBe(48);
-    expect(initialTwoHeight).toBe(48);
-    expect(initialThreeY).toBe(initialOneHeight + spacing + initialTwoHeight + spacing);
-
-    two.setHovered(true);
-    flushTicker();
-
-    const hoveredTwoHeight = two.rect.height;
-    const expectedThreeY = one.rect.height + spacing + hoveredTwoHeight + spacing;
-    const expectedToolbarHeight =
-      one.rect.height
-      + spacing
-      + hoveredTwoHeight
-      + spacing
-      + three.rect.height
-      + padding * 2;
-
-    expect(hoveredTwoHeight).toBe(88);
-    expect(three.rect.y).toBe(expectedThreeY);
-    expect(toolbar.rect.height).toBe(expectedToolbarHeight);
+    expect(one.height).toBe(48);
+    expect(resizedTwo.height).toBe(88);
+    expect(three.y).toBe(160);
+    expect(toolbar.rect.height).toBe(216);
   });
 
   it('fills vertical button widths to the widest child when fillButtons is enabled', () => {
     const { host, flushTicker } = createMockTickerHost();
-    const spacing = 8;
-    const padding = 8;
-    const styleTree = fromJSON({
-      button: {
-        padding: {
-          '$*': { x: 4, y: 4 },
-        },
-        icon: {
-          '$*': { size: { x: 40, y: 40 }, alpha: 1 },
-        },
-        wide: {
-          icon: {
-            '$*': { size: { x: 64, y: 40 }, alpha: 1 },
-          },
-        },
-      },
-    });
 
     const toolbar = new ToolbarStore({
       id: 'toolbar-vertical-fill-width',
       orientation: 'vertical',
-      spacing,
-      padding,
+      spacing: 8,
+      padding: 8,
       fillButtons: true,
-      style: styleTree,
+      style: createToolbarStyle(),
       buttons: [
-        { id: 'one', mode: 'icon' },
-        { id: 'two', mode: 'icon', variant: 'wide' },
-        { id: 'three', mode: 'icon' },
+        { id: 'one', variant: 'vertical', icon: '/icons/demo-icon.png' },
+        { id: 'two', variant: 'vertical', icon: '/icons/demo-icon.png', size: { width: 72 } },
+        { id: 'three', variant: 'vertical', icon: '/icons/demo-icon.png' },
       ],
     }, host as never);
 
     toolbar.kickoff();
     flushTicker();
 
-    const [one, two, three] = toolbar.getButtons();
-    expect(one.rect.width).toBe(72);
-    expect(two.rect.width).toBe(72);
-    expect(three.rect.width).toBe(72);
-    expect(one.rect.y).toBe(0);
-    expect(two.rect.y).toBe(one.rect.height + spacing);
-    expect(three.rect.y).toBe(one.rect.height + spacing + two.rect.height + spacing);
-
-    const expectedToolbarWidth = 72 + padding * 2;
-    expect(toolbar.rect.width).toBe(expectedToolbarWidth);
+    expect(toolbar.getButtonRect('one')!.width).toBe(72);
+    expect(toolbar.getButtonRect('two')!.width).toBe(72);
+    expect(toolbar.getButtonRect('three')!.width).toBe(72);
+    expect(toolbar.rect.width).toBe(88);
   });
 });

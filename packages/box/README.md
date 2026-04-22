@@ -182,7 +182,7 @@ Build custom rendering by returning your own UX object from `assignUx((box) => .
 - extend `BoxUxBase` for a non-Pixi renderer
 - extend `BoxUxPixi` for Pixi customization
 
-See [README.STYLES.md](./README.STYLES.md) for the renderer-facing contract.
+See [Box Styles and Composition](./README.STYLES_COMPOSITION.md) for the renderer-facing contract.
 
 ## Optional Pixi Geometry Preview
 

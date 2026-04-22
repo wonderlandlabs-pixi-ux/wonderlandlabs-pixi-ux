@@ -1,7 +1,3 @@
----
-title: box styles and composition
-description: Style keys, layering, and composition behavior for the default BoxUxPixi.
----
 # Box Styles and Composition
 
 This document describes how the default `BoxUxPixi` composes layers and how styles are resolved.

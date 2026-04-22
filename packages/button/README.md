@@ -1,9 +1,7 @@
 # @wonderlandlabs-pixi-ux/button
 
-`button` turns low-level Pixi interaction into a reusable UI primitive.
-It combines layout from `box` and visual state rules from `style-tree` so hover, active, and disabled behavior stays consistent.
-
-Composable Pixi button store built on nested `BoxStore` layout from `@wonderlandlabs-pixi-ux/box` and styled through `@wonderlandlabs-pixi-ux/style-tree`.
+`button` is the current low-level Pixi button primitive in this repo.
+It renders from a `ButtonStateType`, lays itself out with `box`, and styles itself from `style-tree`.
 
 ## Installation
 
@@ -14,119 +12,197 @@ yarn add @wonderlandlabs-pixi-ux/button @wonderlandlabs-pixi-ux/style-tree
 ## Basic Usage
 
 ```ts
-import { Application, Sprite, Assets } from 'pixi.js';
+import { Application } from 'pixi.js';
 import { fromJSON } from '@wonderlandlabs-pixi-ux/style-tree';
-import { ButtonStore } from '@wonderlandlabs-pixi-ux/button';
+import {
+  ButtonStore,
+  BTYPE_BASE,
+} from '@wonderlandlabs-pixi-ux/button';
 
 const app = new Application();
 await app.init({ width: 800, height: 600 });
 
 const styleTree = fromJSON({
-  button: {
-    inline: {
-      padding: { $*: { x: 12, y: 6 } },
-      'border.radius': { $*: 6 },
-      'icon.gap': { $*: 8 },
-      fill: {
-        $*: { color: { r: 0.2, g: 0.55, b: 0.85 }, alpha: 1 },
-        $hover: { color: { r: 0.25, g: 0.62, b: 0.9 }, alpha: 1 }
+  container: {
+    background: {
+      padding: {
+        '$*': [8, 14],
       },
-      label: {
-        font: {
-          size: { $*: 14 },
-          color: { $*: { r: 1, g: 1, b: 1 } },
-          alpha: { $*: 1 }
-        }
-      }
-    }
-  }
+      base: {
+        '$*': { fill: '#2f7f74' },
+        '$hover': { fill: '#379286' },
+        '$disabled': { fill: '#70827e' },
+      },
+    },
+    border: {
+      radius: {
+        '$*': 8,
+      },
+      width: {
+        '$*': 0,
+      },
+    },
+    content: {
+      gap: {
+        '$*': 8,
+      },
+    },
+  },
+  label: {
+    font: {
+      color: {
+        '$*': '#ffffff',
+      },
+      alpha: {
+        '$*': 1,
+        '$disabled': 0.45,
+      },
+    },
+    size: {
+      '$*': 14,
+    },
+  },
+  icon: {
+    size: {
+      width: {
+        '$*': 18,
+      },
+      height: {
+        '$*': 18,
+      },
+    },
+  },
 });
 
-const texture = await Assets.load('/placeholder-art.png');
 const button = new ButtonStore({
-  id: 'save',
-  mode: 'inline',
-  sprite: new Sprite(texture),
+  variant: BTYPE_BASE,
   label: 'Save',
-  onClick: () => console.log('clicked'),
-}, styleTree, app);
+  icon: '/icons/demo-icon.png',
+  size: {
+    x: 120,
+    y: 120,
+    width: 0,
+    height: 0,
+  },
+}, {
+  app,
+  styleTree,
+  handlers: {
+    click: () => console.log('clicked'),
+  },
+});
 
-button.setPosition(120, 120);
 app.stage.addChild(button.container);
 button.kickoff();
 ```
 
-## Layout Model
+## Constructor Contract
 
-`ButtonStore` now builds a small nested box tree internally:
+```ts
+new ButtonStore(
+  value: {
+    variant: 'base' | 'text' | 'vertical' | 'avatar',
+    label?: string,
+    icon?: string,
+    state?: string,
+    modifiers?: string[],
+    isDisabled?: boolean,
+    isHovered?: boolean,
+    isDebug?: boolean,
+    size?: {
+      x?: number,
+      y?: number,
+      width?: number,
+      height?: number,
+    },
+  },
+  options: {
+    app?: Application,
+    styleTree?: StyleTree | StyleTree[],
+    styleDef?: unknown,
+    handlers: Record<string, () => void>,
+  },
+)
+```
 
-- root `button` box
-- one mode/content box (`text`, `inline`, `iconVertical`, or `content`)
-- semantic children such as `icon`, `label`, and `rightIcon`
-- explicit gap cells when spacing is needed
+Notes:
+- `icon` is a URL string, not a `Sprite` or `Container`.
+- `variant` controls the layout shape.
+- `state` and `modifiers` become style states for lookup.
+- `isDisabled` and `isHovered` are convenience inputs that normalize into `state`.
+- If you want the button to wrap to its content, set `size.width` and `size.height` to `0`.
+- `container.background.fill` can be either a solid color or a gradient object.
 
-That means button layout is parent-driven and no longer relies on ad hoc child position offsets.
+## Variants
 
-## Button Config
+- `base`: row layout for icon + label.
+- `text`: text-first layout.
+- `vertical`: icon over label.
+- `avatar`: centered avatar-style content.
+
+## StyleTree Shape
+
+The current renderer reads from these noun paths:
+
+- `container.background.padding`
+- `container.background.width`
+- `container.background.height`
+- `container.background.fill`
+- `container.background.<variant>`
+- `container.border.width`
+- `container.border.color`
+- `container.border.radius`
+- `container.content.gap`
+- `label.size`
+- `label.font`
+- `icon.size.width`
+- `icon.size.height`
+- `icon.alpha`
+
+Example variant targeting:
 
 ```ts
 {
-  id: string,
-  mode?: 'icon' | 'iconVertical' | 'text' | 'inline',
-  sprite?: Sprite,
-  icon?: Container,
-  rightSprite?: Sprite,
-  rightIcon?: Container,
-  label?: string,
-  isDisabled?: boolean,
-  onClick?: () => void,
-  variant?: string,
-  bitmapFont?: string,
+  container: {
+    background: {
+      base: {
+        '$*': { fill: '#2f7f74' },
+        '$hover': { fill: '#379286' },
+      },
+      text: {
+        '$*': { fill: '#4b5563' },
+      },
+    },
+  },
 }
 ```
 
-Mode behavior:
-- `icon`: icon-only.
-- `iconVertical`: icon with label below.
-- `text`: label-only.
-- `inline`: icon + label in a row (optionally right icon too).
+Example modifier targeting:
 
-If `mode` is omitted it is inferred from available icon/label fields.
-
-## StyleTree Expectations
-
-State keys are read using noun paths under `button` and optional states (`hover`, `disabled`).
-
-Common keys:
-- `button.padding.x`, `button.padding.y`
-- `button.border.radius`
-- `button.fill.color`, `button.fill.alpha`
-- `button.stroke.color`, `button.stroke.size`, `button.stroke.alpha`
-- `button.label.font.size`, `button.label.font.color`, `button.label.font.alpha`
-- `button.icon.size.x`, `button.icon.size.y`, `button.icon.alpha`
-- Mode-specific variants: `button.inline.*`, `button.text.*`, `button.icon.vertical.*`
-
-Variant lookup inserts `variant` after `button` (for example `button.primary.inline.fill.color`).
-
-The built-in Pixi renderer currently reads:
-
-- fill color and alpha
-- stroke color, size, and alpha
-- border radius
-- icon size, alpha, and tint
-- label font size, family, color, and alpha
+```ts
+{
+  container: {
+    background: {
+      base: {
+        '$danger': { fill: '#aa3f3f' },
+      },
+    },
+  },
+}
+```
 
 ## Main API
 
-- `setHovered(isHovered)`
-- `setDisabled(isDisabled)`
-- `isHovered`
-- `isDisabled`
-- `mode`
-- `getConfig()`
-- `getPreferredSize()`
+- `kickoff()`
+- `dirty()`
+- `resolve()`
+- `hasStatus(name)`
+- `setStatus(name, enabled)`
+- `set(key, value)` / `mutate(fn)` from the underlying store
+- `container`
 
 ## Notes
 
-- `children` exposes semantic content boxes with rects relative to the content run, which is useful for tests and inspection.
-- Explicit Pixi display objects win over `content` fallbacks. URL content is only used when no concrete icon display object is supplied.
+- Hover and tap listeners are bound to the rendered button container.
+- The button uses `box` layout internally; the public surface is the state object plus the Pixi container.
+- The package docs and stories should use this state-driven contract as the source of truth.

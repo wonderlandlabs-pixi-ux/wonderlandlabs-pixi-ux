@@ -3,6 +3,7 @@ import type {TitlebarContentRendererFn, WindowLabelFontStyle} from "./types.js";
 import rgbToColor from "./rgbToColor.js";
 import type {TitlebarStore} from "./TitlebarStore.js";
 import type {WindowStore} from "./WindowStore.js";
+import {computeTitlebarLayout} from "./titlebarLayout.js";
 
 const COUNTER_SCALE_LABEL = 'counter-scale';
 const STOCK_TITLE_TEXT = 'stock-titlebar-text';
@@ -146,6 +147,21 @@ export const renderStockTitlebarContent: TitlebarContentRendererFn = ({
     const labelStyle = resolveLabelStyle(typedTitlebarStore, typedWindowStore);
     const {container: renderContainer, rect: layoutRect} = resolveRenderTarget(contentContainer, localRect, localScale);
     const padding = titlebarValue.padding ?? 0;
+    const closeButtonSize = titlebarValue.showCloseButton
+        ? Math.max(10, Math.min(18, layoutRect.height - (padding * 2) - 6))
+        : undefined;
+    const layout = computeTitlebarLayout({
+        width: layoutRect.width,
+        height: layoutRect.height,
+        padding,
+        icon: titlebarValue.icon
+            ? {
+                width: titlebarValue.icon.width,
+                height: titlebarValue.icon.height,
+            }
+            : undefined,
+        closeButtonSize,
+    });
     const titleText = getText(renderContainer, contentContainer);
 
     titleText.text = titlebarValue.title;
@@ -155,17 +171,20 @@ export const renderStockTitlebarContent: TitlebarContentRendererFn = ({
     titleText.alpha = labelStyle.visible ? labelStyle.alpha : 0;
     titleText.style.wordWrap = true;
 
-    let iconOffset = 0;
     if (!titlebarValue.icon) {
         removeChildByLabel(renderContainer, contentContainer, STOCK_TITLE_ICON);
     } else {
         const iconUrl = titlebarValue.icon.url;
         const existingIcon = getManagedChild<StockIconSprite>(renderContainer, contentContainer, STOCK_TITLE_ICON);
         const applyIcon = (sprite: Sprite) => {
+            const iconRect = layout.iconRect;
+            if (!iconRect) {
+                return;
+            }
             sprite.width = titlebarValue.icon!.width;
             sprite.height = titlebarValue.icon!.height;
-            sprite.x = padding;
-            sprite.y = Math.max(0, (layoutRect.height - sprite.height) / 2);
+            sprite.x = iconRect.x;
+            sprite.y = iconRect.y;
         };
 
         if (existingIcon?.__stockIconUrl === iconUrl) {
@@ -195,21 +214,19 @@ export const renderStockTitlebarContent: TitlebarContentRendererFn = ({
                 iconSprite.__stockIconUrl = iconUrl;
                 applyIcon(iconSprite);
                 renderContainer.addChild(iconSprite);
+                typedTitlebarStore.dirty();
             });
         }
-        iconOffset = titlebarValue.icon.width + 4;
     }
 
-    let closeButtonReserve = 0;
     if (!titlebarValue.showCloseButton) {
         removeChildByLabel(renderContainer, contentContainer, STOCK_CLOSE_BUTTON);
     } else {
         const closeButton = getCloseButton(renderContainer, contentContainer, typedWindowStore);
-        const size = Math.max(10, Math.min(18, layoutRect.height - (padding * 2) - 6));
+        const size = closeButtonSize ?? 10;
         const symbolColor = rgbToColor(labelStyle.color);
         const inset = Math.max(2, size * 0.3);
         const half = size / 2;
-        closeButtonReserve = size + 8;
 
         closeButton.clear();
         closeButton.roundRect(-half, -half, size, size, 3)
@@ -220,14 +237,12 @@ export const renderStockTitlebarContent: TitlebarContentRendererFn = ({
         closeButton.moveTo(half - inset, -half + inset)
             .lineTo(-half + inset, half - inset)
             .stroke({color: symbolColor, width: 2});
-        closeButton.x = Math.max(half + padding, layoutRect.width - padding - half);
-        closeButton.y = layoutRect.height / 2;
+        const closeRect = layout.closeRect;
+        closeButton.x = closeRect ? closeRect.x + half : Math.max(half + padding, layoutRect.width - padding - half);
+        closeButton.y = closeRect ? closeRect.y + (closeRect.h / 2) : (layoutRect.height / 2);
     }
 
-    titleText.x = padding + iconOffset;
-    titleText.y = Math.max(0, ((layoutRect.height - labelStyle.size) / 2) - (labelStyle.size * 0.15));
-    titleText.style.wordWrapWidth = Math.max(
-        0,
-        layoutRect.width - (padding * 2) - iconOffset - closeButtonReserve,
-    );
+    titleText.x = layout.titleRect.x;
+    titleText.y = layout.titleRect.y + Math.max(0, ((layout.titleRect.h - labelStyle.size) / 2) - (labelStyle.size * 0.15));
+    titleText.style.wordWrapWidth = Math.max(0, layout.titleRect.w);
 };

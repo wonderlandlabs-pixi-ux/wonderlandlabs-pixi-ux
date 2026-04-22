@@ -2,8 +2,11 @@
   "container": {
     "background": {
       "base": {
-        "color": {
-          "$*": "#183a37"
+        "$*": {
+          "fill": "#183a37"
+        },
+        "$hover": {
+          "fill": "#183a37"
         },
         "padding": {
           "$*": [0, 40]

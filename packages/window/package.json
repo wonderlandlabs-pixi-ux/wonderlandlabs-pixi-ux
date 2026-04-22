@@ -15,8 +15,10 @@
     "pixi.js": "8.16.0"
   },
   "dependencies": {
+    "@wonderlandlabs-pixi-ux/box": "1.2.8",
     "@wonderlandlabs-pixi-ux/observe-drag": "1.2.8",
     "@wonderlandlabs-pixi-ux/resizer": "1.2.8",
+    "@wonderlandlabs-pixi-ux/style-tree": "1.2.8",
     "@wonderlandlabs-pixi-ux/ticker-forest": "1.2.8",
     "@wonderlandlabs-pixi-ux/toolbar": "1.2.8",
     "@wonderlandlabs-pixi-ux/utils": "1.2.8",

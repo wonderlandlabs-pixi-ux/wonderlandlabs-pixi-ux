@@ -1,7 +1,3 @@
----
-title: window titlebar dynamics
-description: Current titlebar mechanics for @wonderlandlabs-pixi-ux/window
----
 # Window Titlebar Dynamics
 
 This document describes the current titlebar mechanics in `@wonderlandlabs-pixi-ux/window`.

@@ -1,6 +1,6 @@
 import { Color, Container, FillGradient, Graphics, Sprite, Text, TextStyle, Texture, type ColorSource, type TextStyleOptions } from 'pixi.js';
 import { z } from 'zod';
-import type { BoxGradientType, BoxSizeType, RectStaticType } from './types.js';
+import { BoxFill, type BoxGradientType, type BoxSizeType, type RectStaticType } from './types.js';
 import { sizeToNumber } from './helpers.js';
 import { DIR_HORIZ_S, DIR_VERT_S, SIZE_PCT } from './constants.js';
 
@@ -158,31 +158,16 @@ export function resolvePixiColor(input: unknown): number | undefined {
   }
 }
 
-const BoxGradientSchema = z.object({
-  from: z.object({
-    x: z.any(),
-    y: z.any(),
-  }).optional(),
-  to: z.object({
-    x: z.any(),
-    y: z.any(),
-  }).optional(),
-  direction: z.enum(['horizontal', 'vertical']).optional(),
-  colors: z.array(z.union([
-    z.object({
-      offset: z.number(),
-      color: z.union([z.string(), z.number()]),
-    }),
-    z.union([z.string(), z.number()]),
-  ])),
-});
-
 export function resolvePixiGradient(
   input: unknown,
   rect: RectStaticType,
 ): FillGradient | undefined {
-  const parsed = BoxGradientSchema.safeParse(input);
+  const parsed = BoxFill.safeParse(input);
   if (!parsed.success || rect.w <= 0 || rect.h <= 0) {
+    return undefined;
+  }
+
+  if (typeof parsed.data !== 'object' || parsed.data === null || !('colors' in parsed.data)) {
     return undefined;
   }
 
@@ -221,6 +206,27 @@ export function resolvePixiGradient(
     },
     colorStops: normalizeGradientStops(gradient.colors),
   });
+}
+
+export function resolvePixiFill(
+  input: unknown,
+  rect: RectStaticType,
+): { color?: number; gradient?: FillGradient } {
+  if (input === undefined || input === null || input === false) {
+    return {};
+  }
+
+  const gradient = resolvePixiGradient(input, rect);
+  if (gradient) {
+    return { gradient };
+  }
+
+  const color = resolvePixiColor(input);
+  if (color !== undefined) {
+    return { color };
+  }
+
+  return {};
 }
 
 function normalizeGradientStops(

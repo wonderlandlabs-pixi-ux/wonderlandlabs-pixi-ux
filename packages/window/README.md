@@ -87,7 +87,7 @@ This package provides draggable, resizable windows with titlebars, managed throu
 
 ## Titlebar Mechanics
 
-See [TITLEBAR_DYNAMICS.md](./TITLEBAR_DYNAMICS.md) for the current titlebar model, including:
+See [Window Titlebar Dynamics](./README.TITLEBAR_DYNAMICS.md) for the current titlebar model, including:
 
 - the renderer frame of reference
 - the explicit `counter-scale` child layer used by `CounterScalingTitlebar`

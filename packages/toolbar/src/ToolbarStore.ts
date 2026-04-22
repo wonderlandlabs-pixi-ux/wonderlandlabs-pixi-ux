@@ -1,19 +1,28 @@
-import { ButtonStore } from '@wonderlandlabs-pixi-ux/button';
-import { StyleTree, fromJSON } from '@wonderlandlabs-pixi-ux/style-tree';
+import {
+  ButtonStore,
+  BTYPE_AVATAR,
+  BTYPE_BASE,
+  BTYPE_TEXT,
+  BTYPE_VERTICAL,
+  type ButtonStateType,
+} from '@wonderlandlabs-pixi-ux/button';
+import { fromJSON, type StyleTree } from '@wonderlandlabs-pixi-ux/style-tree';
 import { TickerForest, type TickerForestConfig } from '@wonderlandlabs-pixi-ux/ticker-forest';
 import {
   Application,
   Container,
   Graphics,
+  Rectangle,
   type Ticker,
 } from 'pixi.js';
 import type {
   BackgroundStyle,
-  ToolbarConfig,
   ToolbarButtonConfig,
+  ToolbarConfig,
   ToolbarPadding,
 } from './types.js';
-import { ToolbarConfigSchema } from './types.js';
+import { ToolbarButtonVariantSchema, ToolbarConfigSchema } from './types.js';
+import { computeToolbarLayout, type ToolbarRect } from './toolbarLayout.js';
 import defaultStyles from './styles/toolbar.default.json' with { type: 'json' };
 
 type ToolbarState = {
@@ -21,15 +30,13 @@ type ToolbarState = {
 };
 
 type TickerSource = Application | { ticker: Ticker };
-
-type ToolbarRect = {
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-};
-
 type Unwire = () => void;
+
+type ToolbarButtonRecord = {
+  button: ButtonStore;
+  config: ToolbarButtonConfig;
+  unwind: Unwire;
+};
 
 const ZERO_PADDING: Required<ToolbarPadding> = {
   top: 0,
@@ -37,6 +44,8 @@ const ZERO_PADDING: Required<ToolbarPadding> = {
   bottom: 0,
   left: 0,
 };
+
+const BUTTON_VARIANTS = new Set(ToolbarButtonVariantSchema.options);
 
 function isApplication(value: TickerSource): value is Application {
   return !!value && typeof value === 'object' && 'renderer' in value && 'ticker' in value;
@@ -74,52 +83,139 @@ function rgbToHex(rgb: { r: number; g: number; b: number }): number {
   return (r << 16) | (g << 8) | b;
 }
 
-/**
- * ToolbarStore - Composes ButtonStore instances and lays them out in row/column flow.
- */
+function isButtonVariant(value: string | undefined): value is typeof BTYPE_BASE | typeof BTYPE_TEXT | typeof BTYPE_VERTICAL | typeof BTYPE_AVATAR {
+  return !!value && BUTTON_VARIANTS.has(value as never);
+}
+
+function variantFromMode(mode: ToolbarButtonConfig['mode']): ButtonStateType['variant'] | undefined {
+  switch (mode) {
+    case 'text':
+      return BTYPE_TEXT;
+    case 'iconVertical':
+      return BTYPE_VERTICAL;
+    case 'avatar':
+      return BTYPE_AVATAR;
+    case 'icon':
+    case 'inline':
+      return BTYPE_BASE;
+    default:
+      return undefined;
+  }
+}
+
+function inferButtonVariant(config: ToolbarButtonConfig): ButtonStateType['variant'] {
+  if (isButtonVariant(config.variant)) {
+    return config.variant;
+  }
+  const fromMode = variantFromMode(config.mode);
+  if (fromMode) {
+    return fromMode;
+  }
+  if (config.label && !config.icon) {
+    return BTYPE_TEXT;
+  }
+  return BTYPE_BASE;
+}
+
+function normalizeModifiers(config: ToolbarButtonConfig): string[] | undefined {
+  const next = new Set(config.modifiers ?? []);
+  if (config.variant && !isButtonVariant(config.variant)) {
+    next.add(config.variant);
+  }
+  return next.size > 0 ? Array.from(next) : undefined;
+}
+
+function normalizeButtonState(config: ToolbarButtonConfig): ButtonStateType {
+  return {
+    variant: inferButtonVariant(config),
+    label: config.label,
+    icon: config.icon,
+    state: config.state,
+    modifiers: normalizeModifiers(config),
+    isDebug: config.isDebug,
+    isDisabled: config.isDisabled,
+    isHovered: config.isHovered,
+    size: {
+      width: config.size?.width ?? 0,
+      height: config.size?.height ?? 0,
+      x: 0,
+      y: 0,
+    },
+  };
+}
+
+function measureButton(button: ButtonStore): { width: number; height: number } {
+  const hitArea = buttonContainer(button).hitArea;
+  if (hitArea instanceof Rectangle) {
+    return {
+      width: Math.max(0, Math.ceil(hitArea.width)),
+      height: Math.max(0, Math.ceil(hitArea.height)),
+    };
+  }
+
+  const bounds = buttonContainer(button).getLocalBounds();
+  return {
+    width: Math.max(0, Math.ceil(bounds.width)),
+    height: Math.max(0, Math.ceil(bounds.height)),
+  };
+}
+
+function sameSize(
+  current: ButtonStateType['size'] | undefined,
+  width: number,
+  height: number,
+): boolean {
+  return (current?.width ?? 0) === width && (current?.height ?? 0) === height;
+}
+
+function buttonContainer(button: ButtonStore): Container {
+  const container = button.container;
+  if (!container) {
+    throw new Error('ToolbarStore: button container unavailable');
+  }
+  return container;
+}
+
 export class ToolbarStore extends TickerForest<ToolbarState> {
   readonly id: string;
 
-  #styleTree: StyleTree;
+  #styleTree: StyleTree | StyleTree[];
   #toolbarConfig: ToolbarConfig;
-  #buttons: Map<string, ButtonStore> = new Map();
-  #buttonUnwires: Map<string, Unwire> = new Map();
-
+  #buttons = new Map<string, ToolbarButtonRecord>();
   #background: Graphics;
-  #contentContainer: Container;
-
   #rect: ToolbarRect = {
     x: 0,
     y: 0,
     width: 0,
     height: 0,
   };
-
+  #buttonRects = new Map<string, ToolbarRect>();
+  #appliedSizes = new Map<string, { width: number; height: number }>();
   #padding: Required<ToolbarPadding>;
+  #isApplyingLayout = false;
 
   constructor(config: ToolbarConfig, tickerSource: TickerSource) {
     const parsedConfig = ToolbarConfigSchema.parse(config);
     const toolbarContainer = new Container({ label: `toolbar-${parsedConfig.id ?? 'toolbar'}` });
     super(
       { value: { order: parsedConfig.order ?? 0 } },
-      {...toTickerConfig(tickerSource), container: toolbarContainer}
+      { ...toTickerConfig(tickerSource), container: toolbarContainer },
     );
-
 
     this.id = parsedConfig.id ?? 'toolbar';
     this.#styleTree = parsedConfig.style ?? fromJSON(defaultStyles);
-    this.#toolbarConfig = parsedConfig;
+    this.#toolbarConfig = {
+      ...parsedConfig,
+      buttons: [...parsedConfig.buttons],
+    };
     this.#padding = normalizePadding(parsedConfig.padding);
 
     this.container.zIndex = this.value.order;
-    this.#background = new Graphics();
-    this.#contentContainer = new Container({ label: `toolbar-content-${this.id}` });
-
+    this.#background = new Graphics({ label: `toolbar-background-${this.id}` });
     this.container.addChild(this.#background);
-    this.container.addChild(this.#contentContainer);
 
     for (const buttonConfig of parsedConfig.buttons) {
-      this.#createButton(buttonConfig, parsedConfig.bitmapFont);
+      this.#createButton(buttonConfig);
     }
   }
 
@@ -140,7 +236,7 @@ export class ToolbarStore extends TickerForest<ToolbarState> {
     };
   }
 
-  get styleTree(): StyleTree {
+  get styleTree(): StyleTree | StyleTree[] {
     return this.#styleTree;
   }
 
@@ -153,68 +249,156 @@ export class ToolbarStore extends TickerForest<ToolbarState> {
   }
 
   #wireButton(button: ButtonStore): Unwire {
-    const originalSetHovered = button.setHovered.bind(button);
-    const originalSetDisabled = button.setDisabled.bind(button);
-
-    button.setHovered = (isHovered: boolean): void => {
-      originalSetHovered(isHovered);
-      this.dirty();
-    };
-
-    button.setDisabled = (isDisabled: boolean): void => {
-      originalSetDisabled(isDisabled);
-      this.dirty();
+    const originalResolve = button.resolve.bind(button);
+    button.resolve = () => {
+      originalResolve();
+      if (!this.#isApplyingLayout) {
+        this.dirty();
+      }
     };
 
     return () => {
-      button.setHovered = originalSetHovered;
-      button.setDisabled = originalSetDisabled;
+      button.resolve = originalResolve;
     };
   }
 
-  #createButton(buttonConfig: ToolbarButtonConfig, bitmapFontName?: string): ButtonStore {
-    const tickerSource = this.application ?? { ticker: this.ticker };
-    const button = new ButtonStore({
-      ...buttonConfig,
-      bitmapFont: buttonConfig.bitmapFont ?? bitmapFontName,
-    }, this.#styleTree, tickerSource);
+  #createButton(buttonConfig: ToolbarButtonConfig): ButtonStore {
+    const button = new ButtonStore(normalizeButtonState(buttonConfig), {
+      app: this.application,
+      styleTree: this.#styleTree,
+      handlers: {
+        click: buttonConfig.onClick ?? (() => {}),
+      },
+    });
+
+    if (!this.application) {
+      button.ticker = this.ticker;
+    }
 
     const unwind = this.#wireButton(button);
-
-    this.#buttons.set(buttonConfig.id, button);
-    this.#buttonUnwires.set(buttonConfig.id, unwind);
-    this.#contentContainer.addChild(button.container);
-
+    this.#buttons.set(buttonConfig.id, {
+      button,
+      config: buttonConfig,
+      unwind,
+    });
+    this.container.addChild(buttonContainer(button));
     return button;
   }
 
+  #settleButton(button: ButtonStore): void {
+    button.resolve();
+    button.resolve();
+  }
+
+  #desiredButtonSize(record: ToolbarButtonRecord): { width: number; height: number } {
+    const current = record.button.value.size;
+    const applied = this.#appliedSizes.get(record.config.id);
+
+    return {
+      width: record.config.size?.width
+        ?? (applied ? ((current?.width ?? 0) !== applied.width ? (current?.width ?? 0) : 0) : (current?.width ?? 0)),
+      height: record.config.size?.height
+        ?? (applied ? ((current?.height ?? 0) !== applied.height ? (current?.height ?? 0) : 0) : (current?.height ?? 0)),
+    };
+  }
+
+  #applyButtonSize(id: string, button: ButtonStore, width: number, height: number): boolean {
+    this.#appliedSizes.set(id, { width, height });
+    if (sameSize(button.value.size, width, height)) {
+      return false;
+    }
+
+    button.set('size', {
+      ...(button.value.size ?? {}),
+      x: 0,
+      y: 0,
+      width,
+      height,
+    });
+    return true;
+  }
+
+  #measureButtons(): Array<{ id: string; width: number; height: number }> {
+    const measured: Array<{ id: string; width: number; height: number }> = [];
+
+    for (const [id, record] of this.#buttons.entries()) {
+      const { width, height } = this.#desiredButtonSize(record);
+      if (this.#applyButtonSize(id, record.button, width, height)) {
+        this.#settleButton(record.button);
+      } else {
+        this.#settleButton(record.button);
+      }
+      const next = measureButton(record.button);
+      measured.push({ id, ...next });
+    }
+
+    const fillButtons = this.#toolbarConfig.fillButtons ?? false;
+    if (!fillButtons || measured.length === 0) {
+      return measured;
+    }
+
+    if ((this.#toolbarConfig.orientation ?? 'horizontal') === 'vertical') {
+      const targetWidth = measured.reduce((max, button) => Math.max(max, button.width), 0);
+      return measured.map((entry) => {
+        const record = this.#buttons.get(entry.id)!;
+        const width = Math.max(record.config.size?.width ?? 0, targetWidth);
+        const height = this.#desiredButtonSize(record).height;
+        if (this.#applyButtonSize(entry.id, record.button, width, height)) {
+          this.#settleButton(record.button);
+          const next = measureButton(record.button);
+          return { id: entry.id, ...next };
+        }
+        return entry;
+      });
+    }
+
+    const targetHeight = measured.reduce((max, button) => Math.max(max, button.height), 0);
+    return measured.map((entry) => {
+      const record = this.#buttons.get(entry.id)!;
+      const width = this.#desiredButtonSize(record).width;
+      const height = Math.max(record.config.size?.height ?? 0, targetHeight);
+      if (this.#applyButtonSize(entry.id, record.button, width, height)) {
+        this.#settleButton(record.button);
+        const next = measureButton(record.button);
+        return { id: entry.id, ...next };
+      }
+      return entry;
+    });
+  }
+
   addButton(buttonConfig: ToolbarButtonConfig): ButtonStore {
-    const button = this.#createButton(buttonConfig, this.#toolbarConfig.bitmapFont);
+    const button = this.#createButton(buttonConfig);
+    this.#toolbarConfig.buttons = [...(this.#toolbarConfig.buttons ?? []), buttonConfig];
     button.kickoff();
     this.dirty();
     return button;
   }
 
   removeButton(id: string): void {
-    const button = this.#buttons.get(id);
-    if (!button) return;
+    const record = this.#buttons.get(id);
+    if (!record) return;
 
-    this.#buttonUnwires.get(id)?.();
-    this.#buttonUnwires.delete(id);
-
+    record.unwind();
     this.#buttons.delete(id);
-    this.#contentContainer.removeChild(button.container);
-    button.cleanup();
-
+    this.#buttonRects.delete(id);
+    this.#appliedSizes.delete(id);
+    this.container.removeChild(buttonContainer(record.button));
+    record.button.cleanup();
+    this.#toolbarConfig.buttons = (this.#toolbarConfig.buttons ?? []).filter((button) => button.id !== id);
     this.dirty();
   }
 
   getButton(id: string): ButtonStore | undefined {
-    return this.#buttons.get(id);
+    return this.#buttons.get(id)?.button;
   }
 
   getButtons(): ButtonStore[] {
-    return Array.from(this.#buttons.values());
+    return Array.from(this.#buttons.values(), (record) => record.button);
+  }
+
+  getButtonRect(id: string): ToolbarRect | undefined {
+    const rect = this.#buttonRects.get(id);
+    return rect ? { ...rect } : undefined;
   }
 
   setPosition(x: number, y: number): void {
@@ -234,99 +418,6 @@ export class ToolbarStore extends TickerForest<ToolbarState> {
     this.dirty();
   }
 
-  #layoutButtons(): { width: number; height: number } {
-    const buttons = this.getButtons();
-    if (!buttons.length) {
-      return { width: 0, height: 0 };
-    }
-
-    const spacing = this.#toolbarConfig.spacing ?? 8;
-    const orientation = this.#toolbarConfig.orientation ?? 'horizontal';
-    const fillButtons = this.#toolbarConfig.fillButtons ?? false;
-
-    let fillChanged = false;
-    if (fillButtons) {
-      if (orientation === 'vertical') {
-        const targetWidth = buttons.reduce((max, button) => Math.max(max, button.rect.width), 0);
-        for (const button of buttons) {
-          fillChanged = button.setMinSize(targetWidth, undefined) || fillChanged;
-        }
-      } else {
-        const targetHeight = buttons.reduce((max, button) => Math.max(max, button.rect.height), 0);
-        for (const button of buttons) {
-          fillChanged = button.setMinSize(undefined, targetHeight) || fillChanged;
-        }
-      }
-    } else {
-      for (const button of buttons) {
-        fillChanged = button.setMinSize(undefined, undefined) || fillChanged;
-      }
-    }
-
-    let flowOffset = 0;
-    let crossSize = 0;
-
-    for (const [index, button] of buttons.entries()) {
-      const { width, height } = button.rect;
-
-      if (orientation === 'vertical') {
-        if (button.rect.x !== 0 || button.rect.y !== flowOffset) {
-          button.setPosition(0, flowOffset);
-        }
-        flowOffset += height;
-        if (index < buttons.length - 1) {
-          flowOffset += spacing;
-        }
-        crossSize = Math.max(crossSize, width);
-      } else {
-        if (button.rect.x !== flowOffset || button.rect.y !== 0) {
-          button.setPosition(flowOffset, 0);
-        }
-        flowOffset += width;
-        if (index < buttons.length - 1) {
-          flowOffset += spacing;
-        }
-        crossSize = Math.max(crossSize, height);
-      }
-    }
-
-    if (orientation === 'vertical') {
-      if (fillChanged) {
-        this.dirty();
-      }
-      return {
-        width: crossSize,
-        height: flowOffset,
-      };
-    }
-
-    if (fillChanged) {
-      this.dirty();
-    }
-    return {
-      width: flowOffset,
-      height: crossSize,
-    };
-  }
-
-  #resolveToolbarSize(contentWidth: number, contentHeight: number): { width: number; height: number } {
-    const withPaddingWidth = contentWidth + this.#padding.left + this.#padding.right;
-    const withPaddingHeight = contentHeight + this.#padding.top + this.#padding.bottom;
-
-    const fixedSize = this.#toolbarConfig.fixedSize ?? false;
-    if (fixedSize) {
-      return {
-        width: this.#toolbarConfig.width ?? withPaddingWidth,
-        height: this.#toolbarConfig.height ?? withPaddingHeight,
-      };
-    }
-
-    return {
-      width: Math.max(this.#toolbarConfig.width ?? 0, withPaddingWidth),
-      height: Math.max(this.#toolbarConfig.height ?? 0, withPaddingHeight),
-    };
-  }
-
   #renderBackground(style?: BackgroundStyle): void {
     this.#background.clear();
 
@@ -342,7 +433,7 @@ export class ToolbarStore extends TickerForest<ToolbarState> {
       });
     }
 
-    if (style.stroke?.color && style.stroke.width && style.stroke.width > 0) {
+    if (style.stroke?.color && style.stroke.width > 0) {
       this.#background.roundRect(0, 0, this.#rect.width, this.#rect.height, radius);
       this.#background.stroke({
         color: rgbToHex(style.stroke.color),
@@ -353,35 +444,60 @@ export class ToolbarStore extends TickerForest<ToolbarState> {
   }
 
   override kickoff(): void {
-    for (const button of this.#buttons.values()) {
-      button.kickoff();
+    for (const record of this.#buttons.values()) {
+      record.button.kickoff();
     }
     super.kickoff();
   }
 
   protected override resolve(): void {
-    const content = this.#layoutButtons();
-    const size = this.#resolveToolbarSize(content.width, content.height);
-    this.container.zIndex = this.value.order;
+    this.#isApplyingLayout = true;
 
-    this.#rect = {
-      x: this.container.position.x,
-      y: this.container.position.y,
-      width: size.width,
-      height: size.height,
-    };
+    try {
+      const measuredButtons = this.#measureButtons();
+      const layout = computeToolbarLayout({
+        buttons: measuredButtons,
+        orientation: this.#toolbarConfig.orientation ?? 'horizontal',
+        spacing: this.#toolbarConfig.spacing ?? 8,
+        fillButtons: this.#toolbarConfig.fillButtons ?? false,
+        width: this.#toolbarConfig.width,
+        height: this.#toolbarConfig.height,
+        fixedSize: this.#toolbarConfig.fixedSize ?? false,
+        padding: this.#padding,
+      });
 
-    this.#contentContainer.position.set(this.#padding.left, this.#padding.top);
-    this.#renderBackground(this.#toolbarConfig.background);
+      this.container.zIndex = this.value.order;
+      this.#rect = {
+        x: this.container.position.x,
+        y: this.container.position.y,
+        width: layout.rect.width,
+        height: layout.rect.height,
+      };
+
+      this.#buttonRects = new Map();
+      for (const [id, record] of this.#buttons.entries()) {
+        const rect = layout.buttonRects.get(id);
+        if (!rect) {
+          continue;
+        }
+        buttonContainer(record.button).position.set(rect.x, rect.y);
+        this.#buttonRects.set(id, { ...rect });
+      }
+
+      this.#renderBackground(this.#toolbarConfig.background);
+    } finally {
+      this.#isApplyingLayout = false;
+    }
   }
 
   override cleanup(): void {
-    for (const [id, button] of this.#buttons.entries()) {
-      this.#buttonUnwires.get(id)?.();
-      button.cleanup();
+    for (const record of this.#buttons.values()) {
+      record.unwind();
+      record.button.cleanup();
     }
-    this.#buttonUnwires.clear();
     this.#buttons.clear();
+    this.#buttonRects.clear();
+    this.#appliedSizes.clear();
     super.cleanup();
   }
 }

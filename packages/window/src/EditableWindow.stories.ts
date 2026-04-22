@@ -8,61 +8,52 @@ import type {TitlebarStore} from "./TitlebarStore.js";
 import {STYLE_VARIANT} from "./constants.js";
 
 const toolbarStyleTree = fromJSON({
-    button: {
-        text: {
-            padding: {
-                '$*': {x: 10, y: 5}
-            },
-            borderRadius: {
-                '$*': 4
-            },
-            label: {
-                fontSize: {
-                    '$*': 12
+    container: {
+        background: {
+            text: {
+                padding: {
+                    '$*': [5, 10]
+                },
+                '$image': {
+                    fill: '#55aa99'
+                },
+                '$caption': {
+                    fill: '#5599aa'
+                },
+                '$done': {
+                    fill: '#666666'
+                },
+                '$hover': {
+                    fill: '#66baa7'
+                }
+            }
+        },
+        border: {
+            text: {
+                radius: {
+                    '$*': 4
+                },
+                width: {
+                    '$*': 0,
+                    '$done': 2
                 },
                 color: {
-                    '$*': {r: 1, g: 1, b: 1}
+                    '$done': '#aaaaaa'
+                }
+            }
+        }
+    },
+    label: {
+        text: {
+            size: {
+                '$*': 12
+            },
+            font: {
+                color: {
+                    '$*': '#ffffff'
                 },
                 alpha: {
                     '$*': 1
-                }
-            },
-            stroke: {
-                '$*': {
-                    color: {r: 0.4, g: 0.4, b: 0.4},
-                    alpha: 0,
-                    width: 0
-                }
-            }
-        },
-        image: {
-            text: {
-                fill: {
-                    '$*': {color: {r: 0.333, g: 0.667, b: 0.6}, alpha: 1},
-                    '$hover': {color: {r: 0.267, g: 0.733, b: 0.533}, alpha: 1}
-                }
-            }
-        },
-        caption: {
-            text: {
-                fill: {
-                    '$*': {color: {r: 0.333, g: 0.6, b: 0.667}, alpha: 1},
-                    '$hover': {color: {r: 0.267, g: 0.533, b: 0.733}, alpha: 1}
-                }
-            }
-        },
-        done: {
-            text: {
-                fill: {
-                    '$*': {color: {r: 0.4, g: 0.4, b: 0.4}, alpha: 1},
-                    '$hover': {color: {r: 0.533, g: 0.533, b: 0.533}, alpha: 1}
-                },
-                stroke: {
-                    '$*': {
-                        color: {r: 0.667, g: 0.667, b: 0.667},
-                        alpha: 1,
-                        width: 2
-                    }
                 }
             }
         }
@@ -86,9 +77,9 @@ function createStoryToolbar(
             borderRadius: 6,
         },
         buttons: [
-            { id: 'toolbar-image', label: 'Image', mode: 'text', variant: 'image', onClick: onAddImage },
-            { id: 'toolbar-caption', label: 'Caption', mode: 'text', variant: 'caption', onClick: onAddCaption },
-            { id: 'toolbar-done', label: 'Done', mode: 'text', variant: 'done', onClick: onDone },
+            { id: 'toolbar-image', label: 'Image', variant: 'text', modifiers: ['image'], onClick: onAddImage },
+            { id: 'toolbar-caption', label: 'Caption', variant: 'text', modifiers: ['caption'], onClick: onAddCaption },
+            { id: 'toolbar-done', label: 'Done', variant: 'text', modifiers: ['done'], onClick: onDone },
         ],
     }, app);
     toolbar.container.visible = false;

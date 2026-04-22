@@ -1,11 +1,92 @@
 import type { Meta, StoryObj } from '@storybook/html';
-import { Application, Assets, Sprite, Spritesheet } from 'pixi.js';
+import { Application, Color } from 'pixi.js';
+import { fromJSON } from '@wonderlandlabs-pixi-ux/style-tree';
 import { ToolbarStore } from './ToolbarStore.js';
-import type { ToolbarButtonConfig } from './types.js';
 
 interface ToolbarArgs {
   orientation: 'horizontal' | 'vertical';
   spacing: number;
+  fillButtons: boolean;
+}
+
+const PLACEHOLDER_ICON = '/icons/demo-icon.png';
+
+function makeToolbarStyle() {
+  return fromJSON({
+    container: {
+      background: {
+        padding: {
+          '$*': [4, 4],
+        },
+        base: {
+          '$*': { fill: '#2f4858' },
+          '$hover': { fill: '#35596d' },
+          '$disabled': { fill: '#627a88' },
+        },
+        text: {
+          '$*': { fill: '#2f7f74' },
+          '$hover': { fill: '#379286' },
+          '$disabled': { fill: '#60736f' },
+          padding: {
+            '$*': [6, 12],
+          },
+        },
+        vertical: {
+          '$*': { fill: '#efe7d4' },
+          '$hover': { fill: '#f7efdd' },
+          '$disabled': { fill: '#ddd5c3' },
+          padding: {
+            '$*': [4, 4],
+          },
+        },
+      },
+      border: {
+        radius: {
+          '$*': 6,
+        },
+      },
+    },
+    label: {
+      size: {
+        '$*': 13,
+      },
+      font: {
+        color: {
+          '$*': '#ffffff',
+          '$hover': '#ffffff',
+          '$disabled': '#b9d3d0',
+        },
+      },
+      vertical: {
+        font: {
+          color: {
+            '$*': '#263238',
+            '$hover': '#111111',
+          },
+        },
+      },
+    },
+    icon: {
+      size: {
+        width: {
+          '$*': 18,
+        },
+        height: {
+          '$*': 18,
+        },
+      },
+      vertical: {
+        size: {
+          width: {
+            '$*': 64,
+          },
+          height: {
+            '$*': 64,
+          },
+        },
+      },
+    },
+  });
 }
 
 const meta: Meta<ToolbarArgs> = {
@@ -13,6 +94,7 @@ const meta: Meta<ToolbarArgs> = {
   args: {
     orientation: 'horizontal',
     spacing: 8,
+    fillButtons: false,
   },
   render: (args) => {
     const wrapper = document.createElement('div');
@@ -20,58 +102,50 @@ const meta: Meta<ToolbarArgs> = {
     wrapper.style.height = '600px';
     wrapper.style.position = 'relative';
 
-    const app = new Application();
-    app.init({
-      width: 800,
-      height: 600,
-      backgroundColor: 0xf0f0f0,
-      antialias: true,
-    }).then(async () => {
+    void (async () => {
+      const app = new Application();
+      await app.init({
+        width: 800,
+        height: 600,
+        backgroundColor: new Color('#f3eee3').toNumber(),
+        antialias: true,
+      });
+
       wrapper.appendChild(app.canvas);
 
-      // Load toolbar spritesheet and bitmap font
-      const [spritesheet] = await Promise.all([
-        Assets.load<Spritesheet>('/toolbar-data.json'),
-        Assets.load('/image_font/image_font.xml.fnt'),
-      ]);
-
-      // Create toolbar with icon buttons
       const toolbar = new ToolbarStore({
         id: 'main-toolbar',
         buttons: [
           {
             id: 'image',
-            sprite: new Sprite(spritesheet.textures['ctrl-image@4x.png']),
+            icon: PLACEHOLDER_ICON,
             label: 'Image',
-            mode: 'iconVertical',
-            onClick: () => console.log('Image button clicked'),
+            variant: 'vertical',
           },
           {
             id: 'caption',
-            sprite: new Sprite(spritesheet.textures['ctrl-caption@4x.png']),
+            icon: PLACEHOLDER_ICON,
             label: 'Caption',
-            mode: 'iconVertical',
-            onClick: () => console.log('Caption button clicked'),
-            isDisabled: true,
+            variant: 'vertical',
+            state: 'disabled',
           },
           {
             id: 'frame',
-            sprite: new Sprite(spritesheet.textures['ctrl-frame@4x.png']),
+            icon: PLACEHOLDER_ICON,
             label: 'Frame',
-            mode: 'iconVertical',
-            onClick: () => console.log('Frame button clicked'),
+            variant: 'vertical',
           },
           {
             id: 'actor',
-            sprite: new Sprite(spritesheet.textures['ctrl-actor@4x.png']),
+            icon: PLACEHOLDER_ICON,
             label: 'Actor',
-            mode: 'iconVertical',
-            onClick: () => console.log('Actor button clicked'),
+            variant: 'vertical',
           },
         ],
         spacing: args.spacing,
         orientation: args.orientation,
-        bitmapFont: 'Inter_18pt-Medium',
+        fillButtons: args.fillButtons,
+        style: makeToolbarStyle(),
         padding: 8,
         background: {
           fill: { color: { r: 0.95, g: 0.95, b: 0.95 }, alpha: 1 },
@@ -83,7 +157,7 @@ const meta: Meta<ToolbarArgs> = {
       toolbar.container.position.set(50, 50);
       app.stage.addChild(toolbar.container);
       toolbar.kickoff();
-    });
+    })();
 
     return wrapper;
   },
@@ -100,7 +174,6 @@ export const Vertical: Story = {
   },
 };
 
-// Text-only buttons story
 export const TextOnly: Story = {
   render: (args) => {
     const wrapper = document.createElement('div');
@@ -108,38 +181,41 @@ export const TextOnly: Story = {
     wrapper.style.height = '600px';
     wrapper.style.position = 'relative';
 
-    const app = new Application();
-    app.init({
-      width: 800,
-      height: 600,
-      backgroundColor: 0xf0f0f0,
-      antialias: true,
-    }).then(async () => {
+    void (async () => {
+      const app = new Application();
+      await app.init({
+        width: 800,
+        height: 600,
+        backgroundColor: new Color('#f3eee3').toNumber(),
+        antialias: true,
+      });
+
       wrapper.appendChild(app.canvas);
 
-      // Create toolbar with text-only buttons (no sprites)
       const toolbar = new ToolbarStore({
         id: 'text-toolbar',
         buttons: [
           {
             id: 'image',
             label: 'Image',
-            onClick: () => console.log('Image button clicked'),
+            variant: 'text',
           },
           {
             id: 'caption',
             label: 'Caption',
-            onClick: () => console.log('Caption button clicked'),
+            variant: 'text',
           },
           {
             id: 'done',
             label: 'Done',
-            onClick: () => console.log('Done button clicked'),
-            isDisabled: true,
+            variant: 'text',
+            state: 'disabled',
           },
         ],
         spacing: args.spacing,
         orientation: args.orientation,
+        fillButtons: args.fillButtons,
+        style: makeToolbarStyle(),
         padding: 8,
         background: {
           fill: { color: { r: 0.95, g: 0.95, b: 0.95 }, alpha: 1 },
@@ -151,7 +227,7 @@ export const TextOnly: Story = {
       toolbar.container.position.set(50, 50);
       app.stage.addChild(toolbar.container);
       toolbar.kickoff();
-    });
+    })();
 
     return wrapper;
   },
@@ -160,58 +236,7 @@ export const TextOnly: Story = {
 export const TextOnlyVertical: Story = {
   args: {
     orientation: 'vertical',
+    fillButtons: true,
   },
-  render: (args) => {
-    const wrapper = document.createElement('div');
-    wrapper.style.width = '100%';
-    wrapper.style.height = '600px';
-    wrapper.style.position = 'relative';
-
-    const app = new Application();
-    app.init({
-      width: 800,
-      height: 600,
-      backgroundColor: 0xf0f0f0,
-      antialias: true,
-    }).then(async () => {
-      wrapper.appendChild(app.canvas);
-
-      const toolbar = new ToolbarStore({
-        id: 'text-toolbar-vertical',
-        buttons: [
-          {
-            id: 'image',
-            label: 'Image',
-            onClick: () => console.log('Image button clicked'),
-          },
-          {
-            id: 'caption',
-            label: 'Caption',
-            onClick: () => console.log('Caption button clicked'),
-          },
-          {
-            id: 'done',
-            label: 'Done',
-            onClick: () => console.log('Done button clicked'),
-            isDisabled: true,
-          },
-        ],
-        spacing: args.spacing,
-        orientation: args.orientation,
-        fillButtons: true,
-        padding: 8,
-        background: {
-          fill: { color: { r: 0.95, g: 0.95, b: 0.95 }, alpha: 1 },
-          stroke: { color: { r: 0.7, g: 0.7, b: 0.7 }, width: 1, alpha: 1 },
-          borderRadius: 8,
-        },
-      }, app);
-
-      toolbar.container.position.set(50, 50);
-      app.stage.addChild(toolbar.container);
-      toolbar.kickoff();
-    });
-
-    return wrapper;
-  },
+  render: TextOnly.render,
 };

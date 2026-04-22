@@ -11,14 +11,14 @@
         "$*": 40
       },
       "$*": {
-        "color": "#FFFFFF"
+        "fill": "#FFFFFF"
       },
       "$dark": {
-        "color": "#000000"
+        "fill": "#000000"
       },
       "base": {
         "$start": {
-          "gradient": {
+          "fill": {
             "direction": "vertical",
             "colors": [
               "#D9D9D9",

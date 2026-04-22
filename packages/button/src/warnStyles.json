@@ -2,7 +2,7 @@
   "container": {
     "background": {
       "base": {
-        "color": {
+        "fill": {
           "$*": "#f4d6a0",
           "$hover": "#f7dfb5"
         }

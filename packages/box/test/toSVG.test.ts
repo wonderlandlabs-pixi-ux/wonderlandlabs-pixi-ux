@@ -48,7 +48,7 @@ function createStyleManager(entries: Record<string, unknown>): BoxStyleManagerLi
 describe('toSVG', () => {
     it('resolves colors from the style manager using variant-aware queries', () => {
         const styles = createStyleManager({
-            '*.button.primary.background.color:': { r: 0.8, g: 0.2, b: 0.2 },
+            '*.button.primary.background.fill:': { r: 0.8, g: 0.2, b: 0.2 },
             '*.button.primary.border.color:': { r: 0.1, g: 0.2, b: 0.3 },
             '*.button.primary.padding.border.color:': { r: 0.2, g: 0.5, b: 0.8 },
         });
@@ -84,12 +84,12 @@ describe('toSVG', () => {
 
         expect(() => boxTreeToSVG(root, {
             styleTree: [createStyleManager({})],
-        })).toThrow(/background\.color and border\.color/);
+        })).toThrow(/background\.fill and border\.color/);
     });
 
     it('draws border visuals only from explicit border inset layers', () => {
         const styles = createStyleManager({
-            '*.panel.background.color:': '#eeeeee',
+            '*.panel.background.fill:': '#eeeeee',
             '*.panel.border.color:': '#222222',
             '*.panel.border.border.color:': '#444444',
         });
@@ -114,7 +114,7 @@ describe('toSVG', () => {
 
     it('does not draw a stroke when a cell has no border layer', () => {
         const styles = createStyleManager({
-            '*.panel.background.color:': '#eeeeee',
+            '*.panel.background.fill:': '#eeeeee',
             '*.panel.border.color:': '#222222',
         });
 

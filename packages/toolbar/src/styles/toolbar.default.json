@@ -1,208 +1,114 @@
 {
-  "button": {
-    "icon": {
-      "$*": {
-        "size": { "x": 80, "y": 80 },
-        "alpha": 1
-      },
-      "$hover": {
-        "size": { "x": 80, "y": 80 },
-        "alpha": 1
-      },
-      "$disabled": {
-        "size": { "x": 80, "y": 80 },
-        "alpha": 0.5
-      }
-    },
-    "padding": {
-      "$*": { "x": 4, "y": 4 }
-    },
-    "stroke": {
-      "$*": {
-        "color": { "r": 0.5, "g": 0.5, "b": 0.5 },
-        "alpha": 1,
-        "size": 1
-      },
-      "$hover": {
-        "color": { "r": 0.7, "g": 0.7, "b": 0.7 },
-        "alpha": 1,
-        "size": 1
-      },
-      "$disabled": {
-        "color": { "r": 0.85, "g": 0.85, "b": 0.85 },
-        "alpha": 0.5,
-        "size": 1
-      }
-    },
-    "fill": {
-      "$disabled": {
-        "color": { "r": 0.9, "g": 0.9, "b": 0.9 },
-        "alpha": 0.3
-      }
-    },
-    "inline": {
+  "container": {
+    "background": {
       "padding": {
-        "$*": { "x": 12, "y": 6 }
+        "$*": [4, 4]
       },
-      "border.radius": {
+      "text": {
+        "padding": {
+          "$*": [6, 12]
+        }
+      },
+      "vertical": {
+        "padding": {
+          "$*": [4, 4]
+        }
+      },
+      "avatar": {
+        "padding": {
+          "$*": [6, 6]
+        }
+      }
+    },
+    "content": {
+      "gap": {
+        "$*": 6
+      },
+      "vertical": {
+        "gap": {
+          "$*": 4
+        }
+      }
+    },
+    "border": {
+      "width": {
+        "$*": 0,
+        "$disabled": 1
+      },
+      "radius": {
         "$*": 4
       },
-      "icon.gap": {
-        "$*": 8
+      "color": {
+        "$disabled": "#b0b0b0"
       },
-      "icon": {
-        "$*": {
-          "size": { "x": 16, "y": 16 },
-          "alpha": 1
-        },
-        "$hover": {
-          "size": { "x": 16, "y": 16 },
-          "alpha": 1
-        },
-        "$disabled": {
-          "size": { "x": 16, "y": 16 },
-          "alpha": 0.5
+      "avatar": {
+        "radius": {
+          "$*": 999
         }
+      }
+    }
+  },
+  "label": {
+    "size": {
+      "$*": 12
+    },
+    "font": {
+      "color": {
+        "$*": "#111111",
+        "$hover": "#000000",
+        "$disabled": "#7a7a7a"
       },
-      "fill": {
-        "$*": {
-          "color": { "r": 0.33, "g": 0.67, "b": 0.6 },
-          "alpha": 1
-        },
-        "$hover": {
-          "color": { "r": 0.27, "g": 0.73, "b": 0.53 },
-          "alpha": 1
-        },
-        "$disabled": {
-          "color": { "r": 0.5, "g": 0.5, "b": 0.5 },
-          "alpha": 0.5
-        }
-      },
-      "stroke": {
-        "$*": {
-          "color": { "r": 0.5, "g": 0.5, "b": 0.5 },
-          "alpha": 0,
-          "size": 0
-        },
-        "$hover": {
-          "color": { "r": 0.5, "g": 0.5, "b": 0.5 },
-          "alpha": 0,
-          "size": 0
-        },
-        "$disabled": {
-          "color": { "r": 0.67, "g": 0.67, "b": 0.67 },
-          "alpha": 1,
-          "size": 2
-        }
-      },
-      "label": {
-        "font": {
-          "size": {
-            "$*": 13
-          },
-          "color": {
-            "$*": { "r": 1, "g": 1, "b": 1 },
-            "$hover": { "r": 1, "g": 1, "b": 1 },
-            "$disabled": { "r": 0.7, "g": 0.7, "b": 0.7 }
-          },
-          "alpha": {
-            "$*": 1,
-            "$hover": 1,
-            "$disabled": 0.5
-          }
-        }
+      "alpha": {
+        "$*": 0.7,
+        "$hover": 1,
+        "$disabled": 0.45
       }
     },
     "text": {
-      "padding": {
-        "$*": { "x": 12, "y": 6 }
+      "size": {
+        "$*": 13
+      }
+    }
+  },
+  "icon": {
+    "alpha": {
+      "$*": 1,
+      "$disabled": 0.45
+    },
+    "size": {
+      "width": {
+        "$*": 40
       },
-      "border.radius": {
-        "$*": 4
+      "height": {
+        "$*": 40
       },
-      "fill": {
-        "$*": {
-          "color": { "r": 0.33, "g": 0.67, "b": 0.6 },
-          "alpha": 1
+      "size": {
+        "$*": 40
+      }
+    },
+    "vertical": {
+      "size": {
+        "width": {
+          "$*": 80
         },
-        "$hover": {
-          "color": { "r": 0.27, "g": 0.73, "b": 0.53 },
-          "alpha": 1
+        "height": {
+          "$*": 80
         },
-        "$disabled": {
-          "color": { "r": 0.5, "g": 0.5, "b": 0.5 },
-          "alpha": 0.5
-        }
-      },
-      "stroke": {
-        "$*": {
-          "color": { "r": 0.5, "g": 0.5, "b": 0.5 },
-          "alpha": 0,
-          "size": 0
-        },
-        "$hover": {
-          "color": { "r": 0.5, "g": 0.5, "b": 0.5 },
-          "alpha": 0,
-          "size": 0
-        },
-        "$disabled": {
-          "color": { "r": 0.67, "g": 0.67, "b": 0.67 },
-          "alpha": 1,
-          "size": 2
-        }
-      },
-      "label": {
-        "font": {
-          "size": {
-            "$*": 13
-          },
-          "color": {
-            "$*": { "r": 1, "g": 1, "b": 1 },
-            "$hover": { "r": 1, "g": 1, "b": 1 },
-            "$disabled": { "r": 0.7, "g": 0.7, "b": 0.7 }
-          },
-          "alpha": {
-            "$*": 1,
-            "$hover": 1,
-            "$disabled": 0.5
-          }
+        "size": {
+          "$*": 80
         }
       }
     },
-    "icon.vertical": {
-      "padding": {
-        "$*": { "x": 4, "y": 4 }
-      },
-      "icon": {
-        "$*": {
-          "size": { "x": 80, "y": 80 },
-          "alpha": 1
+    "avatar": {
+      "size": {
+        "width": {
+          "$*": 48
         },
-        "$hover": {
-          "size": { "x": 80, "y": 80 },
-          "alpha": 1
+        "height": {
+          "$*": 48
         },
-        "$disabled": {
-          "size": { "x": 80, "y": 80 },
-          "alpha": 0.5
-        }
-      },
-      "label": {
-        "font": {
-          "size": {
-            "$*": 12
-          },
-          "color": {
-            "$*": { "r": 0, "g": 0, "b": 0 },
-            "$hover": { "r": 0, "g": 0, "b": 0 }
-          },
-          "alpha": {
-            "$*": 0.5,
-            "$hover": 1
-          }
-        },
-        "padding": {
-          "$*": 4
+        "size": {
+          "$*": 48
         }
       }
     }
