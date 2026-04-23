@@ -6,6 +6,7 @@ export const ButtonVariant = z.enum([BTYPE_VERTICAL, BTYPE_TEXT, BTYPE_AVATAR, B
 
 const ButtonState = z.object({
     variant: ButtonVariant,
+    themeName: z.string().optional(),
     family: z.string().optional(),
     label: z.string().optional(),
     icon: z.string().optional(),

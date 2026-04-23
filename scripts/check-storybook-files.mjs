@@ -34,7 +34,8 @@ const files = output
   .split('\n')
   .map((line) => line.trim())
   .filter(Boolean)
-  .filter((line) => line.startsWith('./.storybook/') || line.startsWith('./packages/'));
+  .filter((line) => line.startsWith('./.storybook/') || line.startsWith('./packages/'))
+  .filter((line) => !line.includes('/dist/'));
 
 if (files.length === 0) {
   process.exit(0);

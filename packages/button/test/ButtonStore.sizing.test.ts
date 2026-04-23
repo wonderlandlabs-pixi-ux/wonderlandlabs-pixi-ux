@@ -1,6 +1,8 @@
 import './setupNavigator';
 import {beforeEach, describe, expect, it} from 'vitest';
+import {fromJSON} from '@wonderlandlabs-pixi-ux/style-tree';
 import {PixiProvider} from '@wonderlandlabs-pixi-ux/utils';
+import {createButtonFamily} from '../src/buttonFamily';
 import {getStyleTree, makeStoreConfig} from '../src/helpers';
 import {BTYPE_AVATAR, BTYPE_BASE, BTYPE_TEXT, BTYPE_VERTICAL} from '../src/constants';
 
@@ -51,6 +53,88 @@ describe('ButtonStore sizing', () => {
         expect(smallConfig.value.dim.w).toBeCloseTo(75.19, 2);
         expect(largeConfig.value.dim.w).toBe(200);
         expect(largeConfig.value.dim.h).toBe(40);
+    });
+
+    it('changes button size when a custom family scale changes', () => {
+        const familyJson = createButtonFamily({
+            container: {
+                background: {
+                    base: {
+                        width: {
+                            '$*': 150,
+                        },
+                        height: {
+                            '$*': 30,
+                        },
+                        padding: {
+                            '$*': [4, 18],
+                        },
+                    },
+                },
+                content: {
+                    '$*': {
+                        gap: 6,
+                    },
+                },
+            },
+            label: {
+                base: {
+                    size: {
+                        '$*': 13,
+                    },
+                },
+            },
+            icon: {
+                size: {
+                    width: {
+                        '$*': 16,
+                    },
+                    height: {
+                        '$*': 16,
+                    },
+                },
+            },
+        }, [50, 100, 200], {family: 'capsule'});
+        const familyStyles = fromJSON(familyJson);
+
+        expect(familyJson.BASE).toBeDefined();
+        expect(((familyJson.BASE as Record<string, unknown>).button as Record<string, unknown>).button).toBeDefined();
+        expect(((((familyJson.BASE as Record<string, unknown>).button as Record<string, unknown>).button as Record<string, unknown>).capsule as Record<string, unknown>)['50']).toBeDefined();
+
+        const smallStyleTree = getStyleTree(BTYPE_BASE, {
+            app: {},
+            handlers: {},
+            styleTree: [familyStyles],
+            styleDef: [],
+        });
+        const largeStyleTree = getStyleTree(BTYPE_BASE, {
+            app: {},
+            handlers: {},
+            styleTree: [familyStyles],
+            styleDef: [],
+        });
+
+        const smallConfig = makeStoreConfig({
+            variant: BTYPE_BASE,
+            family: 'capsule',
+            scale: 50,
+            label: 'Small',
+            icon: 'https://assets.example.com/icon.png',
+        }, smallStyleTree);
+        const largeConfig = makeStoreConfig({
+            variant: BTYPE_BASE,
+            family: 'capsule',
+            scale: 200,
+            label: 'Large',
+            icon: 'https://assets.example.com/icon.png',
+        }, largeStyleTree);
+
+        expect(smallConfig.value.dim.w).toBeCloseTo(75, 2);
+        expect(smallConfig.value.dim.h).toBeCloseTo(15, 2);
+        expect(largeConfig.value.dim.w).toBeCloseTo(300, 2);
+        expect(largeConfig.value.dim.h).toBeCloseTo(60, 2);
+        expect(largeConfig.value.dim.w).toBeGreaterThan(smallConfig.value.dim.w);
+        expect(largeConfig.value.dim.h).toBeGreaterThan(smallConfig.value.dim.h);
     });
 
     it('builds a text button with label-only content sizing', () => {

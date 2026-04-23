@@ -1,6 +1,5 @@
 import './setupNavigator';
 import { describe, expect, it } from 'vitest';
-import * as Pixi from 'pixi.js';
 import { fromJSON } from '@wonderlandlabs-pixi-ux/style-tree';
 import { PixiProvider } from '@wonderlandlabs-pixi-ux/utils';
 import { ToolbarStore } from '../src/ToolbarStore';
@@ -77,7 +76,7 @@ function createToolbar(orientation: 'horizontal' | 'vertical', fillButtons = fal
   flushTicker: () => void;
 } {
   const { host, flushTicker } = createMockTickerHost();
-  const pixi = new PixiProvider(Pixi);
+  const pixi = new PixiProvider(PixiProvider.fallbacks);
 
   const toolbar = new ToolbarStore({
     id: `toolbar-${orientation}`,
@@ -88,9 +87,9 @@ function createToolbar(orientation: 'horizontal' | 'vertical', fillButtons = fal
     pixi,
     style: createToolbarStyle(),
     buttons: [
-      { id: 'one', variant: 'vertical', icon: '/icons/demo-icon.png' },
-      { id: 'two', variant: 'vertical', icon: '/icons/demo-icon.png' },
-      { id: 'three', variant: 'vertical', icon: '/icons/demo-icon.png' },
+      { id: 'one', variant: 'vertical', icon: '/icons/demo-icon.png', size: { width: 48, height: 48 } },
+      { id: 'two', variant: 'vertical', icon: '/icons/demo-icon.png', size: { width: 48, height: 48 } },
+      { id: 'three', variant: 'vertical', icon: '/icons/demo-icon.png', size: { width: 48, height: 48 } },
     ],
   }, host as never);
 
@@ -166,7 +165,7 @@ describe('ToolbarStore layout dimensions', () => {
 
   it('fills vertical button widths to the widest child when fillButtons is enabled', () => {
     const { host, flushTicker } = createMockTickerHost();
-    const pixi = new PixiProvider(Pixi);
+    const pixi = new PixiProvider(PixiProvider.fallbacks);
 
     const toolbar = new ToolbarStore({
       id: 'toolbar-vertical-fill-width',
@@ -177,9 +176,9 @@ describe('ToolbarStore layout dimensions', () => {
       pixi,
       style: createToolbarStyle(),
       buttons: [
-        { id: 'one', variant: 'vertical', icon: '/icons/demo-icon.png' },
-        { id: 'two', variant: 'vertical', icon: '/icons/demo-icon.png', size: { width: 72 } },
-        { id: 'three', variant: 'vertical', icon: '/icons/demo-icon.png' },
+        { id: 'one', variant: 'vertical', icon: '/icons/demo-icon.png', size: { width: 48, height: 48 } },
+        { id: 'two', variant: 'vertical', icon: '/icons/demo-icon.png', size: { width: 72, height: 48 } },
+        { id: 'three', variant: 'vertical', icon: '/icons/demo-icon.png', size: { width: 48, height: 48 } },
       ],
     }, host as never);
 

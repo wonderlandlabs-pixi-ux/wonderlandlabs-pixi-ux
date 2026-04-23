@@ -1,52 +1,50 @@
 {
-  "container": {
-    "background": {
-      "base": {
-        "$*": {
-          "fill": "#183a37"
-        },
-        "$hover": {
-          "fill": "#1f3f6b"
-        },
-        "padding": {
-          "$*": [0, 40]
-        }
-      }
-    },
-    "border": {
-      "base": {
-        "color": {
-          "$*": "#183a37"
-        },
-        "width": {
-          "$hover": 1
-        },
-        "$hover": {
-          "color": "#4f78ad"
-        },
-        "radius": {
-          "$*": 24
-        }
-      }
-    }
-  },
-  "label": {
-    "base": {
-      "font": {
-        "color": {
-          "$*": "#f7f4ea"
-        }
-      }
-    }
-  },
-  "icon": {
-    "base": {
-      "size": {
-        "width": {
-          "$*": 24
-        },
-        "height": {
-          "$*": 24
+  "BASE": {
+    "button": {
+      "button": {
+        "base": {
+          "100": {
+            "container": {
+              "background": {
+                "fill": {
+                  "$*": "#183a37",
+                  "$hover": "#1f3f6b"
+                },
+                "padding": {
+                  "$*": [0, 40]
+                }
+              },
+              "border": {
+                "color": {
+                  "$*": "#183a37",
+                  "$hover": "#4f78ad"
+                },
+                "width": {
+                  "$hover": 1
+                },
+                "radius": {
+                  "$*": 24
+                }
+              }
+            },
+            "label": {
+              "font": {
+                "color": {
+                  "$*": "#f7f4ea"
+                }
+              }
+            },
+            "icon": {
+              "size": {
+                "width": {
+                  "$*": 24
+                },
+                "height": {
+                  "$*": 24
+                }
+              }
+            }
+          }
         }
       }
     }

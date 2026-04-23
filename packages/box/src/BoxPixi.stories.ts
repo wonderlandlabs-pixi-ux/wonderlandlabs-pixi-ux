@@ -31,6 +31,7 @@ import boxPixiStoryStyles from './boxPixiStoryStyles.json' with {type: 'json'};
 type Story = StoryObj;
 
 const meta: Meta = {
+    id: 'box-pixi-renderer',
     title: 'Box/Pixi/Renderer',
 };
 

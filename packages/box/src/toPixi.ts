@@ -45,6 +45,15 @@ type ContentExtent = {
   h: number;
 };
 
+type CachedTextLayout = {
+  text: string;
+  styleKey: string;
+  width: number;
+  height: number;
+};
+
+const textLayoutCache = new WeakMap<Container, CachedTextLayout>();
+
 export function boxTreeToPixi(options: BoxPixiOptions): Container {
   const pixi = options.pixi ?? PixiProvider.shared;
   const parser = new BoxRenderModelParser(options.styleTree);
@@ -317,17 +326,32 @@ function renderDefaultContent(
     config.fontStyle = content.style.fontStyle as TextStyleFontStyle;
   }
 
-  textNode.style = new pixi.TextStyle(config);
+  const styleKey = JSON.stringify(config);
+  const cachedLayout = textLayoutCache.get(textNode);
+  let boundsWidth = cachedLayout?.width ?? 0;
+  let boundsHeight = cachedLayout?.height ?? 0;
 
-  const bounds = textNode.getLocalBounds();
+  if (!cachedLayout || cachedLayout.text !== content.value || cachedLayout.styleKey !== styleKey) {
+    textNode.style = new pixi.TextStyle(config);
+    const bounds = textNode.getLocalBounds();
+    boundsWidth = bounds.width;
+    boundsHeight = bounds.height;
+    textLayoutCache.set(textNode, {
+      text: content.value,
+      styleKey,
+      width: boundsWidth,
+      height: boundsHeight,
+    });
+  }
+
   textNode.position.set(
-    resolveAlignedOffset(localLocation.w, bounds.width, content.align.xPosition),
-    resolveAlignedOffset(localLocation.h, bounds.height, content.align.yPosition),
+    resolveAlignedOffset(localLocation.w, boundsWidth, content.align.xPosition),
+    resolveAlignedOffset(localLocation.h, boundsHeight, content.align.yPosition),
   );
 
   return {
-    w: Math.max(localLocation.w, textNode.position.x + bounds.width),
-    h: Math.max(localLocation.h, textNode.position.y + bounds.height),
+    w: Math.max(localLocation.w, textNode.position.x + boundsWidth),
+    h: Math.max(localLocation.h, textNode.position.y + boundsHeight),
   };
 }
 

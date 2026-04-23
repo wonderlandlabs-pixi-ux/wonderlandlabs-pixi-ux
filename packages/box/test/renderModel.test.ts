@@ -3,6 +3,8 @@ import { boxTreeToJSON, type BoxLayoutCellType, type BoxStyleManagerLike } from 
 import { fromJSON } from '@wonderlandlabs-pixi-ux/style-tree';
 import defaultButtonStyles from '../../button/src/defaultStyles.json' with { type: 'json' };
 import capsuleButtonStyles from '../../button/src/capsuleStyles.json' with { type: 'json' };
+import { getStyleTree } from '../../button/src/helpers.js';
+import { BTYPE_BASE } from '../../button/src/constants.js';
 
 function createStyleManager(entries: Record<string, unknown>): BoxStyleManagerLike {
   const lookup = (nouns: string[], states: string[]) => {
@@ -148,10 +150,17 @@ describe('boxTreeToJSON', () => {
     expect(model.children[0].content.style.fill).toBe('#f7f4ea');
   });
 
-  it('keeps the default button base gradient while allowing later capsule overrides to replace it', () => {
-    const defaultStyle = fromJSON(defaultButtonStyles) as unknown as BoxStyleManagerLike;
-    const capsuleStyle = fromJSON(capsuleButtonStyles) as unknown as BoxStyleManagerLike;
-
+  it('keeps the default button base gradient while button-level canonical overrides are handled in button style resolution', () => {
+    const defaultStyle = getStyleTree({
+      variant: BTYPE_BASE,
+      family: 'base',
+      scale: 100,
+    }, {
+      handlers: {},
+      app: {},
+      styleDef: [],
+      styleTree: [],
+    }) as unknown as BoxStyleManagerLike[];
     const root: BoxLayoutCellType = {
       id: 'button-background',
       name: 'container',
@@ -163,13 +172,10 @@ describe('boxTreeToJSON', () => {
       align: { direction: 'horizontal', xPosition: 'center', yPosition: 'center' },
     };
 
-    const baseModel = boxTreeToJSON(root, [defaultStyle]);
+    const baseModel = boxTreeToJSON(root, defaultStyle);
     expect(baseModel.background.fill).toEqual({
       direction: 'vertical',
       colors: ['#E7E4DE', '#F4F2EE', '#FFFFFF', '#F2EFEB', '#D7D2CA'],
     });
-
-    const overrideModel = boxTreeToJSON(root, [defaultStyle, capsuleStyle]);
-    expect(overrideModel.background.fill).toBe('#183a37');
   });
 });

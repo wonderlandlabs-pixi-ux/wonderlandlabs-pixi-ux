@@ -183,7 +183,11 @@ describe('button style resolution', () => {
     });
 
     it('allows capsule override hover styles to differ from the resting state', () => {
-        const stylesWithCapsule = getStyleTree(BTYPE_BASE, {
+        const stylesWithCapsule = getStyleTree({
+            variant: BTYPE_BASE,
+            family: 'base',
+            scale: 100,
+        }, {
             handlers: {},
             app: {},
             styleTree: [fromJSON(capsuleStyles)],
@@ -199,5 +203,53 @@ describe('button style resolution', () => {
         expect(
             resolveStyleValue(stylesWithCapsule, 'container.border.color', ['hover'], BTYPE_BASE),
         ).toBe('#4f78ad');
+    });
+
+    it('resolves the default BASE theme root without requiring themeName on the button state', () => {
+        const themedStyles = [fromJSON({
+            BASE: {
+                button: {
+                    button: {
+                        base: {
+                            100: {
+                                container: {
+                                    background: {
+                                        width: { '$*': 222 },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                },
+            },
+        })];
+
+        expect(
+            resolveStyleNumber(themedStyles, 'container.background.width', ['start'], 0, BTYPE_BASE, 100, 'base'),
+        ).toBe(222);
+    });
+
+    it('resolves an explicit uppercase theme root when themeName is supplied', () => {
+        const themedStyles = [fromJSON({
+            MOBILE: {
+                button: {
+                    button: {
+                        base: {
+                            100: {
+                                container: {
+                                    background: {
+                                        width: { '$*': 144 },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                },
+            },
+        })];
+
+        expect(
+            resolveStyleNumber(themedStyles, 'container.background.width', ['start'], 0, BTYPE_BASE, 100, 'base', 'MOBILE'),
+        ).toBe(144);
     });
 });

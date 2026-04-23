@@ -12,4 +12,16 @@ describe('PixiProvider', () => {
     expect(provider.Graphics).toBe(PixiProvider.fallbacks.Graphics);
     expect(provider.Texture.EMPTY).toBeDefined();
   });
+
+  it('computes aggregate local bounds from child positions and hit areas', () => {
+    const provider = new PixiProvider({});
+    const parent = new provider.Container();
+    const child = new provider.Container();
+
+    child.position.set(12, 18);
+    child.hitArea = new provider.Rectangle(0, 0, 48, 52);
+    parent.addChild(child);
+
+    expect(parent.getLocalBounds()).toEqual({ width: 60, height: 70 });
+  });
 });

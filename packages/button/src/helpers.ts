@@ -15,6 +15,9 @@ type BoxStoreConfig = {
     value: BoxCellType;
 };
 
+const STYLE_QUERY_MISS = Symbol('STYLE_QUERY_MISS');
+const styleQueryCache = new WeakMap<object, Map<string, unknown>>();
+
 export function makeStoreConfig(value: ButtonStateType, styleTree: BoxStyleManagerLike[]): BoxStoreConfig {
 
     switch (value.variant) {
@@ -82,7 +85,10 @@ const defaultSizeFamilyStyle = fromJSON(createButtonFamily(
     {baselineSize: 133, family: 'base'},
 ));
 
-export function getStyleTree(_variant: string, options: ButtonOptionsType): BoxStyleManagerLike[] {
+export function getStyleTree(input: string | ButtonStateType, options: ButtonOptionsType): BoxStyleManagerLike[] {
+    const value = typeof input === 'string'
+        ? undefined
+        : input;
     const baseLayers = [
         defaultStyle as unknown as BoxStyleManagerLike,
         defaultSizeFamilyStyle as unknown as BoxStyleManagerLike,
@@ -92,6 +98,7 @@ export function getStyleTree(_variant: string, options: ButtonOptionsType): BoxS
 
     return [
         ...baseLayers,
+        ...(value ? [createCanonicalButtonStyleLayer(baseLayers, value)] : []),
         createDynamicScaleStyleLayer(baseLayers),
     ];
 }
@@ -347,8 +354,16 @@ export function resolveStyleValue(
     variant?: string,
     sizeValue?: number,
     family?: string,
+    themeName = 'BASE',
 ): unknown {
-    for (const fullPath of buttonInheritedPaths(nouns, variant, sizeValue, family).reverse()) {
+    const cacheKey = `${nouns}::${states.join(',')}::${variant ?? ''}::${sizeValue ?? ''}::${family ?? ''}::${themeName}`;
+    const cache = getStyleQueryCache(styleTree);
+    const cached = cache.get(cacheKey);
+    if (cached !== undefined) {
+        return cached === STYLE_QUERY_MISS ? undefined : cached;
+    }
+
+    for (const fullPath of buttonInheritedPaths(nouns, variant, sizeValue, family, themeName).reverse()) {
         const query = { nouns: fullPath.split('.'), states };
         for (let index = styleTree.length - 1; index >= 0; index -= 1) {
             const layer = styleTree[index];
@@ -356,11 +371,24 @@ export function resolveStyleValue(
                 ? layer.matchHierarchy(query)
                 : layer.match(query);
             if (value !== undefined) {
+                cache.set(cacheKey, value);
                 return value;
             }
         }
     }
+    cache.set(cacheKey, STYLE_QUERY_MISS);
     return undefined;
+}
+
+function getStyleQueryCache(styleTree: BoxStyleManagerLike[]): Map<string, unknown> {
+    const treeKey = styleTree as unknown as object;
+    const existing = styleQueryCache.get(treeKey);
+    if (existing) {
+        return existing;
+    }
+    const created = new Map<string, unknown>();
+    styleQueryCache.set(treeKey, created);
+    return created;
 }
 
 function resolveHorizontalPadding(padding: number | number[]): number {
@@ -397,8 +425,9 @@ export function resolveStyleNumber(
     variant?: string,
     sizeValue?: number,
     family?: string,
+    themeName = 'BASE',
 ): number {
-    const value = resolveStyleValue(styleTree, nouns, states, variant, sizeValue, family);
+    const value = resolveStyleValue(styleTree, nouns, states, variant, sizeValue, family, themeName);
     return typeof value === 'number' && Number.isFinite(value) ? value : fallback;
 }
 
@@ -406,9 +435,20 @@ function styleVerbs(value: ButtonStateType): string[] {
     return Array.from(resolveStatus(value));
 }
 
-function buttonInheritedPaths(nouns: string, variant?: string, sizeValue?: number, family?: string): string[] {
+function buttonInheritedPaths(nouns: string, variant?: string, sizeValue?: number, family?: string, themeName = 'BASE'): string[] {
+    const canonicalVariant = canonicalButtonVariant(variant);
     const nounList = nouns.split('.');
     const paths = [nounList.join('.')];
+
+    if (canonicalVariant && family) {
+        paths.push(buttonCanonicalNouns(nounList, canonicalVariant, family, 100).join('.'));
+        paths.push(buttonThemedCanonicalNouns(nounList, themeName, canonicalVariant, family, 100).join('.'));
+    }
+
+    if (canonicalVariant && family && sizeValue) {
+        paths.push(buttonCanonicalNouns(nounList, canonicalVariant, family, sizeValue).join('.'));
+        paths.push(buttonThemedCanonicalNouns(nounList, themeName, canonicalVariant, family, sizeValue).join('.'));
+    }
 
     if (variant) {
         paths.push(buttonVariantNouns(nounList, variant).join('.'));
@@ -426,6 +466,10 @@ function buttonInheritedPaths(nouns: string, variant?: string, sizeValue?: numbe
         paths.push(buttonVariantFamilyNouns(nounList, variant, family).join('.'));
     }
 
+    if (family && sizeValue && variant) {
+        paths.push(buttonFamilyScaleVariantNouns(nounList, family, sizeValue, variant).join('.'));
+    }
+
     if (family && sizeValue) {
         paths.push(buttonFamilyScaleNouns(nounList, family, sizeValue).join('.'));
     }
@@ -439,6 +483,43 @@ function buttonInheritedPaths(nouns: string, variant?: string, sizeValue?: numbe
     }
 
     return paths;
+}
+
+function canonicalButtonVariant(variant: string | undefined): string | undefined {
+    if (!variant) {
+        return undefined;
+    }
+    return variant === 'base' ? 'button' : variant;
+}
+
+function stripLegacyVariantNoun(nouns: string[], variant: string | undefined): string[] {
+    if (!variant || nouns.length === 0) {
+        return nouns;
+    }
+
+    if (nouns[0] === 'container' && nouns.length > 2 && nouns[2] === variant) {
+        return [nouns[0], nouns[1], ...nouns.slice(3)];
+    }
+
+    if (nouns.length > 1 && nouns[1] === variant) {
+        return [nouns[0], ...nouns.slice(2)];
+    }
+
+    return nouns;
+}
+
+function buttonCanonicalNouns(nouns: string[], variant: string, family: string, sizeValue: number): string[] {
+    return ['button', variant, family, String(sizeValue), ...nouns];
+}
+
+function buttonThemedCanonicalNouns(
+    nouns: string[],
+    themeName: string,
+    variant: string,
+    family: string,
+    sizeValue: number,
+): string[] {
+    return [themeName, 'button', variant, family, String(sizeValue), ...nouns];
 }
 
 function buttonVariantNouns(nouns: string[], variant: string): string[] {
@@ -504,6 +585,17 @@ function buttonSizeVariantNouns(nouns: string[], variant: string, sizeValue: num
     return [nouns[0], token, variant, ...nouns.slice(1)];
 }
 
+function buttonFamilyScaleVariantNouns(nouns: string[], family: string, sizeValue: number, variant: string): string[] {
+    const token = String(sizeValue);
+    if (nouns.length === 0) {
+        return nouns;
+    }
+    if (nouns[0] === 'container' && nouns.length > 1) {
+        return [nouns[0], nouns[1], family, token, variant, ...nouns.slice(2)];
+    }
+    return [nouns[0], family, token, variant, ...nouns.slice(1)];
+}
+
 function buttonVariantFamilyScaleNouns(nouns: string[], variant: string, family: string, sizeValue: number): string[] {
     const token = String(sizeValue);
     if (nouns.length === 0) {
@@ -543,6 +635,33 @@ function resolveScaleValue(value: ButtonStateType): number {
 
 function resolveFamilyValue(value: ButtonStateType): string {
     return value.family ?? 'base';
+}
+
+function resolveThemeName(value: ButtonStateType): string {
+    return value.themeName ?? 'BASE';
+}
+
+function createCanonicalButtonStyleLayer(
+    layers: BoxStyleManagerLike[],
+    value: ButtonStateType,
+): BoxStyleManagerLike {
+    const resolver = (query: { nouns: string[]; states: string[] }) => {
+        const genericNouns = stripLegacyVariantNoun(query.nouns, value.variant);
+        return resolveStyleValue(
+            layers,
+            genericNouns.join('.'),
+            query.states,
+            value.variant,
+            resolveScaleValue(value),
+            resolveFamilyValue(value),
+            resolveThemeName(value),
+        );
+    };
+
+    return {
+        match: resolver,
+        matchHierarchy: resolver,
+    };
 }
 
 function createDynamicScaleStyleLayer(

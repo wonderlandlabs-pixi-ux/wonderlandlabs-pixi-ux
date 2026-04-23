@@ -204,7 +204,29 @@ function createHeadlessDisplayClass(name: string) {
         }
 
         getLocalBounds(): { width: number; height: number } {
-            return {width: this.width, height: this.height};
+            const ownWidth = Math.max(
+                0,
+                this.width,
+                readExtentValue(this.hitArea, 'width'),
+            );
+            const ownHeight = Math.max(
+                0,
+                this.height,
+                readExtentValue(this.hitArea, 'height'),
+            );
+
+            let maxWidth = ownWidth;
+            let maxHeight = ownHeight;
+
+            for (const child of this.children) {
+                const bounds = child.getLocalBounds();
+                const childX = child.position?.x ?? 0;
+                const childY = child.position?.y ?? 0;
+                maxWidth = Math.max(maxWidth, childX + Math.max(0, bounds.width));
+                maxHeight = Math.max(maxHeight, childY + Math.max(0, bounds.height));
+            }
+
+            return {width: maxWidth, height: maxHeight};
         }
 
         on(): this {
@@ -435,4 +457,13 @@ function coerceColorNumber(value: unknown): number | undefined {
     }
 
     return undefined;
+}
+
+function readExtentValue(input: unknown, key: 'width' | 'height'): number {
+    if (!input || typeof input !== 'object') {
+        return 0;
+    }
+
+    const value = (input as Record<'width' | 'height', unknown>)[key];
+    return typeof value === 'number' && Number.isFinite(value) ? Math.max(0, value) : 0;
 }

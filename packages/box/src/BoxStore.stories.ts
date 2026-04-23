@@ -19,6 +19,7 @@ import { createSVGStoryStyles } from './storyStyles.js';
 import { boxTreeToSVG } from './toSVG.js';
 
 const meta: Meta = {
+    id: 'box-boxstore',
     title: 'Box/Svg/BoxStore',
 };
 

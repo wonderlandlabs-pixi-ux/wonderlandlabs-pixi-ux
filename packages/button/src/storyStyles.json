@@ -1,112 +1,142 @@
 {
-  "container": {
-    "background": {
-      "fill": {
-        "$text": null
-      },
-      "width": {
-        "$*": 180
-      },
-      "height": {
-        "$*": 48
-      },
-      "base": {
-        "fill": {
-          "$hover": "#EAF4FF"
+  "BASE": {
+    "button": {
+      "button": {
+        "base": {
+          "100": {
+            "container": {
+              "background": {
+                "fill": {
+                  "$hover": "#EAF4FF"
+                },
+                "width": {
+                  "$*": 180
+                },
+                "height": {
+                  "$*": 48
+                }
+              },
+              "border": {
+                "width": {
+                  "$hover": 1
+                },
+                "color": {
+                  "$hover": "#3B82F6"
+                }
+              },
+              "content": {
+                "gap": {
+                  "$*": 10
+                }
+              }
+            },
+            "icon": {
+              "size": {
+                "width": {
+                  "$*": 28
+                },
+                "height": {
+                  "$*": 28
+                }
+              }
+            }
+          }
         }
       },
       "text": {
-        "width": {
-          "$*": 180
-        },
-        "height": {
-          "$*": 40
+        "base": {
+          "100": {
+            "container": {
+              "background": {
+                "fill": {
+                  "$*": null
+                },
+                "width": {
+                  "$*": 180
+                },
+                "height": {
+                  "$*": 40
+                }
+              },
+              "border": {
+                "width": {
+                  "$*": 0
+                }
+              },
+              "content": {
+                "gap": {
+                  "$*": 8
+                }
+              }
+            },
+            "icon": {
+              "size": {
+                "width": {
+                  "$*": 24
+                },
+                "height": {
+                  "$*": 24
+                }
+              }
+            }
+          }
         }
       },
       "vertical": {
-        "width": {
-          "$*": 80
-        },
-        "height": {
-          "$*": 80
+        "base": {
+          "100": {
+            "container": {
+              "background": {
+                "width": {
+                  "$*": 80
+                },
+                "height": {
+                  "$*": 80
+                }
+              },
+              "content": {
+                "gap": {
+                  "$*": 8
+                }
+              }
+            },
+            "icon": {
+              "size": {
+                "width": {
+                  "$*": 40
+                },
+                "height": {
+                  "$*": 40
+                }
+              }
+            }
+          }
         }
       },
       "avatar": {
-        "width": {
-          "$*": 72
-        },
-        "height": {
-          "$*": 72
-        }
-      }
-    },
-    "border": {
-      "text": {
-        "width": {
-          "$*": 0
-        }
-      },
-      "base": {
-        "width": {
-          "$hover": 1
-        },
-        "color": {
-          "$hover": "#3B82F6"
-        }
-      }
-    },
-    "content": {
-      "gap": {
-        "$*": 10
-      },
-      "text": {
-        "gap": {
-          "$*": 8
-        }
-      },
-      "vertical": {
-        "gap": {
-          "$*": 8
-        }
-      }
-    }
-  },
-  "icon": {
-    "size": {
-      "width": {
-        "$*": 28
-      },
-      "height": {
-        "$*": 28
-      }
-    },
-    "text": {
-      "size": {
-        "width": {
-          "$*": 24
-        },
-        "height": {
-          "$*": 24
-        }
-      }
-    },
-    "vertical": {
-      "size": {
-        "width": {
-          "$*": 40
-        },
-        "height": {
-          "$*": 40
-        }
-      }
-    },
-    "avatar": {
-      "size": {
-        "width": {
-          "$*": 36
-        },
-        "height": {
-          "$*": 36
+        "base": {
+          "100": {
+            "container": {
+              "background": {
+                "width": {
+                  "$*": 72
+                },
+                "height": {
+                  "$*": 72
+                }
+              }
+            },
+            "icon": {
+              "size": {
+                "width": {
+                  "$*": 36
+                },
+                "height": {
+                  "$*": 36
+                }
+              }
+            }
+          }
         }
       }
     }

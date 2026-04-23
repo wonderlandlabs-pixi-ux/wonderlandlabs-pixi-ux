@@ -149,9 +149,17 @@ function measureButton(button: ButtonStore): { width: number; height: number } {
   }
 
   const bounds = buttonContainer(button).getLocalBounds();
+  const width = Math.max(0, Math.ceil(bounds.width));
+  const height = Math.max(0, Math.ceil(bounds.height));
+  if (width > 0 || height > 0) {
+    return { width, height };
+  }
+
+  // Headless tests may not provide renderer-derived bounds; fall back to the
+  // button's resolved size model so layout logic remains testable under DI.
   return {
-    width: Math.max(0, Math.ceil(bounds.width)),
-    height: Math.max(0, Math.ceil(bounds.height)),
+    width: Math.max(0, Math.ceil(button.value.size?.width ?? 0)),
+    height: Math.max(0, Math.ceil(button.value.size?.height ?? 0)),
   };
 }
 
@@ -161,6 +169,20 @@ function sameSize(
   height: number,
 ): boolean {
   return (current?.width ?? 0) === width && (current?.height ?? 0) === height;
+}
+
+function resolveDesiredAxisSize(
+  current: number | undefined,
+  configured: number | undefined,
+  applied: number | undefined,
+): number {
+  if (applied !== undefined && current !== undefined && current !== applied) {
+    return current;
+  }
+  if (configured !== undefined) {
+    return configured;
+  }
+  return current ?? 0;
 }
 
 function buttonContainer(button: ButtonStore): Container {
@@ -296,10 +318,8 @@ export class ToolbarStore extends TickerForest<ToolbarState> {
     const applied = this.#appliedSizes.get(record.config.id);
 
     return {
-      width: record.config.size?.width
-        ?? (applied ? ((current?.width ?? 0) !== applied.width ? (current?.width ?? 0) : 0) : (current?.width ?? 0)),
-      height: record.config.size?.height
-        ?? (applied ? ((current?.height ?? 0) !== applied.height ? (current?.height ?? 0) : 0) : (current?.height ?? 0)),
+      width: resolveDesiredAxisSize(current?.width, record.config.size?.width, applied?.width),
+      height: resolveDesiredAxisSize(current?.height, record.config.size?.height, applied?.height),
     };
   }
 

@@ -397,64 +397,73 @@ export const PartialThemeOverrides: Story = {
 
 function createDesignerOverrideJSON(args: DesignerArgs) {
     const hasBackground = args.variant !== BTYPE_TEXT;
+    const variant = args.variant === BTYPE_BASE ? 'button' : args.variant;
     return {
-        container: {
-            background: {
-                [args.variant]: {
-                    "$*": {
-                        width: args.width,
-                        height: args.height,
-                        padding: [args.paddingY, args.paddingX],
-                        fill: hasBackground ? color(args.backgroundColor) : null,
-                    },
-                    "$hover": {
-                        fill: hasBackground ? color(args.hoverBackgroundColor) : null,
-                    },
-                },
-            },
-            border: {
-                [args.variant]: {
-                    "$*": {
-                        color: color(args.borderColor),
-                        width: hasBackground ? args.borderWidth : 0,
-                        radius: args.borderRadius,
-                    },
-                    "$hover": {
-                        color: color(args.hoverBorderColor),
-                        width: hasBackground ? args.borderWidth : 0,
-                    },
-                },
-            },
-            content: {
-                [args.variant]: {
-                    "$*": {
-                        gap: args.gap,
-                    },
-                },
-            },
-        },
-        label: {
-            [args.variant]: {
-                "$*": {
-                    font: {
-                        color: color(args.labelColor),
-                    },
-                    size: args.fontSize,
-                },
-            },
-            "$disabled": {
-                font: {
-                    alpha: args.disabledLabelAlpha,
-                },
-            },
-        },
-        icon: {
-            alpha: {'$disabled': args.disabledLabelAlpha},
-            [args.variant]: {
-                "$*": {
-                    size: {
-                        width: args.iconSize,
-                        height: args.iconSize,
+        button: {
+            [variant]: {
+                base: {
+                    100: {
+                        container: {
+                            background: {
+                                width: {
+                                    '$*': args.width,
+                                },
+                                height: {
+                                    '$*': args.height,
+                                },
+                                padding: {
+                                    '$*': [args.paddingY, args.paddingX],
+                                },
+                                fill: {
+                                    '$*': hasBackground ? color(args.backgroundColor) : null,
+                                    '$hover': hasBackground ? color(args.hoverBackgroundColor) : null,
+                                },
+                            },
+                            border: {
+                                color: {
+                                    '$*': color(args.borderColor),
+                                    '$hover': color(args.hoverBorderColor),
+                                },
+                                width: {
+                                    '$*': hasBackground ? args.borderWidth : 0,
+                                    '$hover': hasBackground ? args.borderWidth : 0,
+                                },
+                                radius: {
+                                    '$*': args.borderRadius,
+                                },
+                            },
+                            content: {
+                                gap: {
+                                    '$*': args.gap,
+                                },
+                            },
+                        },
+                        label: {
+                            font: {
+                                color: {
+                                    '$*': color(args.labelColor),
+                                },
+                                alpha: {
+                                    '$disabled': args.disabledLabelAlpha,
+                                },
+                            },
+                            size: {
+                                '$*': args.fontSize,
+                            },
+                        },
+                        icon: {
+                            alpha: {
+                                '$disabled': args.disabledLabelAlpha,
+                            },
+                            size: {
+                                width: {
+                                    '$*': args.iconSize,
+                                },
+                                height: {
+                                    '$*': args.iconSize,
+                                },
+                            },
+                        },
                     },
                 },
             },
@@ -565,65 +574,65 @@ export const ButtonFamily: StoryObj<FamilyArgs> = {
     render: (args) => {
         const baseStyles = createStoryStyleTree();
         const familyBaseJSON = {
-            container: {
-                background: {
+            button: {
+                button: {
                     base: {
-                        '$*': {
-                            fill: '#f1ede4',
+                        100: {
+                            container: {
+                                background: {
+                                    fill: {
+                                        '$*': '#f1ede4',
+                                        '$hover': '#e4ddd0',
+                                    },
+                                    padding: {
+                                        '$*': [4, 18],
+                                    },
+                                    width: {
+                                        '$*': 150,
+                                    },
+                                    height: {
+                                        '$*': 30,
+                                    },
+                                },
+                                border: {
+                                    width: {
+                                        '$*': 1,
+                                    },
+                                    color: {
+                                        '$*': '#6e6557',
+                                        '$hover': '#2d4f80',
+                                    },
+                                    radius: {
+                                        '$*': 8,
+                                    },
+                                },
+                                content: {
+                                    gap: {
+                                        '$*': 6,
+                                    },
+                                },
+                            },
+                            label: {
+                                font: {
+                                    color: {
+                                        '$*': '#332b20',
+                                    },
+                                },
+                                size: {
+                                    '$*': 13,
+                                },
+                            },
+                            icon: {
+                                size: {
+                                    width: {
+                                        '$*': 16,
+                                    },
+                                    height: {
+                                        '$*': 16,
+                                    },
+                                },
+                            },
                         },
-                        '$hover': {
-                            fill: '#e4ddd0',
-                        },
-                        padding: {
-                            '$*': [4, 18],
-                        },
-                        width: {
-                            '$*': 150,
-                        },
-                        height: {
-                            '$*': 30,
-                        },
-                    },
-                },
-                border: {
-                    base: {
-                        width: {
-                            '$*': 1,
-                        },
-                        color: {
-                            '$*': '#6e6557',
-                            '$hover': '#2d4f80',
-                        },
-                        radius: {
-                            '$*': 8,
-                        },
-                    },
-                },
-                content: {
-                    '$*': {
-                        gap: 6,
-                    },
-                },
-            },
-            label: {
-                base: {
-                    font: {
-                        color: {
-                            '$*': '#332b20',
-                        },
-                    },
-                    size: {
-                        '$*': 13,
-                    },
-                },
-            },
-            icon: {
-                size: {
-                    width: {
-                        '$*': 16,
-                    },
-                    height: {
-                        '$*': 16,
                     },
                 },
             },

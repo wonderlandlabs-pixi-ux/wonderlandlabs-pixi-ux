@@ -24,6 +24,7 @@ type ButtonRendererManifest = {
 export class ButtonStore extends TickerForest<ButtonStateType> {
     #boxStore: BoxStore;
     #styleTree: BoxStyleManagerLike[];
+    #styleTreeSignature: string;
     #renderer: ButtonRendererManifest;
     #options: ButtonOptionsType;
     #pixi: PixiProvider;
@@ -44,13 +45,13 @@ export class ButtonStore extends TickerForest<ButtonStateType> {
 
         this.#options = options;
         this.#pixi = pixi;
-        this.#styleTree = getStyleTree(value.variant, options);
+        this.#styleTree = getStyleTree(this.value, options);
+        this.#styleTreeSignature = this.#makeStyleTreeSignature();
         this.#renderer = this.#makeRendererManifest();
 
         this.#boxStore = new BoxStore(makeStoreConfig(this.value, this.#styleTree));
         this.#boxStore.styles = this.#styleTree;
         this.#boxStore.isDebug = !!this.value.isDebug;
-        this.resolve();
     }
 
     get isDebug(): boolean {
@@ -145,6 +146,26 @@ export class ButtonStore extends TickerForest<ButtonStateType> {
         return () => {};
     }
 
+    #makeStyleTreeSignature(): string {
+        return [
+            this.value.variant,
+            this.value.family ?? 'base',
+            this.value.scale ?? 100,
+            this.value.themeName ?? 'BASE',
+        ].join('|');
+    }
+
+    #refreshStyleTree(): void {
+        const nextSignature = this.#makeStyleTreeSignature();
+        if (nextSignature === this.#styleTreeSignature) {
+            return;
+        }
+
+        this.#styleTree = getStyleTree(this.value, this.#options);
+        this.#styleTreeSignature = nextSignature;
+        this.#boxStore.styles = this.#styleTree;
+    }
+
     observeBox(input: BoxPixiObserverMessage): void {
         if (input.action === 'invalidate') {
             window.setTimeout(this.$.dirty, 0);
@@ -170,6 +191,7 @@ export class ButtonStore extends TickerForest<ButtonStateType> {
         }
         this.isUpdating = true;
         try {
+            this.#refreshStyleTree();
             this.#boxStore.mutate((draft) => {
                 Object.assign(draft, makeStoreConfig(this.value, this.#styleTree).value);
             });
