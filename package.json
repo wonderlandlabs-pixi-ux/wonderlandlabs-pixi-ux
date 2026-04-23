@@ -21,7 +21,7 @@
     "package-validator:preview": "yarn workspace @wonderlandlabs-pixi-ux/package-validator preview",
     "build:validator-targets": "yarn workspace @wonderlandlabs-pixi-ux/utils build && yarn workspace @wonderlandlabs-pixi-ux/style-tree build && yarn workspace @wonderlandlabs-pixi-ux/box build && yarn workspace @wonderlandlabs-pixi-ux/observe-drag build && yarn workspace @wonderlandlabs-pixi-ux/ticker-forest build && yarn workspace @wonderlandlabs-pixi-ux/button build && yarn workspace @wonderlandlabs-pixi-ux/toolbar build && yarn workspace @wonderlandlabs-pixi-ux/root-container build && yarn workspace @wonderlandlabs-pixi-ux/grid build && yarn workspace @wonderlandlabs-pixi-ux/resizer build && yarn workspace @wonderlandlabs-pixi-ux/window build",
     "validate:release": "yarn workspace @wonderlandlabs-pixi-ux/package-validator validate:release",
-    "validate:release:built": "yarn build:validator-targets && yarn validate:release",
+    "validate:release:build-first": "yarn build:validator-targets && yarn validate:release",
     "build": "yarn workspaces foreach -A run build",
     "clean": "yarn workspaces foreach -A run clean",
     "release:survey": "bash ./scripts/release-survey.sh",

@@ -220,10 +220,41 @@ function resolveBackgroundFillStyle(
   context: BoxStyleContext,
   backgroundStyle?: Record<string, unknown>,
 ): unknown {
-  const direction = resolveStyleValue(styles, context, ['background', 'fill', 'direction']);
-  const colors = resolveStyleValue(styles, context, ['background', 'fill', 'colors']);
-  const from = resolveStyleValue(styles, context, ['background', 'fill', 'from']);
-  const to = resolveStyleValue(styles, context, ['background', 'fill', 'to']);
+  for (let index = (styles?.length ?? 0) - 1; index >= 0; index -= 1) {
+    const layerResult = resolveBackgroundFillFromLayer(styles?.[index], context);
+    if (layerResult !== undefined) {
+      return layerResult;
+    }
+  }
+
+  if (backgroundStyle?.fill !== undefined) {
+    return backgroundStyle.fill;
+  }
+
+  return undefined;
+}
+
+function resolveBackgroundFillFromLayer(
+  style: BoxStyleManagerLike | undefined,
+  context: BoxStyleContext,
+): unknown {
+  if (!style) {
+    return undefined;
+  }
+
+  const backgroundStyle = resolveStyleValue<Record<string, unknown> | undefined>(
+    [style],
+    context,
+    ['background'],
+  );
+  if (backgroundStyle?.fill !== undefined && isGradientFillObject(backgroundStyle.fill)) {
+    return backgroundStyle.fill;
+  }
+
+  const direction = resolveStyleValue([style], context, ['background', 'fill', 'direction']);
+  const colors = resolveStyleValue([style], context, ['background', 'fill', 'colors']);
+  const from = resolveStyleValue([style], context, ['background', 'fill', 'from']);
+  const to = resolveStyleValue([style], context, ['background', 'fill', 'to']);
 
   if (
     direction !== undefined
@@ -239,7 +270,24 @@ function resolveBackgroundFillStyle(
     };
   }
 
-  return backgroundStyle?.fill;
+  if (backgroundStyle?.fill !== undefined) {
+    return backgroundStyle.fill;
+  }
+
+  const directFill = resolveStyleValue([style], context, ['background', 'fill']);
+  if (directFill !== undefined) {
+    return directFill;
+  }
+
+  return undefined;
+}
+
+function isGradientFillObject(input: unknown): input is Record<string, unknown> {
+  if (typeof input !== 'object' || input === null || Array.isArray(input)) {
+    return false;
+  }
+
+  return 'colors' in input || 'direction' in input || 'from' in input || 'to' in input;
 }
 
 function resolveNumericStyle(input: unknown): number | undefined {

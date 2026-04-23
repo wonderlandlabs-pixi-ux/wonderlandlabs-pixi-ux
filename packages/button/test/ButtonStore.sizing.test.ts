@@ -1,367 +1,109 @@
 import './setupNavigator';
-import {describe, expect, it, vi} from 'vitest';
-import {CanvasTextMetrics, Container} from 'pixi.js';
-import {fromJSON, type StyleTree} from '@wonderlandlabs-pixi-ux/style-tree';
-import {ButtonStore} from '../src/ButtonStore';
-import sizingStyles from './fixtures/button.sizing.styles.json';
+import {beforeEach, describe, expect, it} from 'vitest';
+import {PixiProvider} from '@wonderlandlabs-pixi-ux/utils';
+import {getStyleTree, makeStoreConfig} from '../src/helpers';
+import {BTYPE_AVATAR, BTYPE_BASE, BTYPE_TEXT, BTYPE_VERTICAL} from '../src/constants';
 
-type QueuedTick = {
-    fn: () => void;
-    context?: unknown;
-};
-
-type TickerHost = {
-    ticker: {
-        addOnce: (fn: () => void, context?: unknown) => void;
-        remove: () => void;
-    };
-};
-
-function createMockTickerHost(): { host: TickerHost; flushTicker: (maxTicks?: number) => void } {
-    const queuedTicks: QueuedTick[] = [];
-
-    const ticker = {
-        addOnce(fn: () => void, context?: unknown) {
-            queuedTicks.push({fn, context});
-        },
-        remove() {
-            // no-op in tests
-        },
-    };
-
-    const host: TickerHost = {ticker};
-
-    const flushTicker = (maxTicks = 500) => {
-        let ticks = 0;
-        while (queuedTicks.length > 0 && ticks < maxTicks) {
-            ticks += 1;
-            const next = queuedTicks.shift()!;
-            next.fn.call(next.context);
-        }
-    };
-
-    return {host, flushTicker};
-}
-
-function createStyleTree() {
-    return fromJSON(sizingStyles);
-}
-
-const TEXT_LABEL = 'Test';
-const TEXT_HEIGHT_FACTOR = 1.2;
-
-function getStyleNumber(
-    styleTree: StyleTree,
-    nouns: string[],
-    states: string[] = []
-): number {
-    const value = styleTree.match({nouns, states});
-    if (typeof value !== 'number') {
-        throw new Error(`Expected numeric style value for ${nouns.join('.')} with states [${states.join(',')}]`);
-    }
-    return value;
-}
+beforeEach(() => {
+    PixiProvider.init(PixiProvider.fallbacks);
+});
 
 describe('ButtonStore sizing', () => {
-    it('avoids box content fallback when explicit icon/label display objects are present', () => {
-        const textMetricsSpy = vi
-            .spyOn(CanvasTextMetrics, 'measureText')
-            .mockImplementation((text: string, style: { fontSize?: number }) => {
-                const fontSize = style.fontSize ?? 13;
-                return {
-                    width: text.length * fontSize,
-                    height: fontSize * TEXT_HEIGHT_FACTOR,
-                } as any;
-            });
-
-        const {host, flushTicker} = createMockTickerHost();
-        const styleTree = createStyleTree();
-        const button = new ButtonStore(
-            {
-                id: 'content-mapping',
-                mode: 'inline',
-                label: 'Open',
-                icon: new Container(),
-                rightIcon: new Container(),
-                iconUrl: 'https://assets.example.com/left.png',
-                rightIconUrl: 'https://assets.example.com/right.png',
-            },
-            styleTree,
-            host as never
-        );
-
-        button.kickoff();
-        flushTicker();
-
-        const [leftIcon, labelNode, rightIcon] = button.children;
-        expect(leftIcon?.content).toBeUndefined();
-        expect(labelNode?.content).toBeUndefined();
-        expect(rightIcon?.content).toBeUndefined();
-
-        button.cleanup();
-        textMetricsSpy.mockRestore();
-    });
-
-    it('uses box url content fallback when no explicit icon display object is provided', () => {
-        const {host, flushTicker} = createMockTickerHost();
-        const styleTree = createStyleTree();
-        const button = new ButtonStore(
-            {
-                id: 'content-fallback',
-                mode: 'icon',
-                iconUrl: 'https://assets.example.com/fallback.png',
-            },
-            styleTree,
-            host as never
-        );
-
-        button.kickoff();
-        flushTicker();
-
-        const [iconNode] = button.children;
-        expect(iconNode?.content).toEqual({
-            type: 'url',
-            value: 'https://assets.example.com/fallback.png',
+    it('uses the medium base family scale by default', () => {
+        const styleTree = getStyleTree(BTYPE_BASE, {
+            app: {},
+            handlers: {},
+            styleTree: [],
+            styleDef: [],
         });
 
-        button.cleanup();
+        const config = makeStoreConfig({
+            variant: BTYPE_BASE,
+            label: 'Launch',
+            icon: 'https://assets.example.com/icon.png',
+        }, styleTree);
+
+        expect(config.value.dim.w).toBeCloseTo(150.38, 2);
+        expect(config.value.dim.h).toBeCloseTo(30.08, 2);
+        expect(config.value.gap).toBeCloseTo(4.51, 2);
+        expect(config.value.children).toHaveLength(2);
     });
 
-    it('computes icon mode size from icon.size + padding', () => {
-        const {host, flushTicker} = createMockTickerHost();
-        const styleTree = createStyleTree();
-        const button = new ButtonStore(
-            {id: 'icon-size', mode: 'icon'},
-            styleTree,
-            host as never
-        );
+    it('uses explicit family scale tokens when present', () => {
+        const styleTree = getStyleTree(BTYPE_BASE, {
+            app: {},
+            handlers: {},
+            styleTree: [],
+            styleDef: [],
+        });
 
-        button.kickoff();
-        flushTicker();
+        const smallConfig = makeStoreConfig({
+            variant: BTYPE_BASE,
+            label: 'Small',
+            scale: 50,
+        }, styleTree);
+        const largeConfig = makeStoreConfig({
+            variant: BTYPE_BASE,
+            label: 'Large',
+            scale: 133,
+        }, styleTree);
 
-        const iconSizeX = getStyleNumber(styleTree, ['button', 'icon', 'size', 'x']);
-        const iconSizeY = getStyleNumber(styleTree, ['button', 'icon', 'size', 'y']);
-        const paddingX = getStyleNumber(styleTree, ['button', 'padding', 'x']);
-        const paddingY = getStyleNumber(styleTree, ['button', 'padding', 'y']);
-        const expectedWidth = iconSizeX + paddingX * 2;
-        const expectedHeight = iconSizeY + paddingY * 2;
-
-        expect(button.rect.width).toBe(expectedWidth);
-        expect(button.rect.height).toBe(expectedHeight);
-
-        button.cleanup();
+        expect(smallConfig.value.dim.w).toBeCloseTo(75.19, 2);
+        expect(largeConfig.value.dim.w).toBe(200);
+        expect(largeConfig.value.dim.h).toBe(40);
     });
 
-    it('recomputes icon mode size on hover state', () => {
-        const {host, flushTicker} = createMockTickerHost();
-        const styleTree = createStyleTree();
-        const button = new ButtonStore(
-            {id: 'icon-hover-size', mode: 'icon'},
-            styleTree,
-            host as never
-        );
+    it('builds a text button with label-only content sizing', () => {
+        const styleTree = getStyleTree(BTYPE_TEXT, {
+            app: {},
+            handlers: {},
+            styleTree: [],
+            styleDef: [],
+        });
 
-        button.kickoff();
-        flushTicker();
-        const baseIconSizeX = getStyleNumber(styleTree, ['button', 'icon', 'size', 'x']);
-        const baseIconSizeY = getStyleNumber(styleTree, ['button', 'icon', 'size', 'y']);
-        const paddingX = getStyleNumber(styleTree, ['button', 'padding', 'x']);
-        const paddingY = getStyleNumber(styleTree, ['button', 'padding', 'y']);
-        const expectedBaseWidth = baseIconSizeX + paddingX * 2;
-        const expectedBaseHeight = baseIconSizeY + paddingY * 2;
-        expect(button.rect.width).toBe(expectedBaseWidth);
-        expect(button.rect.height).toBe(expectedBaseHeight);
+        const config = makeStoreConfig({
+            variant: BTYPE_TEXT,
+            label: 'Text Link',
+        }, styleTree);
 
-        button.setHovered(true);
-        flushTicker();
-        const hoverIconSizeX = getStyleNumber(styleTree, ['button', 'icon', 'size', 'x'], ['hover']);
-        const hoverIconSizeY = getStyleNumber(styleTree, ['button', 'icon', 'size', 'y'], ['hover']);
-        const expectedHoverWidth = hoverIconSizeX + paddingX * 2;
-        const expectedHoverHeight = hoverIconSizeY + paddingY * 2;
-        expect(button.rect.width).toBe(expectedHoverWidth);
-        expect(button.rect.height).toBe(expectedHoverHeight);
-
-        button.cleanup();
+        expect(config.value.variant).toBe(BTYPE_TEXT);
+        expect(config.value.children).toHaveLength(1);
+        expect(config.value.children?.[0].name).toBe('label');
     });
 
-    it('uses icon.vertical style path for iconVertical mode sizing', () => {
-        const {host, flushTicker} = createMockTickerHost();
-        const styleTree = createStyleTree();
-        const button = new ButtonStore(
-            {id: 'icon-vertical-size', mode: 'iconVertical'},
-            styleTree,
-            host as never
-        );
+    it('builds a vertical button with stacked icon and label children', () => {
+        const styleTree = getStyleTree(BTYPE_VERTICAL, {
+            app: {},
+            handlers: {},
+            styleTree: [],
+            styleDef: [],
+        });
 
-        button.kickoff();
-        flushTicker();
+        const config = makeStoreConfig({
+            variant: BTYPE_VERTICAL,
+            label: 'Profile',
+            icon: 'https://assets.example.com/icon.png',
+        }, styleTree);
 
-        const iconSizeX = getStyleNumber(styleTree, ['button', 'icon', 'vertical', 'icon', 'size', 'x']);
-        const iconSizeY = getStyleNumber(styleTree, ['button', 'icon', 'vertical', 'icon', 'size', 'y']);
-        const paddingX = getStyleNumber(styleTree, ['button', 'icon', 'vertical', 'padding', 'x']);
-        const paddingY = getStyleNumber(styleTree, ['button', 'icon', 'vertical', 'padding', 'y']);
-        const expectedWidth = iconSizeX + paddingX * 2;
-        const expectedHeight = iconSizeY + paddingY * 2;
-
-        expect(button.rect.width).toBe(expectedWidth);
-        expect(button.rect.height).toBe(expectedHeight);
-
-        button.cleanup();
+        expect(config.value.align.direction).toBe('vertical');
+        expect(config.value.children?.map((child) => child.name)).toEqual(['icon', 'label']);
     });
 
-    it('recomputes iconVertical size on hover with icon.vertical hover styles', () => {
-        const {host, flushTicker} = createMockTickerHost();
-        const styleTree = createStyleTree();
-        const button = new ButtonStore(
-            {id: 'icon-vertical-hover-size', mode: 'iconVertical'},
-            styleTree,
-            host as never
-        );
+    it('builds an avatar button around a square inner child', () => {
+        const styleTree = getStyleTree(BTYPE_AVATAR, {
+            app: {},
+            handlers: {},
+            styleTree: [],
+            styleDef: [],
+        });
 
-        button.kickoff();
-        flushTicker();
-        const baseIconSizeX = getStyleNumber(styleTree, ['button', 'icon', 'vertical', 'icon', 'size', 'x']);
-        const baseIconSizeY = getStyleNumber(styleTree, ['button', 'icon', 'vertical', 'icon', 'size', 'y']);
-        const paddingX = getStyleNumber(styleTree, ['button', 'icon', 'vertical', 'padding', 'x']);
-        const paddingY = getStyleNumber(styleTree, ['button', 'icon', 'vertical', 'padding', 'y']);
-        const expectedBaseWidth = baseIconSizeX + paddingX * 2;
-        const expectedBaseHeight = baseIconSizeY + paddingY * 2;
-        expect(button.rect.width).toBe(expectedBaseWidth);
-        expect(button.rect.height).toBe(expectedBaseHeight);
+        const config = makeStoreConfig({
+            variant: BTYPE_AVATAR,
+            label: 'AB',
+        }, styleTree);
 
-        button.setHovered(true);
-        flushTicker();
-        const hoverIconSizeX = getStyleNumber(styleTree, ['button', 'icon', 'vertical', 'icon', 'size', 'x'], ['hover']);
-        const hoverIconSizeY = getStyleNumber(styleTree, ['button', 'icon', 'vertical', 'icon', 'size', 'y'], ['hover']);
-        const expectedHoverWidth = hoverIconSizeX + paddingX * 2;
-        const expectedHoverHeight = hoverIconSizeY + paddingY * 2;
-        expect(button.rect.width).toBe(expectedHoverWidth);
-        expect(button.rect.height).toBe(expectedHoverHeight);
-
-        button.cleanup();
-    });
-
-    it('distributes iconVertical children with icon.gap on the y axis', () => {
-        const textMetricsSpy = vi
-            .spyOn(CanvasTextMetrics, 'measureText')
-            .mockImplementation((text: string, style: { fontSize?: number }) => {
-                const fontSize = style.fontSize ?? 13;
-                return {
-                    width: text.length * fontSize,
-                    height: fontSize * TEXT_HEIGHT_FACTOR,
-                } as any;
-            });
-
-        const {host, flushTicker} = createMockTickerHost();
-        const styleTree = createStyleTree();
-        const labelText = 'ABCD';
-        const button = new ButtonStore(
-            {id: 'icon-vertical-layout', mode: 'iconVertical', label: labelText},
-            styleTree,
-            host as never
-        );
-
-        button.kickoff();
-        flushTicker();
-
-        const iconGap = getStyleNumber(styleTree, ['button', 'icon', 'vertical', 'icon', 'gap']);
-        const paddingX = getStyleNumber(styleTree, ['button', 'icon', 'vertical', 'padding', 'x']);
-        const paddingY = getStyleNumber(styleTree, ['button', 'icon', 'vertical', 'padding', 'y']);
-        const iconSizeX = getStyleNumber(styleTree, ['button', 'icon', 'vertical', 'icon', 'size', 'x']);
-        const iconSizeY = getStyleNumber(styleTree, ['button', 'icon', 'vertical', 'icon', 'size', 'y']);
-        const labelFontSize = getStyleNumber(styleTree, ['button', 'icon', 'vertical', 'label', 'font', 'size']);
-
-        const [iconChild, labelChild] = button.children;
-        const expectedLabelWidth = labelText.length * labelFontSize;
-        const expectedLabelHeight = labelFontSize * TEXT_HEIGHT_FACTOR;
-
-        expect(iconChild.rect.y).toBe(0);
-        expect(labelChild.rect.y).toBe(iconChild.rect.height + iconGap);
-
-        const expectedWidth = Math.max(iconSizeX, expectedLabelWidth) + paddingX * 2;
-        const expectedHeight = iconSizeY + iconGap + expectedLabelHeight + paddingY * 2;
-
-        expect(button.rect.width).toBe(expectedWidth);
-        expect(button.rect.height).toBe(expectedHeight);
-
-        button.cleanup();
-        textMetricsSpy.mockRestore();
-    });
-
-    it('computes text mode size with mocked text metrics (no browser canvas required)', () => {
-        const textMetricsSpy = vi
-            .spyOn(CanvasTextMetrics, 'measureText')
-            .mockImplementation((text: string, style: { fontSize?: number }) => {
-                const fontSize = style.fontSize ?? 13;
-                return {
-                    width: text.length * fontSize,
-                    height: fontSize * 1.2,
-                } as any;
-            });
-
-        const {host, flushTicker} = createMockTickerHost();
-        const styleTree = createStyleTree();
-        const button = new ButtonStore(
-            {id: 'text-size', mode: 'text', label: TEXT_LABEL},
-            styleTree,
-            host as never
-        );
-
-        button.kickoff();
-        flushTicker();
-
-        const textFontSize = getStyleNumber(styleTree, ['button', 'text', 'label', 'font', 'size']);
-        const textPaddingX = getStyleNumber(styleTree, ['button', 'text', 'padding', 'x']);
-        const textPaddingY = getStyleNumber(styleTree, ['button', 'text', 'padding', 'y']);
-        const textWidth = TEXT_LABEL.length * textFontSize;
-        const textHeight = textFontSize * TEXT_HEIGHT_FACTOR;
-        const expectedWidth = textWidth + textPaddingX * 2;
-        const expectedHeight = textHeight + textPaddingY * 2;
-
-        expect(button.rect.width).toBe(expectedWidth);
-        expect(button.rect.height).toBe(expectedHeight);
-
-        button.cleanup();
-        textMetricsSpy.mockRestore();
-    });
-
-    it('centers inline children on y axis based on measured extents', () => {
-        const textMetricsSpy = vi
-            .spyOn(CanvasTextMetrics, 'measureText')
-            .mockImplementation((text: string, style: { fontSize?: number }) => {
-                const fontSize = style.fontSize ?? 13;
-                return {
-                    width: text.length * fontSize,
-                    height: fontSize * TEXT_HEIGHT_FACTOR,
-                } as any;
-            });
-
-        const {host, flushTicker} = createMockTickerHost();
-        const styleTree = createStyleTree();
-        styleTree.set('button.inline.label.font.size', [], 24);
-        styleTree.set('button.inline.icon.size.x', [], 16);
-        styleTree.set('button.inline.icon.size.y', [], 16);
-
-        const button = new ButtonStore(
-            {
-                id: 'inline-center-y',
-                mode: 'inline',
-                label: 'Go',
-                icon: new Container(),
-            },
-            styleTree,
-            host as never
-        );
-
-        button.kickoff();
-        flushTicker();
-
-        const [iconChild, labelChild] = button.children;
-        const expectedIconY = Math.max(0, (labelChild.rect.height - iconChild.rect.height) / 2);
-        expect(labelChild.rect.y).toBe(0);
-        expect(iconChild.rect.y).toBeCloseTo(expectedIconY, 6);
-
-        button.cleanup();
-        textMetricsSpy.mockRestore();
+        expect(config.value.children).toHaveLength(1);
+        expect(config.value.children?.[0].name).toBe('label');
+        expect(config.value.children?.[0].dim.w).toBe(config.value.children?.[0].dim.h);
     });
 });

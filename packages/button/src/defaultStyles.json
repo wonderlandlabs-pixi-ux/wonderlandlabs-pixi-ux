@@ -2,7 +2,7 @@
   "container": {
     "background": {
       "padding": {
-        "$*": 4
+        "$*": [4, 17]
       },
       "width": {
         "$*": 200
@@ -21,9 +21,11 @@
           "fill": {
             "direction": "vertical",
             "colors": [
-              "#D9D9D9",
+              "#E7E4DE",
+              "#F4F2EE",
               "#FFFFFF",
-              "#BFBFBF"
+              "#F2EFEB",
+              "#D7D2CA"
             ]
           }
         }
@@ -106,7 +108,7 @@
       }
     },
     "size": {
-      "$*": 14
+      "$*": 17
     },
     "avatar": {
       "size": {

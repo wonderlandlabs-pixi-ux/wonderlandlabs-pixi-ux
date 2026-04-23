@@ -37,3 +37,5 @@
 - Migrate `caption` away from transitional `bubble.*` style keys toward canonical `background.*` and `border.*` paths while preserving only genuinely caption-specific geometry keys such as `pointer.*` and `thought.*`.
 - Migrate `window` off its current bespoke style merge model and onto shared style-tree digestors and canonical DSL paths.
 - Keep package docs explicit about current deviations until the `caption` and `window` migrations are complete.
+- Pixi injection is considered complete for the core runtime stack; remaining work is about style normalization and cleanup, not replacing the provider architecture.
+- Story/demo code may continue to use raw Pixi values directly. The purpose of `PixiProvider` is to keep shipped/runtime code testable and headless-friendly, not to forbid normal live Pixi usage in stories.

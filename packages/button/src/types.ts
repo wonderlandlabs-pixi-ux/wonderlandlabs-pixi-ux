@@ -6,9 +6,11 @@ export const ButtonVariant = z.enum([BTYPE_VERTICAL, BTYPE_TEXT, BTYPE_AVATAR, B
 
 const ButtonState = z.object({
     variant: ButtonVariant,
+    family: z.string().optional(),
     label: z.string().optional(),
     icon: z.string().optional(),
     state: z.string().optional(),
+    scale: z.number().int().min(0).max(500).optional(),
     modifiers: z.array(z.string()).optional(),
     isDebug: z.boolean().optional(),
     isDisabled: z.boolean().optional(),

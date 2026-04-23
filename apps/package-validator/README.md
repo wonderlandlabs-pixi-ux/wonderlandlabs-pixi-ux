@@ -12,6 +12,7 @@ React Router framework-mode app + CLI for heartbeat validation across published 
   - Previews the built app.
 - `yarn workspace @wonderlandlabs-pixi-ux/package-validator validate:release`
   - Validates published aliases (`@published/*`) and workspace package `dist` exports for extensionless/unresolved relative imports.
+  - Known stale published issues are reported as expected baseline; unexpected published issues and any workspace issues still fail the command.
 
 ## Root shortcuts
 
@@ -22,7 +23,7 @@ From the repo root:
 - `yarn package-validator:preview`
 - `yarn build:validator-targets`
 - `yarn validate:release`
-- `yarn validate:release:built`
+- `yarn validate:release:build-first`
 
 ## Current scope
 
@@ -40,11 +41,11 @@ From the repo root:
 
 ## Release workflow
 
-1. `yarn validate:release` to confirm current published package set has expected failures.
+1. `yarn validate:release` to confirm workspace `dist` exports pass and published packages have no unexpected regressions.
 2. `yarn validate:release --package root-container` (or full run) after local fixes/build to confirm workspace dist passes.
-3. Publish new versions, run `yarn install` to refresh `@latest`, then re-run `yarn validate:release`.
+3. Publish new versions, run `yarn install` to refresh the published aliases, then re-run `yarn validate:release`.
 
 ## Recommended root flow
 
-1. `yarn validate:release:built`
+1. `yarn validate:release:build-first`
 2. Optional targeted rerun: `yarn validate:release --package root-container`

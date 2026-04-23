@@ -1,0 +1,237 @@
+import { CanvasTextMetrics, Container, Text, TextStyle, type Sprite, type TextStyleOptions } from 'pixi.js';
+import type { BoxContentType } from '@wonderlandlabs-pixi-ux/box';
+import type { ButtonConfig, ButtonMode, RgbColor } from './types.js';
+import { rgbToHex } from './types.js';
+import {
+    asNonEmptyString,
+    type IconRef,
+    type LabelRef,
+    type LayoutNodeSpec,
+    type StyleGetter,
+} from './buttonInternals.js';
+
+export class ButtonContentModel {
+    readonly #config: ButtonConfig;
+    readonly #mode: ButtonMode;
+    readonly #getStyle: StyleGetter;
+    readonly #isDisabled: () => boolean;
+
+    #leftIcon?: IconRef;
+    #rightIcon?: IconRef;
+    #label?: LabelRef;
+
+    constructor(
+        config: ButtonConfig,
+        mode: ButtonMode,
+        getStyle: StyleGetter,
+        isDisabled: () => boolean,
+    ) {
+        this.#config = config;
+        this.#mode = mode;
+        this.#getStyle = getStyle;
+        this.#isDisabled = isDisabled;
+
+        this.#buildRefs();
+    }
+
+    get leftIcon(): IconRef | undefined {
+        return this.#leftIcon;
+    }
+
+    get rightIcon(): IconRef | undefined {
+        return this.#rightIcon;
+    }
+
+    get label(): LabelRef | undefined {
+        return this.#label;
+    }
+
+    #buildRefs(): void {
+        if (this.#mode === 'icon' || this.#mode === 'iconVertical' || (this.#mode === 'inline' && !!(this.#config.sprite || this.#config.icon))) {
+            this.#leftIcon = {
+                key: 'icon',
+                sprite: this.#config.sprite,
+                container: this.#config.icon,
+                role: 'left',
+            };
+        }
+
+        if (this.#config.label && this.#mode !== 'icon') {
+            this.#label = {
+                key: 'label',
+                measureText: new Text({
+                    text: this.#config.label,
+                    style: new TextStyle({
+                        fontSize: 13,
+                        fill: 0xffffff,
+                        align: 'center',
+                        fontFamily: this.#config.bitmapFont ?? 'Arial',
+                    }),
+                }),
+            };
+        }
+
+        if (this.#mode === 'inline' && !!(this.#config.rightSprite || this.#config.rightIcon)) {
+            this.#rightIcon = {
+                key: 'rightIcon',
+                sprite: this.#config.rightSprite,
+                container: this.#config.rightIcon,
+                role: 'right',
+            };
+        }
+    }
+
+    defaultPaddingX(): number {
+        return this.#mode === 'text' || this.#mode === 'inline' ? 12 : 4;
+    }
+
+    defaultPaddingY(): number {
+        return this.#mode === 'text' || this.#mode === 'inline' ? 6 : 4;
+    }
+
+    gap(): number {
+        const resolvedGap = this.#getStyle<number>('icon', 'gap')
+            ?? this.#getStyle<number>('right', 'icon', 'gap')
+            ?? this.#getStyle<number>('iconGap');
+        if (this.#mode === 'iconVertical') {
+            return resolvedGap ?? 4;
+        }
+        if (this.#mode === 'inline') {
+            return resolvedGap ?? 8;
+        }
+        return 0;
+    }
+
+    iconStyle(iconRef: IconRef): { width: number; height: number; alpha: number; tint?: RgbColor } {
+        const defaults = this.#mode === 'inline' ? { x: 16, y: 16 } : { x: 32, y: 32 };
+        const sizePrefix = iconRef.role === 'right' ? ['right', 'icon'] : ['icon'];
+
+        const width = this.#getStyle<number>(...sizePrefix, 'size', 'x') ?? defaults.x;
+        const height = this.#getStyle<number>(...sizePrefix, 'size', 'y') ?? defaults.y;
+        const alpha = this.#getStyle<number>(...sizePrefix, 'alpha') ?? 1;
+        const tint = this.#getStyle<RgbColor>(...sizePrefix, 'tint');
+
+        return { width, height, alpha, tint };
+    }
+
+    labelStyle(): { textStyle: TextStyleOptions; alpha: number } {
+        const fontSize = this.#getStyle<number>('label', 'font', 'size')
+            ?? this.#getStyle<number>('label', 'fontSize')
+            ?? 13;
+        const color = this.#getStyle<RgbColor>('label', 'font', 'color')
+            ?? this.#getStyle<RgbColor>('label', 'color')
+            ?? (this.#mode === 'text' || this.#mode === 'inline'
+                ? { r: 1, g: 1, b: 1 }
+                : { r: 0, g: 0, b: 0 });
+        const alpha = this.#getStyle<number>('label', 'font', 'alpha')
+            ?? this.#getStyle<number>('label', 'alpha')
+            ?? (this.#mode === 'text' || this.#mode === 'inline' ? 1 : 0.5);
+        const visible = this.#getStyle<boolean>('label', 'font', 'visible')
+            ?? this.#getStyle<boolean>('label', 'visible')
+            ?? true;
+        const family = this.#getStyle<string>('label', 'font', 'family')
+            ?? this.#config.bitmapFont
+            ?? 'Arial';
+
+        return {
+            textStyle: {
+                fontSize,
+                fill: rgbToHex(color),
+                align: 'center',
+                fontFamily: family,
+            },
+            alpha: this.#isDisabled() ? (visible ? alpha * 0.5 : 0) : (visible ? alpha : 0),
+        };
+    }
+
+    nodeSpecs(): LayoutNodeSpec[] {
+        const specs: LayoutNodeSpec[] = [];
+
+        if (this.#leftIcon) {
+            const style = this.iconStyle(this.#leftIcon);
+            specs.push({
+                key: 'icon',
+                name: 'icon',
+                width: style.width,
+                height: style.height,
+                content: this.resolveIconContent(this.#leftIcon),
+            });
+        }
+
+        if (this.#label) {
+            const { textStyle } = this.labelStyle();
+            const measured = this.#measureLabel(textStyle);
+            specs.push({
+                key: 'label',
+                name: 'label',
+                width: measured.width,
+                height: measured.height,
+            });
+        }
+
+        if (this.#rightIcon) {
+            const style = this.iconStyle(this.#rightIcon);
+            specs.push({
+                key: 'rightIcon',
+                name: 'rightIcon',
+                width: style.width,
+                height: style.height,
+                content: this.resolveIconContent(this.#rightIcon),
+            });
+        }
+
+        return specs;
+    }
+
+    resolveIconContent(iconRef: IconRef): BoxContentType | undefined {
+        if (iconRef.sprite || iconRef.container) {
+            return undefined;
+        }
+
+        const explicit = iconRef.role === 'right'
+            ? this.#config.rightIconUrl
+            : this.#config.iconUrl;
+        const url = asNonEmptyString(explicit);
+        return url ? { type: 'url', value: url } : undefined;
+    }
+
+    #measureLabel(textStyle: TextStyleOptions): { width: number; height: number } {
+        const text = this.#config.label ?? '';
+        const fallbackFontSize = typeof textStyle.fontSize === 'number' ? textStyle.fontSize : 13;
+        let measuredWidth = Math.max(0, text.length * fallbackFontSize * 0.6);
+        let measuredHeight = Math.max(0, fallbackFontSize * 1.2);
+
+        if (this.#label) {
+            try {
+                this.#label.measureText.text = text;
+                this.#label.measureText.style = new TextStyle(textStyle);
+                const bounds = this.#label.measureText.getLocalBounds();
+                if (Number.isFinite(bounds.width) && bounds.width >= 0) {
+                    measuredWidth = bounds.width;
+                }
+                if (Number.isFinite(bounds.height) && bounds.height >= 0) {
+                    measuredHeight = bounds.height;
+                }
+            } catch {
+                // noop fallback
+            }
+        }
+
+        try {
+            const measured = CanvasTextMetrics.measureText(text, textStyle as never);
+            if (Number.isFinite(measured.width) && measured.width >= 0) {
+                measuredWidth = measured.width;
+            }
+            if (Number.isFinite(measured.height) && measured.height >= 0) {
+                measuredHeight = measured.height;
+            }
+        } catch {
+            // noop fallback
+        }
+
+        return {
+            width: measuredWidth,
+            height: measuredHeight,
+        };
+    }
+}

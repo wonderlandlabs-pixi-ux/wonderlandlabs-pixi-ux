@@ -12,6 +12,7 @@ import {
 import storyStyles from './storyStyles.json' with {type: 'json'};
 import capsuleStyles from './capsuleStyles.json' with {type: 'json'};
 import warnStyles from './warnStyles.json' with {type: 'json'};
+import { createButtonFamily } from './buttonFamily.js';
 
 const PLACEHOLDER_ICON = '/icons/demo-icon.png';
 const STORY_BACKGROUND = new Pixi.Color('#f6f1e7').toNumber();
@@ -30,6 +31,15 @@ function createCapsuleOverrideTree() {
 
 function createWarnOverrideTree() {
     return fromJSON(warnStyles);
+}
+
+function createButtonFamilyTree(
+    styleJson: Record<string, unknown>,
+    sizes: number[],
+    family = 'base',
+    baselineSize = 100,
+) {
+    return fromJSON(createButtonFamily(styleJson, sizes, {family, baselineSize}));
 }
 
 function showAlert(message: string) {
@@ -63,6 +73,10 @@ type DesignerArgs = {
     fontSize: number;
     iconSize: number;
     disabled: boolean;
+};
+
+type FamilyArgs = {
+    scale: number;
 };
 
 const meta: Meta<DesignerArgs> = {
@@ -533,6 +547,192 @@ export const Designer: StoryObj<DesignerArgs> = {
 
             app.stage.addChild(button.container!);
             button.kickoff();
+        })();
+
+        return wrapper;
+    },
+};
+
+const FAMILY_SIZES = [50, 100, 133, 200];
+
+export const ButtonFamily: StoryObj<FamilyArgs> = {
+    args: {
+        scale: 125,
+    },
+    argTypes: {
+        scale: {control: {type: 'range', min: 0, max: 500, step: 5}},
+    },
+    render: (args) => {
+        const baseStyles = createStoryStyleTree();
+        const familyBaseJSON = {
+            container: {
+                background: {
+                    base: {
+                        '$*': {
+                            fill: '#f1ede4',
+                        },
+                        '$hover': {
+                            fill: '#e4ddd0',
+                        },
+                        padding: {
+                            '$*': [4, 18],
+                        },
+                        width: {
+                            '$*': 150,
+                        },
+                        height: {
+                            '$*': 30,
+                        },
+                    },
+                },
+                border: {
+                    base: {
+                        width: {
+                            '$*': 1,
+                        },
+                        color: {
+                            '$*': '#6e6557',
+                            '$hover': '#2d4f80',
+                        },
+                        radius: {
+                            '$*': 8,
+                        },
+                    },
+                },
+                content: {
+                    '$*': {
+                        gap: 6,
+                    },
+                },
+            },
+            label: {
+                base: {
+                    font: {
+                        color: {
+                            '$*': '#332b20',
+                        },
+                    },
+                    size: {
+                        '$*': 13,
+                    },
+                },
+            },
+            icon: {
+                size: {
+                    width: {
+                        '$*': 16,
+                    },
+                    height: {
+                        '$*': 16,
+                    },
+                },
+            },
+        } satisfies Record<string, unknown>;
+        const familyStyles = createButtonFamilyTree(familyBaseJSON, FAMILY_SIZES, 'capsule');
+        const wrapper = document.createElement('div');
+        wrapper.style.width = '100%';
+        wrapper.style.height = '420px';
+        wrapper.style.display = 'flex';
+        wrapper.style.gap = '16px';
+        wrapper.style.alignItems = 'stretch';
+
+        const preview = document.createElement('div');
+        preview.style.flex = '1 1 auto';
+        preview.style.minWidth = '0';
+
+        const code = document.createElement('textarea');
+        code.readOnly = true;
+        code.value = JSON.stringify({
+            family: 'capsule',
+            authored: createButtonFamily(familyBaseJSON, FAMILY_SIZES, {family: 'capsule'}),
+            dynamicScale: args.scale,
+            note: 'Missing capsule.<scale> styles are synthesized from capsule.100 at runtime.',
+        }, null, 2);
+        code.style.width = '360px';
+        code.style.height = '100%';
+        code.style.fontFamily = 'ui-monospace, SFMono-Regular, Menlo, monospace';
+        code.style.fontSize = '12px';
+        code.style.lineHeight = '1.4';
+        code.style.padding = '12px';
+        code.style.border = '1px solid #d8d0bf';
+        code.style.borderRadius = '8px';
+        code.style.background = '#fffdf8';
+        code.style.color = '#3a3125';
+
+        wrapper.appendChild(preview);
+        wrapper.appendChild(code);
+
+        void (async () => {
+            PixiProvider.init(Pixi);
+            const app = new Pixi.Application();
+            await app.init({
+                width: 860,
+                height: 420,
+                backgroundColor: STORY_BACKGROUND,
+                antialias: true,
+            });
+            preview.appendChild(app.canvas);
+
+            FAMILY_SIZES.forEach((sizeValue, index) => {
+                const button = new ButtonStore({
+                    variant: BTYPE_BASE,
+                    family: 'capsule',
+                    label: `capsule.${sizeValue} authored`,
+                    icon: PLACEHOLDER_ICON,
+                    scale: sizeValue,
+                    size: {
+                        x: 40,
+                        y: 30 + (index * 62),
+                    },
+                }, {
+                    app,
+                    pixi: PixiProvider.shared,
+                    styleTree: [baseStyles, familyStyles],
+                    handlers: {click: showAlert(`Family size ${sizeValue} clicked`)},
+                });
+
+                app.stage.addChild(button.container!);
+                button.kickoff();
+            });
+
+            const dynamicButton = new ButtonStore({
+                variant: BTYPE_BASE,
+                family: 'capsule',
+                label: `capsule.${args.scale} dynamic`,
+                icon: PLACEHOLDER_ICON,
+                scale: args.scale,
+                size: {
+                    x: 320,
+                    y: 80,
+                },
+            }, {
+                app,
+                pixi: PixiProvider.shared,
+                styleTree: [baseStyles, familyStyles],
+                handlers: {click: showAlert(`Dynamic family size ${args.scale} clicked`)},
+            });
+
+            const baselineButton = new ButtonStore({
+                variant: BTYPE_BASE,
+                family: 'capsule',
+                label: 'capsule.100 baseline',
+                icon: PLACEHOLDER_ICON,
+                scale: 100,
+                size: {
+                    x: 320,
+                    y: 170,
+                },
+            }, {
+                app,
+                pixi: PixiProvider.shared,
+                styleTree: [baseStyles, familyStyles],
+                handlers: {click: showAlert('Baseline family size 100 clicked')},
+            });
+
+            app.stage.addChild(dynamicButton.container!);
+            dynamicButton.kickoff();
+            app.stage.addChild(baselineButton.container!);
+            baselineButton.kickoff();
         })();
 
         return wrapper;

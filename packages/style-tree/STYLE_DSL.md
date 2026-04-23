@@ -145,6 +145,13 @@ These helpers take a root such as:
 - `window.titlebar`
 - `caption`
 
+Resolvers also accept comma-delimited roots to express ordered inheritance:
+
+- `button.container, button.variant.base.container`
+- `button.container, button.variant.base.container, button.modifier.danger.container`
+
+Later roots override earlier roots.
+
 and return normalized typed objects instead of requiring each package to manually query:
 
 - `background.fill`
@@ -187,6 +194,174 @@ const background = resolveBackgroundStyle(tree, 'button.container');
 const labelFont = resolveFontStyle(tree, 'button.label');
 ```
 
+## Resolution Model
+
+The style system has two distinct phases:
+
+### 1. Digestion
+
+Digestion normalizes authored input into addressable style-tree paths.
+
+Examples:
+
+- `fontColor` becomes `font.color`
+- nested JSON objects become deeper noun paths
+- `$hover` and other `$state` keys become state variants
+
+Digestion is structural only.
+It does **not** decide how inherited values should combine.
+
+### 2. Inheritance Resolution
+
+Inheritance resolution decides how values from multiple roots or layers interact.
+
+Examples:
+
+- base root plus variant root
+- base root plus variant root plus modifier root
+- base theme plus local override theme
+
+This is where replacement and merge behavior matter.
+
+Example:
+
+```ts
+resolveBackgroundStyle(
+  tree,
+  'button.container, button.variant.base.container, button.modifier.danger.container',
+);
+```
+
+Meaning:
+
+1. read `button.container`
+2. apply `button.variant.base.container`
+3. apply `button.modifier.danger.container`
+4. later roots override earlier roots
+
+## Atomic vs Merged Values
+
+Not every property resolves the same way.
+
+Some values are atomic:
+
+- a later value replaces the earlier one as a whole
+
+Some values are merged:
+
+- sub-properties resolve independently
+
+### Atomic
+
+- `background.fill`
+
+Reason:
+
+- `fill` is one semantic value
+- it may be a solid color or a gradient object
+- a later `fill` should replace an earlier `fill` completely
+
+Example:
+
+```json
+{
+  "button": {
+    "container": {
+      "background": {
+        "fill": {
+          "direction": "vertical",
+          "colors": ["#d9d9d9", "#ffffff", "#bfbfbf"]
+        }
+      }
+    },
+    "variant": {
+      "capsule": {
+        "container": {
+          "background": {
+            "fill": "#183a37"
+          }
+        }
+      }
+    }
+  }
+}
+```
+
+For the roots:
+
+```ts
+'button.container, button.variant.capsule.container'
+```
+
+the final fill is:
+
+```ts
+'#183a37'
+```
+
+not a hybrid of the earlier gradient and the later solid fill.
+
+### Merged By Sub-Property
+
+- `border`
+- `label.font`
+
+Reason:
+
+- later `border.color` should not erase an earlier `border.width`
+- later `label.font.color` should not erase an earlier `label.font.size`
+
+Example:
+
+```json
+{
+  "button": {
+    "label": {
+      "font": {
+        "size": 14,
+        "family": "IBM Plex Sans"
+      }
+    },
+    "variant": {
+      "danger": {
+        "label": {
+          "font": {
+            "color": "#ffffff"
+          }
+        }
+      }
+    }
+  }
+}
+```
+
+The resolved font keeps:
+
+- `size: 14`
+- `family: "IBM Plex Sans"`
+- `color: "#ffffff"`
+
+### Normalized Shorthand / Scalar
+
+- `padding`
+- `gap`
+- `background.alpha`
+- `border.width`
+- `label.font.alpha`
+
+These resolve as scalar or shorthand values, not as object-merging surfaces.
+
+## Predictability Rule
+
+When in doubt:
+
+- digestion tells you how authored data becomes paths
+- resolution tells you how inherited paths combine
+- atomic values replace as a whole
+- merged values combine by sub-property
+
+Packages should rely on the shared resolvers to enforce these semantics instead of reimplementing merge rules locally.
+
 ## Migration Guidance
 
 When normalizing older package styles:
@@ -210,6 +385,7 @@ Examples:
 - `resolveBackgroundStyle(tree, 'button.container')`
 - `resolveBorderStyle(tree, 'caption')`
 - `resolveFontStyle(tree, 'button.label')`
+- `resolveBackgroundStyle(tree, 'button.container, button.variant.text.container')`
 
 Use this layer when:
 
@@ -257,6 +433,16 @@ digestStyle(tree, 'button.container', {
 });
 ```
 
+With inheritance roots:
+
+```ts
+digestStyle(tree, 'button.container, button.variant.base.container, button.modifier.danger.container', {
+  background: backgroundDigestor,
+  border: borderDigestor,
+  padding: spacingDigestor,
+});
+```
+
 Use this layer when:
 
 - you want maximum reuse
@@ -297,7 +483,8 @@ The preferred stack for this monorepo is:
 1. Define the canonical authored DSL in CSS-like terms.
 2. Keep primitive root resolvers in `style-tree`.
 3. Add composite surface digestors in `style-tree` for genuinely common surfaces.
-4. Keep package-specific digestors in the package layer unless they become broadly reusable.
+4. Keep package-specific 
+5. digestors in the package layer unless they become broadly reusable.
 
 In short:
 

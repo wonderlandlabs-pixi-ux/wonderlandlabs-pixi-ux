@@ -120,4 +120,51 @@ describe('style resolvers', () => {
     expect(resolveFill(tree, 'caption.background')).toBe('#101820');
     expect(resolveGap(tree, 'button.container')).toBe(8);
   });
+
+  it('supports comma-delimited root inheritance order', () => {
+    const inherited = fromJSON({
+      button: {
+        container: {
+          padding: [6, 10],
+          background: {
+            fill: '#223344',
+          },
+          border: {
+            radius: 8,
+            width: 1,
+          },
+        },
+      },
+      buttonVariant: {
+        container: {
+          background: {
+            fill: '#445566',
+          },
+        },
+      },
+      buttonDanger: {
+        container: {
+          border: {
+            color: '#aa3333',
+            width: 3,
+          },
+        },
+      },
+    });
+
+    expect(resolveSpacing(inherited, 'button.container, buttonVariant.container')).toEqual({
+      top: 6,
+      right: 10,
+      bottom: 6,
+      left: 10,
+    });
+    expect(resolveBackgroundStyle(inherited, 'button.container, buttonVariant.container').fill).toBe('#445566');
+    expect(resolveBorderStyle(inherited, 'button.container, buttonDanger.container')).toEqual({
+      color: '#aa3333',
+      width: 3,
+      alpha: 1,
+      radius: 8,
+      visible: true,
+    });
+  });
 });

@@ -1,0 +1,188 @@
+import { Container, Graphics, Text, TextStyle, type Sprite } from 'pixi.js';
+import type {
+    BoxPixiRenderInput,
+    BoxPixiRendererOverride,
+} from '@wonderlandlabs-pixi-ux/box';
+import type { ButtonConfig, ButtonMode, RgbColor } from './types.js';
+import { rgbToHex } from './types.js';
+import type { ButtonContentModel } from './buttonContent.js';
+import type { IconRef, StyleGetter } from './buttonInternals.js';
+
+const BACKGROUND_LABEL = '$$background';
+const CONTENT_LABEL = '$$content';
+
+export class ButtonRendererRegistry {
+    readonly #config: ButtonConfig;
+    readonly #mode: ButtonMode;
+    readonly #content: ButtonContentModel;
+    readonly #getStyle: StyleGetter;
+    readonly #isDisabled: () => boolean;
+
+    constructor(
+        config: ButtonConfig,
+        mode: ButtonMode,
+        content: ButtonContentModel,
+        getStyle: StyleGetter,
+        isDisabled: () => boolean,
+    ) {
+        this.#config = config;
+        this.#mode = mode;
+        this.#content = content;
+        this.#getStyle = getStyle;
+        this.#isDisabled = isDisabled;
+    }
+
+    rendererOverrideFor(nouns: string[]): BoxPixiRendererOverride | undefined {
+        switch (nouns.join('.')) {
+            case 'button':
+                return { renderer: this.#renderButton };
+            case 'button.label':
+                return { renderer: this.#renderLabel };
+            case 'button.icon':
+                return { renderer: this.#renderLeftIcon };
+            case 'button.rightIcon':
+                return { renderer: this.#renderRightIcon };
+            default:
+                return undefined;
+        }
+    }
+
+    #renderButton = ({ local }: BoxPixiRenderInput): Container => {
+        const currentContainer = local.currentContainer!;
+        currentContainer.sortableChildren = true;
+        currentContainer.position.set(local.localLocation.x, local.localLocation.y);
+
+        const background = this.#ensureGraphics(currentContainer);
+        const backgroundStyle = this.#backgroundStyle();
+        const borderRadius = this.#getStyle<number>('border', 'radius') ?? 6;
+        background.clear();
+
+        if (backgroundStyle.fill && backgroundStyle.fillAlpha !== undefined && backgroundStyle.fillAlpha > 0) {
+            background.roundRect(0, 0, local.localLocation.w, local.localLocation.h, borderRadius);
+            background.fill({ color: rgbToHex(backgroundStyle.fill), alpha: backgroundStyle.fillAlpha });
+        }
+        if (backgroundStyle.strokeWidth > 0) {
+            background.roundRect(0, 0, local.localLocation.w, local.localLocation.h, borderRadius);
+            background.stroke({
+                color: rgbToHex(backgroundStyle.stroke ?? { r: 0.5, g: 0.5, b: 0.5 }),
+                alpha: backgroundStyle.strokeAlpha,
+                width: backgroundStyle.strokeWidth,
+            });
+        }
+
+        return currentContainer;
+    };
+
+    #renderLabel = (input: BoxPixiRenderInput): Container => {
+        const currentContainer = input.local.currentContainer!;
+        currentContainer.position.set(input.local.localLocation.x, input.local.localLocation.y);
+
+        const { textStyle, alpha } = this.#content.labelStyle();
+        const textNode = this.#ensureText(currentContainer);
+        textNode.text = this.#config.label ?? '';
+        textNode.style = new TextStyle(textStyle);
+        textNode.alpha = alpha;
+        textNode.position.set(0, 0);
+
+        return currentContainer;
+    };
+
+    #renderLeftIcon = (input: BoxPixiRenderInput): Container => this.#renderIconNode(input, this.#content.leftIcon);
+
+    #renderRightIcon = (input: BoxPixiRenderInput): Container => this.#renderIconNode(input, this.#content.rightIcon);
+
+    #renderIconNode(input: BoxPixiRenderInput, iconRef?: IconRef): Container {
+        const currentContainer = input.local.currentContainer!;
+        currentContainer.position.set(input.local.localLocation.x, input.local.localLocation.y);
+
+        if (!iconRef) {
+            return currentContainer;
+        }
+
+        const style = this.#content.iconStyle(iconRef);
+        const contentNode = this.#resolveManagedIconNode(currentContainer, iconRef);
+        if (!contentNode) {
+            return currentContainer;
+        }
+
+        contentNode.position.set(0, 0);
+
+        if (iconRef.sprite) {
+            iconRef.sprite.width = style.width;
+            iconRef.sprite.height = style.height;
+            iconRef.sprite.alpha = this.#isDisabled() ? style.alpha * 0.5 : style.alpha;
+            iconRef.sprite.tint = style.tint ? rgbToHex(style.tint) : 0xffffff;
+            return currentContainer;
+        }
+
+        if (iconRef.container) {
+            const bounds = iconRef.container.getLocalBounds();
+            if (bounds.width > 0 && bounds.height > 0) {
+                iconRef.container.scale.set(style.width / bounds.width, style.height / bounds.height);
+            }
+            iconRef.container.alpha = this.#isDisabled() ? style.alpha * 0.5 : style.alpha;
+        }
+
+        return currentContainer;
+    }
+
+    #resolveManagedIconNode(currentContainer: Container, iconRef: IconRef): Container | undefined {
+        const display = (iconRef.sprite ?? iconRef.container) as Container | Sprite | undefined;
+        if (!display) {
+            return undefined;
+        }
+
+        display.label = CONTENT_LABEL;
+        if (display.parent !== currentContainer) {
+            currentContainer.addChild(display);
+        }
+
+        return display as Container;
+    }
+
+    #backgroundStyle(): {
+        fill?: RgbColor;
+        fillAlpha?: number;
+        stroke?: RgbColor;
+        strokeAlpha: number;
+        strokeWidth: number;
+    } {
+        const fill = this.#getStyle<RgbColor>('fill', 'color')
+            ?? ((this.#mode === 'text' || this.#mode === 'inline') ? { r: 0.33, g: 0.67, b: 0.6 } : undefined);
+        const fillAlphaBase = this.#getStyle<number>('fill', 'alpha') ?? (fill ? 1 : undefined);
+        const stroke = this.#getStyle<RgbColor>('stroke', 'color') ?? { r: 0.5, g: 0.5, b: 0.5 };
+        const strokeAlphaBase = this.#getStyle<number>('stroke', 'alpha') ?? 1;
+        const strokeWidth = this.#getStyle<number>('stroke', 'size')
+            ?? this.#getStyle<number>('stroke', 'width')
+            ?? ((this.#mode === 'text' || this.#mode === 'inline') ? 0 : 1);
+
+        return {
+            fill,
+            fillAlpha: fillAlphaBase === undefined ? undefined : (this.#isDisabled() ? fillAlphaBase * 0.5 : fillAlphaBase),
+            stroke,
+            strokeAlpha: this.#isDisabled() ? strokeAlphaBase * 0.5 : strokeAlphaBase,
+            strokeWidth,
+        };
+    }
+
+    #ensureGraphics(container: Container): Graphics {
+        const existing = container.getChildByLabel(BACKGROUND_LABEL);
+        if (existing instanceof Graphics) {
+            return existing;
+        }
+        const graphics = new Graphics({ label: BACKGROUND_LABEL });
+        container.addChildAt(graphics, 0);
+        return graphics;
+    }
+
+    #ensureText(container: Container): Text {
+        const existing = container.getChildByLabel(CONTENT_LABEL);
+        if (existing instanceof Text) {
+            return existing;
+        }
+        const textNode = new Text({ text: '', style: new TextStyle({}) });
+        textNode.label = CONTENT_LABEL;
+        container.addChild(textNode);
+        return textNode;
+    }
+}

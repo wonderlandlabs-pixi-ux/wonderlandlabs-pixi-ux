@@ -6,7 +6,7 @@
           "fill": "#183a37"
         },
         "$hover": {
-          "fill": "#183a37"
+          "fill": "#1f3f6b"
         },
         "padding": {
           "$*": [0, 40]
@@ -17,6 +17,12 @@
       "base": {
         "color": {
           "$*": "#183a37"
+        },
+        "width": {
+          "$hover": 1
+        },
+        "$hover": {
+          "color": "#4f78ad"
         },
         "radius": {
           "$*": 24

@@ -1,0 +1,43 @@
+import type {
+    BoxPixiRendererOverride,
+    BoxStyleManagerLike,
+    BoxStyleQueryLike,
+} from '@wonderlandlabs-pixi-ux/box';
+import type { StyleTree } from '@wonderlandlabs-pixi-ux/style-tree';
+
+export class ButtonStyleBridge implements BoxStyleManagerLike {
+    readonly #styleTree: StyleTree;
+    readonly #rendererOverrideFor: (nouns: string[]) => BoxPixiRendererOverride | undefined;
+
+    constructor(
+        styleTree: StyleTree,
+        rendererOverrideFor: (nouns: string[]) => BoxPixiRendererOverride | undefined,
+    ) {
+        this.#styleTree = styleTree;
+        this.#rendererOverrideFor = rendererOverrideFor;
+    }
+
+    match(query: BoxStyleQueryLike): unknown {
+        return this.#resolve(query, false);
+    }
+
+    matchHierarchy(query: BoxStyleQueryLike): unknown {
+        return this.#resolve(query, true);
+    }
+
+    #resolve(query: BoxStyleQueryLike, hierarchical: boolean): unknown {
+        const delegated = hierarchical && this.#styleTree.matchHierarchy
+            ? this.#styleTree.matchHierarchy(query)
+            : this.#styleTree.match(query);
+
+        if (delegated !== undefined) {
+            return delegated;
+        }
+
+        if (query.nouns[query.nouns.length - 1] !== 'renderer') {
+            return undefined;
+        }
+
+        return this.#rendererOverrideFor(query.nouns.slice(0, -1));
+    }
+}

@@ -5,7 +5,7 @@ export type StyleTreeResolverLike = {
   matchHierarchy?: (query: StyleQuery) => unknown;
 };
 
-export type StyleRoot = string | string[];
+export type StyleRoot = string;
 
 export type StyleColorValue =
   | string
@@ -70,8 +70,12 @@ function toLayers(input: StyleTreeResolverLike | StyleTreeResolverLike[]): Style
   return Array.isArray(input) ? input : [input];
 }
 
-function toRootPath(root: StyleRoot): string[] {
-  return Array.isArray(root) ? root : root.split('.').filter(Boolean);
+function toRootPaths(root: StyleRoot): string[][] {
+  return root
+    .split(',')
+    .map((entry) => entry.trim())
+    .filter(Boolean)
+    .map((entry) => entry.split('.').filter(Boolean));
 }
 
 function getNestedValue(value: unknown, path: string[]): unknown {
@@ -111,19 +115,23 @@ function resolveStyleValue(
 ): unknown {
   const layers = toLayers(input);
   const states = options.states ?? [];
-  const rootPath = toRootPath(root);
-  const direct = resolveQueryValue(layers, [...rootPath, ...path], states);
-  if (direct !== undefined) {
-    return direct;
-  }
+  const rootPaths = toRootPaths(root);
 
-  for (let index = path.length - 1; index >= 0; index -= 1) {
-    const prefix = path.slice(0, index);
-    const remainder = path.slice(index);
-    const objectValue = resolveQueryValue(layers, [...rootPath, ...prefix], states);
-    const nested = getNestedValue(objectValue, remainder);
-    if (nested !== undefined) {
-      return nested;
+  for (let rootIndex = rootPaths.length - 1; rootIndex >= 0; rootIndex -= 1) {
+    const rootPath = rootPaths[rootIndex];
+    const direct = resolveQueryValue(layers, [...rootPath, ...path], states);
+    if (direct !== undefined) {
+      return direct;
+    }
+
+    for (let index = path.length - 1; index >= 0; index -= 1) {
+      const prefix = path.slice(0, index);
+      const remainder = path.slice(index);
+      const objectValue = resolveQueryValue(layers, [...rootPath, ...prefix], states);
+      const nested = getNestedValue(objectValue, remainder);
+      if (nested !== undefined) {
+        return nested;
+      }
     }
   }
 
@@ -140,6 +148,34 @@ function asBoolean(value: unknown, fallback: boolean): boolean {
 
 function asString(value: unknown): string | undefined {
   return typeof value === 'string' && value.length > 0 ? value : undefined;
+}
+
+function resolveRgbLike(
+  input: StyleTreeResolverLike | StyleTreeResolverLike[],
+  root: StyleRoot,
+  path: string[],
+  options: ResolverOptions = {},
+): StyleColorValue | undefined {
+  const direct = resolveStyleValue(input, root, path, options);
+  if (direct !== undefined) {
+    return direct as StyleColorValue;
+  }
+
+  const r = resolveStyleValue(input, root, [...path, 'r'], options);
+  const g = resolveStyleValue(input, root, [...path, 'g'], options);
+  const b = resolveStyleValue(input, root, [...path, 'b'], options);
+  const a = resolveStyleValue(input, root, [...path, 'a'], options);
+
+  if (typeof r === 'number' && typeof g === 'number' && typeof b === 'number') {
+    return {
+      r,
+      g,
+      b,
+      ...(typeof a === 'number' ? { a } : {}),
+    };
+  }
+
+  return undefined;
 }
 
 export function resolveSpacing(
@@ -229,6 +265,10 @@ export function resolveFill(
   const from = resolveStyleValue(input, root, ['fill', 'from'], options);
   const to = resolveStyleValue(input, root, ['fill', 'to'], options);
   const color = resolveStyleValue(input, root, ['fill', 'color'], options);
+  const r = resolveStyleValue(input, root, ['fill', 'r'], options);
+  const g = resolveStyleValue(input, root, ['fill', 'g'], options);
+  const b = resolveStyleValue(input, root, ['fill', 'b'], options);
+  const a = resolveStyleValue(input, root, ['fill', 'a'], options);
 
   if (direction !== undefined || colors !== undefined || from !== undefined || to !== undefined) {
     return {
@@ -243,6 +283,15 @@ export function resolveFill(
     return color as StyleFillValue;
   }
 
+  if (typeof r === 'number' && typeof g === 'number' && typeof b === 'number') {
+    return {
+      r,
+      g,
+      b,
+      ...(typeof a === 'number' ? { a } : {}),
+    };
+  }
+
   return fallback;
 }
 
@@ -253,7 +302,12 @@ export function resolveBackgroundStyle(
   options: ResolverOptions = {},
 ): ResolvedBackgroundStyle {
   return {
-    fill: resolveFill(input, [...toRootPath(root), 'background'], fallback.fill, options),
+    fill: resolveFill(
+      input,
+      toRootPaths(root).map((path) => [...path, 'background'].join('.')).join(', '),
+      fallback.fill,
+      options,
+    ),
     alpha: asNumber(resolveStyleValue(input, root, ['background', 'alpha'], options), fallback.alpha ?? 1),
     visible: asBoolean(resolveStyleValue(input, root, ['background', 'visible'], options), fallback.visible ?? true),
   };
@@ -266,7 +320,7 @@ export function resolveBorderStyle(
   options: ResolverOptions = {},
 ): ResolvedBorderStyle {
   return {
-    color: resolveStyleValue(input, root, ['border', 'color'], options) as StyleColorValue | undefined ?? fallback.color,
+    color: resolveRgbLike(input, root, ['border', 'color'], options) ?? fallback.color,
     width: asNumber(resolveStyleValue(input, root, ['border', 'width'], options), fallback.width ?? 0),
     alpha: asNumber(resolveStyleValue(input, root, ['border', 'alpha'], options), fallback.alpha ?? 1),
     radius: asNumber(resolveStyleValue(input, root, ['border', 'radius'], options), fallback.radius ?? 0),
@@ -283,7 +337,7 @@ export function resolveFontStyle(
   return {
     size: asNumber(resolveStyleValue(input, root, ['font', 'size'], options), fallback.size ?? 14),
     family: asString(resolveStyleValue(input, root, ['font', 'family'], options)) ?? fallback.family,
-    color: resolveStyleValue(input, root, ['font', 'color'], options) as StyleColorValue | undefined ?? fallback.color,
+    color: resolveRgbLike(input, root, ['font', 'color'], options) ?? fallback.color,
     alpha: asNumber(resolveStyleValue(input, root, ['font', 'alpha'], options), fallback.alpha ?? 1),
     align: asString(resolveStyleValue(input, root, ['font', 'align'], options)) ?? fallback.align,
     weight: resolveStyleValue(input, root, ['font', 'weight'], options) as string | number | undefined ?? fallback.weight,

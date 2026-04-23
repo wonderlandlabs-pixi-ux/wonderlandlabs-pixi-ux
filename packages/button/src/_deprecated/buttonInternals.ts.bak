@@ -1,0 +1,66 @@
+import { Application, Container, type Sprite, type Text, type Ticker } from 'pixi.js';
+import { type TickerForestConfig } from '@wonderlandlabs-pixi-ux/ticker-forest';
+import type { BoxContentType } from '@wonderlandlabs-pixi-ux/box';
+import type { ButtonConfig, ButtonMode } from './types.js';
+
+export type TickerSource = Application | { ticker: Ticker };
+
+export type ButtonChildView = {
+    name: string;
+    rect: { x: number; y: number; width: number; height: number };
+    content?: BoxContentType;
+};
+
+export type IconRef = {
+    key: 'icon' | 'rightIcon';
+    sprite?: Sprite;
+    container?: Container;
+    role: 'left' | 'right';
+};
+
+export type LabelRef = {
+    key: 'label';
+    measureText: Text;
+};
+
+export type LayoutNodeSpec = {
+    key: string;
+    name: string;
+    width: number;
+    height: number;
+    content?: BoxContentType;
+};
+
+export type ButtonLayoutView = {
+    contentRect: { x: number; y: number; width: number; height: number };
+    semanticChildren: ButtonChildView[];
+    absoluteChildren: ButtonChildView[];
+};
+
+export type StyleGetter = <T = unknown>(...propertyPath: string[]) => T | undefined;
+
+export function isApplication(value: TickerSource): value is Application {
+    return !!value && typeof value === 'object' && 'renderer' in value && 'ticker' in value;
+}
+
+export function toTickerConfig(source: TickerSource): TickerForestConfig {
+    if (isApplication(source)) {
+        return { app: source };
+    }
+    return { ticker: source.ticker };
+}
+
+export function resolveButtonMode(config: ButtonConfig): ButtonMode {
+    if (config.mode) return config.mode;
+    if (!config.sprite && !config.icon && config.label) return 'text';
+    if ((config.sprite || config.icon) && config.label) return 'inline';
+    return 'icon';
+}
+
+export function asNonEmptyString(value: unknown): string | undefined {
+    if (typeof value !== 'string') {
+        return undefined;
+    }
+    const next = value.trim();
+    return next.length ? next : undefined;
+}

@@ -167,6 +167,7 @@ The tree itself is noun-agnostic, but the monorepo now standardizes on a CSS-lik
 Use dot-separated lowercase nouns and avoid compound keys such as `fontSize`.
 Use `fill` when a value may be either a solid color or a gradient.
 See [Style DSL](/packages/style-tree-style-dsl) for the full shared vocabulary and migration guidance.
+The Style DSL doc also explains the resolution split explicitly: digestion normalizes authored data into paths, while inherited-root resolution defines whether values replace atomically or merge by sub-property.
 
 Helpers:
 - `normalizeStyleConvention(partial)`
@@ -178,6 +179,85 @@ Helpers:
 - `resolveBackgroundStyle(tree, root, fallback?, options?)`
 - `resolveBorderStyle(tree, root, fallback?, options?)`
 - `resolveFontStyle(tree, root, fallback?, options?)`
+
+## Inherited Roots
+
+The shared resolver helpers accept a `root` string that can describe either:
+
+- one root, such as `button.container`
+- or an ordered inheritance chain, such as `button.container, button.variant.base.container, button.modifier.danger.container`
+
+Concept:
+
+- earlier roots provide defaults
+- later roots override earlier roots
+- states still apply orthogonally
+
+This is the preferred way to model style layering such as:
+
+- base -> variant
+- base -> variant -> modifier
+- base -> variant -> local override
+
+Example:
+
+```ts
+import { fromJSON, resolveBackgroundStyle } from '@wonderlandlabs-pixi-ux/style-tree';
+
+const tree = fromJSON({
+  button: {
+    container: {
+      background: {
+        fill: '#e5e7eb',
+      },
+    },
+    variant: {
+      base: {
+        container: {
+          background: {
+            fill: '#2f7f74',
+          },
+        },
+      },
+    },
+    modifier: {
+      danger: {
+        container: {
+          border: {
+            color: '#aa3f3f',
+            width: 2,
+          },
+        },
+      },
+    },
+  },
+});
+
+const background = resolveBackgroundStyle(
+  tree,
+  'button.container, button.variant.base.container',
+);
+```
+
+Implementation rule:
+
+- use a comma-delimited root string
+- roots are read left to right
+- the resolver applies them right to left internally so the last root wins
+
+So this:
+
+```ts
+'button.container, button.variant.base.container, button.modifier.danger.container'
+```
+
+means:
+
+1. start with `button.container`
+2. apply `button.variant.base.container`
+3. apply `button.modifier.danger.container`
+
+Use this whenever you want inheritance without inventing package-specific merge code.
 
 ### Example
 
