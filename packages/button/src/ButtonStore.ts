@@ -72,9 +72,6 @@ export class ButtonStore extends TickerForest<ButtonStateType> {
             return;
         }
         this.#isUpdatingValue = value;
-        if (this.isDebug) {
-            console.info('[ButtonStore] isUpdating changed', {value});
-        }
     }
 
     #makeRendererManifest(): ButtonRendererManifest {
@@ -174,21 +171,9 @@ export class ButtonStore extends TickerForest<ButtonStateType> {
 
     resolve() {
         if (this.isUpdating) {
-            if (this.isDebug) {
-                console.info('[ButtonStore.resolve] skipped while updating', {
-                    state: this.value.state,
-                    modifiers: this.value.modifiers ?? [],
-                });
-            }
             return;
         }
 
-        if (this.isDebug) {
-            console.info('[ButtonStore.resolve] start', {
-                state: this.value.state,
-                modifiers: this.value.modifiers ?? [],
-            });
-        }
         this.isUpdating = true;
         try {
             this.#refreshStyleTree();
@@ -208,12 +193,6 @@ export class ButtonStore extends TickerForest<ButtonStateType> {
             } as never);
         } finally {
             this.isUpdating = false;
-            if (this.isDebug) {
-                console.info('[ButtonStore.resolve] complete', {
-                    state: this.value.state,
-                    modifiers: this.value.modifiers ?? [],
-                });
-            }
         }
     }
 }

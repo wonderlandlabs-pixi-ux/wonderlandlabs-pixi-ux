@@ -57,12 +57,6 @@ const textLayoutCache = new WeakMap<Container, CachedTextLayout>();
 export function boxTreeToPixi(options: BoxPixiOptions): Container {
   const pixi = options.pixi ?? PixiProvider.shared;
   const parser = new BoxRenderModelParser(options.styleTree);
-  if (options.store.isDebug) {
-    console.info('[boxTreeToPixi] start', {
-      id: options.root.id,
-      name: options.root.name,
-    });
-  }
 
   drainKillList(options);
   const textMeasures = new Map<string, { w: number; h: number }>();
@@ -73,13 +67,6 @@ export function boxTreeToPixi(options: BoxPixiOptions): Container {
 
   if (options.store.recordTextMeasures(textMeasures)) {
     options.observer?.({ action: 'invalidate' });
-  }
-
-  if (options.store.isDebug) {
-    console.info('[boxTreeToPixi] complete', {
-      id: options.root.id,
-      name: options.root.name,
-    });
   }
 
   return rendered;

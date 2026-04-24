@@ -19,6 +19,7 @@
     "vitest": "^4.0.18"
   },
   "dependencies": {
+    "uuid": "^11.1.0",
     "zod": "^4.3.6"
   },
   "engines": {

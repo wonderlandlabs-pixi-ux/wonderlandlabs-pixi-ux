@@ -1,4 +1,5 @@
 export { ButtonStore } from './ButtonStore.js';
+export { createButtonSimpleClass, snapButtonSimpleSize, type ButtonSimpleLayout, type ButtonSimpleState, type ButtonSimplePartRenderer } from './ButtonSimple.js';
 export {
     ButtonVariant,
     ButtonOptions,

@@ -37,14 +37,7 @@ export class BoxStore extends Forest<BoxPreparedCellType> {
         ).subscribe(this.$.addToKillList);
         this.#debugSubscription = this.$subject
             .pipe(map((value) => value as BoxPreparedCellType))
-            .subscribe((value) => {
-                if (this.isDebug) {
-                    console.info('[BoxStore] root emitted', {
-                        rootId: value.id,
-                        rootName: value.name,
-                    });
-                }
-            });
+            .subscribe(() => {});
         this.#cacheSubscription = this.$subject
             .pipe(map((value) => value as BoxPreparedCellType))
             .subscribe(() => {
@@ -54,21 +47,9 @@ export class BoxStore extends Forest<BoxPreparedCellType> {
     }
 
     update() {
-        if (this.isDebug) {
-            console.info('[BoxStore.update] start', {
-                id: this.value.id,
-                name: this.value.name,
-            });
-        }
         const settled = settleLayout(clonePreparedCell(this.value), this.textMeasures);
         this.#layoutValue = settled;
         this.locationCache = buildLocationCache(settled);
-        if (this.isDebug) {
-            console.info('[BoxStore.update] complete', {
-                id: this.value.id,
-                name: this.value.name,
-            });
-        }
     }
 
     get layoutValue(): BoxLayoutCellType {

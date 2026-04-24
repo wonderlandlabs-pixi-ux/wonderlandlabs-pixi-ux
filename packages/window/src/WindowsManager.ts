@@ -229,7 +229,6 @@ export class WindowsManager extends Forest<WindowStoreValue> {
      */
     initWindow(key: string) {
         if (this.#windowsBranches.has(key)) {
-            console.warn('attempt to recreate existing branch ' + key);
             return this.#windowsBranches.get(key)!;
         }
 
@@ -569,7 +568,7 @@ export class WindowsManager extends Forest<WindowStoreValue> {
                     }
                 }
             });
-            console.warn('Failed to load textures:', err);
+            console.error('Failed to load textures:', err);
         });
     }
 

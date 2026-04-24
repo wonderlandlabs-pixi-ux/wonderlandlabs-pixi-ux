@@ -1,0 +1,39 @@
+{
+  "name": "@wonderlandlabs-pixi-ux/button-simple",
+  "version": "1.2.9",
+  "description": "Direct PixiJS button runtime with explicit layout and lightweight child parts",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "clean": "rm -rf dist",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "peerDependencies": {
+    "pixi.js": "8.16.0"
+  },
+  "dependencies": {
+    "@wonderlandlabs-pixi-ux/ticker-forest": "1.2.9",
+    "@wonderlandlabs-pixi-ux/utils": "1.2.9",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "pixi.js": "8.16.0",
+    "typescript": "^5.5.4",
+    "vitest": "^4.0.18"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "homepage": "https://wonderlandlabs-pixi-ux.netlify.app/packages/button-simple",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/wonderlandlabs-pixi-ux/wonderlandlabs-pixi-ux.git",
+    "directory": "packages/button-simple"
+  },
+  "type": "module"
+}

@@ -9,6 +9,14 @@ describe('StyleTree', () => {
   });
 
   describe('Basic operations', () => {
+    it('assigns each tree a stable runtime id', () => {
+      const otherTree = new StyleTree();
+
+      expect(tree.id).toMatch(/^([0-9a-f-]{36}|styletree-)/);
+      expect(otherTree.id).toMatch(/^([0-9a-f-]{36}|styletree-)/);
+      expect(tree.id).not.toBe(otherTree.id);
+    });
+
     it('should set and get styles', () => {
       tree.set('button.text', ['hover'], 'blue');
       expect(tree.get('button.text', ['hover'])).toBe('blue');

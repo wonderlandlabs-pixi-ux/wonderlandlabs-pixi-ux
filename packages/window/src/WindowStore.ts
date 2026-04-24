@@ -498,9 +498,7 @@ export class WindowStore extends TickerForest<WindowDef> {
         if (typeof globalDebug === 'function') {
             return globalDebug;
         }
-        return (source, message, data) => {
-            console.log(`[WindowStore:${this.value.id}] ${source}.${message}`, data);
-        };
+        return undefined;
     }
 
     #subscribeWindowDrag(sourceContainer: Container, trackClicks: boolean): DragSubscription {

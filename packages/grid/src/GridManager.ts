@@ -369,18 +369,9 @@ export class GridManager extends TickerForest<GridManagerValue> {
 
     if (this.#cacheDebugLogger) {
       this.#cacheDebugLogger(info);
-      return;
+    } else {
+      void info;
     }
-
-    const baseMessage = `[GridCacheDebug] reason=${info.reason} zoom=${info.zoom.toFixed(2)} res=${info.activeResolution.toFixed(2)} texture=${info.textureWidthPx}x${info.textureHeightPx} pixels=${info.pixelCount} estMiB=${info.estimatedMiB.toFixed(2)}`;
-    if (info.measuredBytes !== null) {
-      // eslint-disable-next-line no-console
-      console.info(`${baseMessage} measuredBytes=${info.measuredBytes} method=${info.measuredBytesMethod}`);
-      return;
-    }
-
-    // eslint-disable-next-line no-console
-    console.info(baseMessage);
   }
 
   #redrawGrid(): void {

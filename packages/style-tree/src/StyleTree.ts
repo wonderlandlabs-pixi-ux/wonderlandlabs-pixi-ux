@@ -4,6 +4,7 @@ import type {
   StyleTreeOptions,
 } from './types.js';
 import type { DigestOptions } from './digest.js';
+import { v4 as uuid } from 'uuid';
 import { StyleKeySchema } from './types.js';
 import { digestJSON, toJSON as exportToJSON } from './digest.js';
 import {
@@ -33,8 +34,10 @@ export class StyleTree {
   private styles: Map<string, Map<string, any>> = new Map();
   private options: Required<StyleTreeOptions>;
   private cache: Map<string, unknown> = new Map();
+  public readonly id: string;
 
   constructor(options: StyleTreeOptions = {}) {
+    this.id = generateStyleTreeId();
     this.options = {
       validateKeys: options.validateKeys ?? true,
       autoSortStates: options.autoSortStates ?? true,
@@ -69,12 +72,6 @@ export class StyleTree {
     if (!stateMap) {
       stateMap = new Map();
       this.styles.set(nounKey, stateMap);
-    }
-
-    // Warn if overwriting an existing value
-    if (stateMap.has(stateKey)) {
-      const fullKey = stateKey ? `${nounKey}:${stateKey}` : nounKey;
-      console.warn(`StyleTree: Overwriting existing key "${fullKey}"`);
     }
 
     stateMap.set(stateKey, value);
@@ -405,4 +402,8 @@ function isPlainObject(value: unknown): value is Record<string, any> {
   return typeof value === 'object'
     && value !== null
     && !Array.isArray(value);
+}
+
+function generateStyleTreeId(): string {
+  return uuid();
 }
