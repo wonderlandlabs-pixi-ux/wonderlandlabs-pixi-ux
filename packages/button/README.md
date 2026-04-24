@@ -1,7 +1,10 @@
 # @wonderlandlabs-pixi-ux/button
 
-`button` is the current low-level Pixi button primitive in this repo.
-It renders from a `ButtonStateType`, lays itself out with `box`, and styles itself from `style-tree`.
+`button` is deprecated for new work.
+
+It remains functional, but it carries more runtime and performance overhead than `@wonderlandlabs-pixi-ux/button-simple` because it renders from `ButtonStateType`, lays itself out with `box`, and styles itself from `style-tree`.
+
+For new practical button work, prefer `@wonderlandlabs-pixi-ux/button-simple`.
 
 ## Installation
 
