@@ -45,6 +45,17 @@ describe('StyleTree', () => {
       expect(tree.size).toBe(2);
     });
 
+    it('should clone correctly', () => {
+      tree.set('button.text', ['hover'], 'blue');
+      tree.set('button.text', ['active'], 'red');
+      const cloned = tree.clone();
+      expect(cloned.size).toBe(2);
+      expect(cloned.get('button.text', ['hover'])).toBe('blue');
+      expect(cloned.get('button.text', ['active'])).toBe('red');
+      expect(cloned).not.toBe(tree);
+      expect(cloned.id).not.toBe(tree.id);
+    });
+
     it('should normalize interCaps noun keys by default', () => {
       tree.set('button.label.fontSize', [], 13);
       expect(tree.get('button.label.font.size', [])).toBe(13);

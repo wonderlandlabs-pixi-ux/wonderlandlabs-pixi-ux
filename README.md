@@ -5,6 +5,13 @@ This repo publishes the `@wonderlandlabs-pixi-ux/*` package set and keeps versio
 
 ## Pixi Provider Model
 
+Unit tests cannot be executed with Pixi in scope; it uses canvas and navigator 
+resources from Pixi. For this reason Pixi is provided to the applciation via a `PixiProvider` singleton.
+
+PixiProvider has a singleton that can be provided with the core classes in runtime;
+it can also, for testing, be set to use fallback mocks so that Pixi itself can be
+avoideed in unit tst context. 
+
 The current rendering direction is:
 
 - core packages treat `pixi.js` as a `peerDependency`
@@ -44,6 +51,7 @@ wonderlandlabs-pixi-ux/
 - `@wonderlandlabs-pixi-ux/root-container`: centered root + zoom/pan decorators.
 - `@wonderlandlabs-pixi-ux/resizer`: interactive handle-based resize system.
 - `@wonderlandlabs-pixi-ux/window`: draggable/resizable windows with titlebar/content renderers.
+- `@wonderlandlabs-pixi-ux/button-simple`: direct Pixi button runtime for dense or high-frequency button use cases.
 - `@wonderlandlabs-pixi-ux/ticker-forest`: ticker-synchronized resolve/dirty base class.
 - `@wonderlandlabs-pixi-ux/utils`: shared runtime helpers (including shared render-helper singleton/lifecycle behavior).
 
@@ -65,28 +73,28 @@ See [CONTROLLERS.md](./CONTROLLERS.md) for controller conventions and usage patt
 | Package | Internal dependencies |
 | --- | --- |
 | `@wonderlandlabs-pixi-ux/style-tree` | _none_ |
-| `@wonderlandlabs-pixi-ux/ticker-forest` | _none_ |
+| `@wonderlandlabs-pixi-ux/ticker-forest` | `@wonderlandlabs-pixi-ux/utils` |
 | `@wonderlandlabs-pixi-ux/utils` | _none_ |
 | `@wonderlandlabs-pixi-ux/observe-drag` | `@wonderlandlabs-pixi-ux/utils` |
 | `@wonderlandlabs-pixi-ux/root-container` | `@wonderlandlabs-pixi-ux/observe-drag`, `@wonderlandlabs-pixi-ux/utils` |
 | `@wonderlandlabs-pixi-ux/box` | `@wonderlandlabs-pixi-ux/utils` |
+| `@wonderlandlabs-pixi-ux/button-simple` | `@wonderlandlabs-pixi-ux/style-tree`, `@wonderlandlabs-pixi-ux/ticker-forest`, `@wonderlandlabs-pixi-ux/utils` |
 | `@wonderlandlabs-pixi-ux/button` | `@wonderlandlabs-pixi-ux/box`, `@wonderlandlabs-pixi-ux/style-tree`, `@wonderlandlabs-pixi-ux/ticker-forest`, `@wonderlandlabs-pixi-ux/utils` |
-| `@wonderlandlabs-pixi-ux/caption` | `@wonderlandlabs-pixi-ux/ticker-forest` |
-| `@wonderlandlabs-pixi-ux/drag` | `@wonderlandlabs-pixi-ux/ticker-forest` |
-| `@wonderlandlabs-pixi-ux/grid` | `@wonderlandlabs-pixi-ux/ticker-forest` |
-| `@wonderlandlabs-pixi-ux/resizer` | `@wonderlandlabs-pixi-ux/observe-drag`, `@wonderlandlabs-pixi-ux/ticker-forest` |
-| `@wonderlandlabs-pixi-ux/toolbar` | `@wonderlandlabs-pixi-ux/button`, `@wonderlandlabs-pixi-ux/style-tree`, `@wonderlandlabs-pixi-ux/ticker-forest`, `@wonderlandlabs-pixi-ux/utils` |
-| `@wonderlandlabs-pixi-ux/window` | `@wonderlandlabs-pixi-ux/observe-drag`, `@wonderlandlabs-pixi-ux/resizer`, `@wonderlandlabs-pixi-ux/ticker-forest`, `@wonderlandlabs-pixi-ux/toolbar` |
+| `@wonderlandlabs-pixi-ux/caption` | `@wonderlandlabs-pixi-ux/box`, `@wonderlandlabs-pixi-ux/style-tree`, `@wonderlandlabs-pixi-ux/ticker-forest`, `@wonderlandlabs-pixi-ux/utils` |
+| `@wonderlandlabs-pixi-ux/grid` | `@wonderlandlabs-pixi-ux/ticker-forest`, `@wonderlandlabs-pixi-ux/utils` |
+| `@wonderlandlabs-pixi-ux/resizer` | `@wonderlandlabs-pixi-ux/observe-drag`, `@wonderlandlabs-pixi-ux/ticker-forest`, `@wonderlandlabs-pixi-ux/utils` |
+| `@wonderlandlabs-pixi-ux/toolbar` | `@wonderlandlabs-pixi-ux/box`, `@wonderlandlabs-pixi-ux/button`, `@wonderlandlabs-pixi-ux/style-tree`, `@wonderlandlabs-pixi-ux/ticker-forest`, `@wonderlandlabs-pixi-ux/utils` |
+| `@wonderlandlabs-pixi-ux/window` | `@wonderlandlabs-pixi-ux/box`, `@wonderlandlabs-pixi-ux/observe-drag`, `@wonderlandlabs-pixi-ux/resizer`, `@wonderlandlabs-pixi-ux/style-tree`, `@wonderlandlabs-pixi-ux/ticker-forest`, `@wonderlandlabs-pixi-ux/toolbar`, `@wonderlandlabs-pixi-ux/utils` |
 
 ## Manual Publish Order
 
 1. `@wonderlandlabs-pixi-ux/style-tree`
-2. `@wonderlandlabs-pixi-ux/ticker-forest`
-3. `@wonderlandlabs-pixi-ux/utils`
-4. `@wonderlandlabs-pixi-ux/observe-drag`
-5. `@wonderlandlabs-pixi-ux/box`
-6. `@wonderlandlabs-pixi-ux/drag` (deprecated)
-7. `@wonderlandlabs-pixi-ux/root-container`
+2. `@wonderlandlabs-pixi-ux/utils`
+3. `@wonderlandlabs-pixi-ux/observe-drag`
+4. `@wonderlandlabs-pixi-ux/ticker-forest`
+5. `@wonderlandlabs-pixi-ux/root-container`
+6. `@wonderlandlabs-pixi-ux/box`
+7. `@wonderlandlabs-pixi-ux/button-simple`
 8. `@wonderlandlabs-pixi-ux/button`
 9. `@wonderlandlabs-pixi-ux/caption`
 10. `@wonderlandlabs-pixi-ux/grid`

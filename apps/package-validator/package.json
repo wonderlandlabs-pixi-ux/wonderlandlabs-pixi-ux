@@ -14,7 +14,7 @@
     "@published/resizer": "npm:@wonderlandlabs-pixi-ux/resizer@1.2.2",
     "@published/root-container": "npm:@wonderlandlabs-pixi-ux/root-container@1.2.2",
     "@published/window": "npm:@wonderlandlabs-pixi-ux/window@1.2.2",
-    "@wonderlandlabs-pixi-ux/grid": "1.2.9",
+    "@wonderlandlabs-pixi-ux/grid": "workspace:*",
     "@wonderlandlabs-pixi-ux/resizer": "1.2.9",
     "@wonderlandlabs-pixi-ux/root-container": "1.2.9",
     "@wonderlandlabs-pixi-ux/window": "1.2.9",

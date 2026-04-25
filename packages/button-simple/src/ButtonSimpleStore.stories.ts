@@ -1,14 +1,22 @@
-import type { Meta, StoryObj } from '@storybook/html';
+import type {Meta, StoryObj} from '@storybook/html';
 import * as Pixi from 'pixi.js';
-import { PixiProvider } from '@wonderlandlabs-pixi-ux/utils';
+import {StyleTree} from '@wonderlandlabs-pixi-ux/style-tree';
+import {PixiProvider} from '@wonderlandlabs-pixi-ux/utils';
 import {
   ButtonSimpleStore,
-  ORIENTATION_HORIZONTAL,
-  ORIENTATION_VERTICAL,
+  CONTROL_CHECKBOX,
+  CONTROL_RADIO,
+  createButtonSimpleComparisonStyleTree,
   createButtonSimpleStoreClass,
+  EVENT_CHECK_CHANGED,
+  EVENT_RADIO_SELECTED,
+  ICON_IMAGE,
+  ORIENTATION_VERTICAL,
+  PART_ICON,
+  PART_LABEL,
+  makeButtonStyle,
 } from './index.js';
 
-const PLACEHOLDER_ICON = '/icons/demo-icon.png';
 const STORY_BACKGROUND = new Pixi.Color('#f3eee2').toNumber();
 
 const meta: Meta = {
@@ -18,7 +26,7 @@ const meta: Meta = {
 export default meta;
 type Story = StoryObj;
 
-function createStoryShell(width: number, height: number): HTMLDivElement {
+function createStoryShell(height: number): HTMLDivElement {
   const wrapper = document.createElement('div');
   wrapper.style.width = '100%';
   wrapper.style.height = `${height}px`;
@@ -28,9 +36,24 @@ function createStoryShell(width: number, height: number): HTMLDivElement {
   wrapper.style.borderRadius = '16px';
   wrapper.style.padding = '12px';
   wrapper.style.boxSizing = 'border-box';
-  wrapper.dataset.width = String(width);
-  wrapper.dataset.height = String(height);
+  wrapper.style.position = 'relative';
+  wrapper.style.overflow = 'auto';
   return wrapper;
+}
+
+function addStoryMetric(wrapper: HTMLDivElement, label: string): HTMLDivElement {
+  const metric = document.createElement('div');
+  metric.style.position = 'absolute';
+  metric.style.left = '18px';
+  metric.style.bottom = '12px';
+  metric.style.padding = '6px 8px';
+  metric.style.borderRadius = '6px';
+  metric.style.background = 'rgba(255, 255, 255, 0.82)';
+  metric.style.color = '#263242';
+  metric.style.font = '12px Menlo, Consolas, monospace';
+  metric.textContent = label;
+  wrapper.appendChild(metric);
+  return metric;
 }
 
 async function createPixiApp(wrapper: HTMLDivElement): Promise<Pixi.Application> {
@@ -45,58 +68,341 @@ async function createPixiApp(wrapper: HTMLDivElement): Promise<Pixi.Application>
   return app;
 }
 
-export const HorizontalExamples: Story = {
+function baseButtonTree(root = 'button.simple'): StyleTree {
+  const tree = createButtonSimpleComparisonStyleTree();
+  if (root !== 'button.simple') {
+    copyButtonTreeRoot(tree, 'button.simple', root);
+  }
+  return tree;
+}
+
+function copyButtonTreeRoot(tree: StyleTree, from: string, to: string): void {
+  for (const [key, value] of tree.entries()) {
+    const [nounKey, stateKey = ''] = key.split(':');
+    if (!nounKey.startsWith(from)) {
+      continue;
+    }
+    const states = stateKey ? stateKey.split('-') : [];
+    tree.set(nounKey.replace(from, to), states, value);
+  }
+}
+
+function setVerticalButton(tree: StyleTree, root = 'button.simple'): StyleTree {
+  tree.set(`${root}.layout.orientation`, [], ORIENTATION_VERTICAL);
+  tree.set(`${root}.layout.gap`, [], 6);
+  tree.set(`${root}.layout.padding.x`, [], 10);
+  tree.set(`${root}.layout.padding.y`, [], 10);
+  tree.set(`${root}.layout.min.width`, [], 88);
+  tree.set(`${root}.layout.min.height`, [], 96);
+  tree.set(`${root}.layout.border.radius`, [], 18);
+  tree.set(`${root}.icon.width`, [], 22);
+  tree.set(`${root}.icon.height`, [], 22);
+  tree.set(`${root}.label.font.size`, [], 12);
+  return tree;
+}
+
+function setWarmButton(tree: StyleTree, root = 'button.simple'): StyleTree {
+  tree.set(`${root}.layout.background.color`, [], '#65513d');
+  tree.set(`${root}.layout.background.color`, ['hovered'], '#82684f');
+  tree.set(`${root}.layout.background.color`, ['down'], '#574535');
+  tree.set(`${root}.layout.border.color`, [], '#3e2d1e');
+  tree.set(`${root}.layout.border.color`, ['hovered'], '#513726');
+  tree.set(`${root}.layout.border.color`, ['down'], '#342418');
+  tree.set(`${root}.icon.type`, [], 'circle');
+  tree.set(`${root}.icon.checked.type`, [], 'filledCircle');
+  tree.set(`${root}.icon.fill.color`, [], '#ffd49b');
+  tree.set(`${root}.icon.fill.color`, ['hovered'], '#ffe2b9');
+  tree.set(`${root}.icon.fill.color`, ['down'], '#f6c57f');
+  tree.set(`${root}.label.color`, [], '#fff8ef');
+  return tree;
+}
+
+const GRID_COLUMNS = 10;
+const GRID_ROWS = 10;
+const GRID_START_X = 24;
+const GRID_START_Y = 24;
+const GRID_STEP_X = 92;
+const GRID_STEP_Y = 48;
+
+function gridPosition(index: number): { x: number; y: number } {
+  return {
+    x: GRID_START_X + (index % GRID_COLUMNS) * GRID_STEP_X,
+    y: GRID_START_Y + Math.floor(index / GRID_COLUMNS) * GRID_STEP_Y,
+  };
+}
+
+function gridLabel(index: number): string {
+  return `B${String(index + 1).padStart(2, '0')}`;
+}
+
+export const CustomArrangements: Story = {
   render: () => {
-    const wrapper = createStoryShell(920, 220);
+    const wrapper = createStoryShell(240);
 
     void (async () => {
       const app = await createPixiApp(wrapper);
       const pixi = PixiProvider.shared;
 
+      // 1. No icon
+      const noIconTree = baseButtonTree('button.no-icon');
+      noIconTree.set('button.no-icon.children', [], [
+        {
+          type: PART_LABEL,
+          id: 'label',
+          useButtonLabel: true,
+          labelStyle: {
+            active: {color: '#ffffff'},
+            hovered: {color: '#ffff00'},
+            down: {color: '#cccccc'},
+            disabled: {color: '#666666'},
+          }
+        }
+      ]);
+
+      // 2. Label then star icon
+      const labelFirstTree = baseButtonTree('button.label-first');
+      labelFirstTree.set('button.label-first.children', [], [
+        {
+          type: PART_LABEL,
+          id: 'label',
+          useButtonLabel: true,
+          labelStyle: {
+            active: {color: '#ffffff'},
+            hovered: {color: '#ffffff'},
+            down: {color: '#ffffff'},
+            disabled: {color: '#cccccc'},
+          }
+        },
+        {
+          type: PART_ICON,
+          id: 'icon',
+          iconType: ICON_IMAGE,
+          icon: '/icons/demo-icon.png',
+          width: 16,
+          height: 16,
+          iconStyle: {
+            active: {alpha: 1, color: '#ffffff'},
+            hovered: {alpha: 1, color: '#ffff00'},
+            down: {alpha: 1, color: '#cccccc'},
+            disabled: {alpha: 0.5, color: '#666666'},
+          }
+        }
+      ]);
+
+      // 3. Label Star Label
+      const multiIconTree = baseButtonTree('button.multi-icon');
+      multiIconTree.set('button.multi-icon.children', [], [
+        {
+          type: PART_LABEL,
+          id: 'label-left',
+          useButtonLabel: true,
+          labelStyle: {
+            active: {color: '#ffffff'},
+            hovered: {color: '#ffffff'},
+            down: {color: '#ffffff'},
+            disabled: {color: '#ffffff'},
+          }
+        },
+        {
+          type: PART_ICON,
+          id: 'star-icon',
+          iconType: ICON_IMAGE,
+          icon: '/icons/demo-icon.png',
+          width: 16,
+          height: 16,
+          iconStyle: {
+            active: {alpha: 1, color: '#ffffff'},
+            hovered: {alpha: 1, color: '#ffffff'},
+            down: {alpha: 1, color: '#ffffff'},
+            disabled: {alpha: 0.5, color: '#ffffff'},
+          }
+        },
+        {
+          type: PART_LABEL,
+          id: 'label-right',
+          text: 'Suffix',
+          labelStyle: {
+            active: {color: '#ffd49b'},
+            hovered: {color: '#ffd49b'},
+            down: {color: '#ffd49b'},
+            disabled: {color: '#ffffff'},
+          }
+        }
+      ]);
+
+      const b1 = new ButtonSimpleStore({label: 'No Icon'}, {
+        app, parentContainer: app.stage, pixi, styleTree: noIconTree, root: 'button.no-icon', x: 20, y: 40
+      });
+      const b2 = new ButtonSimpleStore({label: 'Label First'}, {
+        app, parentContainer: app.stage, pixi, styleTree: labelFirstTree, root: 'button.label-first', x: 150, y: 40
+      });
+      const b3 = new ButtonSimpleStore({label: 'Label Star Label'}, {
+        app, parentContainer: app.stage, pixi, styleTree: multiIconTree, root: 'button.multi-icon', x: 300, y: 40
+      });
+
+      [b1, b2, b3].forEach(b => b.kickoff());
+    })();
+
+    return wrapper;
+  }
+};
+
+export const GradientBackgrounds: Story = {
+  render: () => {
+    const wrapper = createStoryShell(240);
+
+    void (async () => {
+      const app = await createPixiApp(wrapper);
+      const pixi = PixiProvider.shared;
+
+      const gradTree = baseButtonTree('button.grad');
+      gradTree.set('button.grad.layout.background.color', [], {
+        direction: 'vertical',
+        colors: ['#4a90e2', '#357abd']
+      });
+      gradTree.set('button.grad.layout.background.color', ['hovered'], {
+        direction: 'vertical',
+        colors: ['#5da1f3', '#4a90e2']
+      });
+      gradTree.set('button.grad.layout.background.color', ['down'], {
+        direction: 'vertical',
+        colors: ['#255a8f', '#1a3f65']
+      });
+      gradTree.set('button.grad.layout.background.color', ['disabled'], '#b2bcc7');
+
+      const b1 = new ButtonSimpleStore({label: 'Vertical Gradient'}, {
+        app, parentContainer: app.stage, pixi, styleTree: gradTree, root: 'button.grad', x: 40, y: 40
+      });
+
+      const gradTreeH = baseButtonTree('button.gradh');
+      gradTreeH.set('button.gradh.layout.background.color', [], {
+        direction: 'horizontal',
+        colors: ['#e24a4a', '#bd3535']
+      });
+      gradTreeH.set('button.gradh.layout.background.color', ['hovered'], {
+        direction: 'horizontal',
+        colors: ['#f35d5d', '#e24a4a']
+      });
+      gradTreeH.set('button.gradh.layout.background.color', ['down'], {
+        direction: 'horizontal',
+        colors: ['#8f2525', '#651a1a']
+      });
+      gradTreeH.set('button.gradh.layout.background.color', ['disabled'], '#c7b2b2');
+
+      const b2 = new ButtonSimpleStore({label: 'Horizontal Gradient'}, {
+        app, parentContainer: app.stage, pixi, styleTree: gradTreeH, root: 'button.gradh', x: 250, y: 40
+      });
+
+      [b1, b2].forEach(b => b.kickoff());
+    })();
+
+    return wrapper;
+  }
+};
+
+export const ImageIcons: Story = {
+  render: () => {
+    const wrapper = createStoryShell(240);
+
+    void (async () => {
+      const app = await createPixiApp(wrapper);
+      const pixi = PixiProvider.shared;
+
+      const imgTree = baseButtonTree('button.img');
+      imgTree.set('button.img.children', [], [
+        {
+          type: PART_ICON,
+          id: 'img-icon',
+          iconType: ICON_IMAGE,
+          icon: '/icons/demo-icon.png',
+          width: 32,
+          height: 32,
+          iconStyle: {
+            active: {alpha: 1},
+            hovered: {alpha: 1},
+            down: {alpha: 0.8},
+            disabled: {alpha: 0.5},
+          }
+        },
+        {
+          type: PART_LABEL,
+          id: 'label',
+          useButtonLabel: true,
+          labelStyle: {
+            active: {color: '#ffffff'},
+            hovered: {color: '#ffffff'},
+            down: {color: '#ffffff'},
+            disabled: {color: '#cccccc'},
+          }
+        }
+      ]);
+
+      const b1 = new ButtonSimpleStore({label: 'Star Button'}, {
+        app, parentContainer: app.stage, pixi, styleTree: imgTree, root: 'button.img', x: 40, y: 40
+      });
+
+      // Managed icon with image? Managed icons use shape by default, but we can override icon.type
+      const managedImgTree = baseButtonTree('button.managed-img');
+      managedImgTree.set('button.managed-img.icon.type', [], ICON_IMAGE);
+      // But managed icon expects some specific props for image icon if we want it to work as IMAGE.
+      // Currently resolveButtonSimpleStyle managed-icon uses read('icon.type', ICON_CIRCLE).
+      // If we set it to ICON_IMAGE, it might fail because it doesn't have 'icon' property.
+      // Let's stick to user children for image icons for now as it's more flexible.
+
+      [b1].forEach(b => b.kickoff());
+    })();
+
+    return wrapper;
+  }
+};
+
+export const HorizontalExamples: Story = {
+  render: () => {
+    const wrapper = createStoryShell(220);
+
+    void (async () => {
+      const app = await createPixiApp(wrapper);
+      const pixi = PixiProvider.shared;
+      const primaryTree = baseButtonTree('button.primary');
+      primaryTree.set('button.primary.children', [], [
+        {
+          type: PART_LABEL,
+          id: 'label',
+          useButtonLabel: true,
+          labelStyle: {
+            active: {color: '#ffffff'},
+            hovered: {color: '#ffffff'},
+            down: {color: '#ffffff'},
+            disabled: {color: '#cccccc'},
+          }
+        }
+      ]);
+      const dangerTree = setWarmButton(baseButtonTree('button.danger'), 'button.danger');
+      dangerTree.set('button.danger.children', [], [
+        {
+          type: PART_LABEL,
+          id: 'label',
+          useButtonLabel: true,
+          labelStyle: {
+            active: {color: '#fff8ef'},
+            hovered: {color: '#fff8ef'},
+            down: {color: '#fff8ef'},
+            disabled: {color: '#cccccc'},
+          }
+        }
+      ]);
+
       const primary = new ButtonSimpleStore({
         label: 'Launch Sequence',
+        checked: true,
       }, {
         app,
         parentContainer: app.stage,
         pixi,
-        layout: {
-          x: 40,
-          y: 44,
-          orientation: ORIENTATION_HORIZONTAL,
-          gap: 8,
-          paddingX: 12,
-          paddingY: 8,
-          sizeIncrement: 4,
-          minHeight: 40,
-          borderRadius: 12,
-          borderWidth: 2,
-          backgroundColor: '#2f5d8a',
-          hoverBackgroundColor: '#3b79b4',
-          disabledBackgroundColor: '#b2bcc7',
-          borderColor: '#17324b',
-          hoverBorderColor: '#1f4e78',
-          disabledBorderColor: '#8a93a0',
-        },
-        children: [
-          {
-            type: 'icon',
-            iconType: 'image',
-            id: 'icon',
-            icon: PLACEHOLDER_ICON,
-            width: 20,
-            height: 20,
-            disabledAlpha: 0.45,
-          },
-          {
-            type: 'label',
-            id: 'label',
-            useButtonLabel: true,
-            fontSize: 15,
-            color: '#ffffff',
-            hoverColor: '#ffffff',
-            disabledColor: '#f4f4f4',
-          },
-        ],
+        styleTree: primaryTree,
+        root: 'button.primary',
+        x: 40,
+        y: 44,
       });
 
       const danger = new ButtonSimpleStore({
@@ -105,35 +411,10 @@ export const HorizontalExamples: Story = {
         app,
         parentContainer: app.stage,
         pixi,
-        layout: {
-          x: 340,
-          y: 44,
-          orientation: ORIENTATION_HORIZONTAL,
-          gap: 8,
-          paddingX: 12,
-          paddingY: 8,
-          sizeIncrement: 4,
-          minHeight: 40,
-          borderRadius: 20,
-          borderWidth: 2,
-          backgroundColor: '#9b2c2c',
-          hoverBackgroundColor: '#bb3b3b',
-          disabledBackgroundColor: '#c8b1b1',
-          borderColor: '#641f1f',
-          hoverBorderColor: '#7a2424',
-          disabledBorderColor: '#a18989',
-        },
-        children: [
-          {
-            type: 'label',
-            id: 'label',
-            useButtonLabel: true,
-            fontSize: 14,
-            color: '#fff6f6',
-            hoverColor: '#ffffff',
-            disabledColor: '#f5eded',
-          },
-        ],
+        styleTree: dangerTree,
+        root: 'button.danger',
+        x: 300,
+        y: 44,
       });
 
       const disabled = new ButtonSimpleStore({
@@ -143,43 +424,10 @@ export const HorizontalExamples: Story = {
         app,
         parentContainer: app.stage,
         pixi,
-        layout: {
-          x: 560,
-          y: 44,
-          orientation: ORIENTATION_HORIZONTAL,
-          gap: 8,
-          paddingX: 12,
-          paddingY: 8,
-          sizeIncrement: 4,
-          minHeight: 40,
-          borderRadius: 12,
-          borderWidth: 2,
-          backgroundColor: '#46604c',
-          hoverBackgroundColor: '#53765d',
-          disabledBackgroundColor: '#c4cdc6',
-          borderColor: '#1c3420',
-          hoverBorderColor: '#24472c',
-          disabledBorderColor: '#97a198',
-        },
-        children: [
-          {
-            type: 'icon',
-            iconType: 'image',
-            id: 'icon',
-            icon: PLACEHOLDER_ICON,
-            width: 20,
-            height: 20,
-            disabledAlpha: 0.4,
-          },
-          {
-            type: 'label',
-            id: 'label',
-            useButtonLabel: true,
-            fontSize: 14,
-            color: '#f2f8f2',
-            disabledColor: '#eef0ee',
-          },
-        ],
+        styleTree: primaryTree,
+        root: 'button.primary',
+        x: 500,
+        y: 44,
       });
 
       [primary, danger, disabled].forEach((button) => button.kickoff());
@@ -191,113 +439,64 @@ export const HorizontalExamples: Story = {
 
 export const VerticalExamples: Story = {
   render: () => {
-    const wrapper = createStoryShell(720, 240);
+    const wrapper = createStoryShell(240);
 
     void (async () => {
       const app = await createPixiApp(wrapper);
       const pixi = PixiProvider.shared;
-
-      const VerticalButton = createButtonSimpleStoreClass({
-        orientation: ORIENTATION_VERTICAL,
-        gap: 6,
-        paddingX: 10,
-        paddingY: 10,
-        sizeIncrement: 4,
-        minWidth: 88,
-        minHeight: 96,
-        borderRadius: 18,
-        borderWidth: 2,
-        backgroundColor: '#384d62',
-        hoverBackgroundColor: '#4d6986',
-        disabledBackgroundColor: '#b6bec7',
-        borderColor: '#1d2a37',
-        hoverBorderColor: '#2b3f53',
-        disabledBorderColor: '#8f98a1',
-      }, [
+      const coolTree = setVerticalButton(baseButtonTree('button.vertical'), 'button.vertical');
+      coolTree.set('button.vertical.children', [], [
         {
-          type: 'icon',
-          iconType: 'image',
-          id: 'icon',
-          icon: PLACEHOLDER_ICON,
-          width: 24,
-          height: 24,
-          disabledAlpha: 0.4,
-        },
-        {
-          type: 'label',
+          type: PART_LABEL,
           id: 'label',
           useButtonLabel: true,
-          fontSize: 12,
-          color: '#ffffff',
-          disabledColor: '#eef1f4',
+          labelStyle: {
+            active: {color: '#ffffff'},
+            hovered: {color: '#ffffff'},
+            down: {color: '#ffffff'},
+            disabled: {color: '#cccccc'},
+          }
         },
-      ]);
-
-      const GalleryButton = createButtonSimpleStoreClass({
-        orientation: ORIENTATION_VERTICAL,
-        gap: 4,
-        paddingX: 10,
-        paddingY: 10,
-        sizeIncrement: 4,
-        minWidth: 96,
-        minHeight: 96,
-        borderRadius: 16,
-        borderWidth: 2,
-        backgroundColor: '#65513d',
-        hoverBackgroundColor: '#82684f',
-        disabledBackgroundColor: '#c8c0b8',
-        borderColor: '#3e2d1e',
-        hoverBorderColor: '#513726',
-        disabledBorderColor: '#9e948a',
-      }, [
         {
-          type: 'icon',
-          iconType: 'image',
-          id: 'icon',
-          icon: PLACEHOLDER_ICON,
+          type: PART_ICON,
+          id: 'star-icon',
+          iconType: ICON_IMAGE,
+          icon: '/icons/demo-icon.png',
           width: 24,
           height: 24,
-          alpha: 0.95,
-          disabledAlpha: 0.4,
-        },
+          iconStyle: {
+            active: {alpha: 1},
+            hovered: {alpha: 1},
+            down: {alpha: 0.8},
+            disabled: {alpha: 0.5},
+          }
+        }
+      ]);
+      const warmTree = setWarmButton(setVerticalButton(baseButtonTree('button.gallery'), 'button.gallery'), 'button.gallery');
+      warmTree.set('button.gallery.children', [], [
         {
-          type: 'label',
+          type: PART_LABEL,
           id: 'label',
           useButtonLabel: true,
-          fontSize: 12,
-          color: '#fff8ef',
-          disabledColor: '#f0ece7',
-        },
+          labelStyle: {
+            active: {color: '#fff8ef'},
+            hovered: {color: '#fff8ef'},
+            down: {color: '#fff8ef'},
+            disabled: {color: '#cccccc'},
+          }
+        }
       ]);
 
-      const profile = new VerticalButton({
-        label: 'Profile',
-      }, {
-        app,
-        parentContainer: app.stage,
-        pixi,
-      });
+      const VerticalButton = createButtonSimpleStoreClass(coolTree, 'button.vertical');
+      const GalleryButton = createButtonSimpleStoreClass(warmTree, 'button.gallery');
+
+      const profile = new VerticalButton({ label: 'Profile', checked: true }, { app, parentContainer: app.stage, pixi });
+      const gallery = new GalleryButton({ label: 'Gallery', checked: true }, { app, parentContainer: app.stage, pixi });
+      const locked = new VerticalButton({ label: 'Locked', disabled: true }, { app, parentContainer: app.stage, pixi });
+
       profile.setPosition(64, 42);
-
-      const gallery = new GalleryButton({
-        label: 'Gallery',
-      }, {
-        app,
-        parentContainer: app.stage,
-        pixi,
-      });
       gallery.setPosition(220, 42);
-
-      const locked = new VerticalButton({
-        label: 'Locked',
-        disabled: true,
-      }, {
-        app,
-        parentContainer: app.stage,
-        pixi,
-      });
       locked.setPosition(388, 42);
-
       [profile, gallery, locked].forEach((button) => button.kickoff());
     })();
 
@@ -307,197 +506,145 @@ export const VerticalExamples: Story = {
 
 export const DynamicLabelGrowth: Story = {
   render: () => {
-    const wrapper = createStoryShell(860, 180);
+    const wrapper = createStoryShell(180);
 
     void (async () => {
       const app = await createPixiApp(wrapper);
       const pixi = PixiProvider.shared;
-
       const button = new ButtonSimpleStore({
         label: 'Go',
       }, {
         app,
         parentContainer: app.stage,
         pixi,
-        layout: {
-          x: 40,
-          y: 50,
-          orientation: ORIENTATION_HORIZONTAL,
-          gap: 8,
-          paddingX: 12,
-          paddingY: 8,
-          sizeIncrement: 4,
-          minHeight: 40,
-          borderRadius: 14,
-          borderWidth: 2,
-          backgroundColor: '#5b4a7a',
-          hoverBackgroundColor: '#725d98',
-          disabledBackgroundColor: '#c4bdd0',
-          borderColor: '#2f2246',
-          hoverBorderColor: '#412c62',
-          disabledBorderColor: '#978faa',
-        },
-        children: [
-          {
-            type: 'icon',
-            iconType: 'image',
-            id: 'icon',
-            icon: PLACEHOLDER_ICON,
-            width: 18,
-            height: 18,
-            disabledAlpha: 0.4,
-          },
-          {
-            type: 'label',
-            id: 'label',
-            useButtonLabel: true,
-            fontSize: 14,
-            color: '#ffffff',
-            disabledColor: '#f3eff8',
-          },
-        ],
+        styleTree: (() => {
+          const t = baseButtonTree();
+          t.set('button.simple.children', [], [
+            {
+              type: PART_LABEL,
+              id: 'label',
+              useButtonLabel: true,
+              labelStyle: {
+                active: {color: '#ffffff'},
+                hovered: {color: '#ffffff'},
+                down: {color: '#ffffff'},
+                disabled: {color: '#cccccc'},
+              }
+            }
+          ]);
+          return t;
+        })(),
+        x: 40,
+        y: 50,
       });
 
       button.kickoff();
-
-      window.setTimeout(() => {
-        button.updateState({ label: 'Proceed To Checkout' });
-      }, 1200);
-
-      window.setTimeout(() => {
-        button.updateState({ label: 'Done', disabled: true });
-      }, 2600);
+      window.setTimeout(() => button.updateState({ label: 'Proceed To Checkout' }), 1200);
+      window.setTimeout(() => button.updateState({ label: 'Done', disabled: true }), 2600);
     })();
 
     return wrapper;
   },
 };
 
-export const CheckedIcons: Story = {
+function setCoolButton(tree: StyleTree, root = 'button.simple'): StyleTree {
+  tree.set(`${root}.layout.background.color`, [], '#3d5165');
+  tree.set(`${root}.layout.background.color`, ['hovered'], '#4f6882');
+  tree.set(`${root}.layout.background.color`, ['down'], '#354557');
+  tree.set(`${root}.layout.border.color`, [], '#1e2d3e');
+  tree.set(`${root}.layout.border.color`, ['hovered'], '#263751');
+  tree.set(`${root}.layout.border.color`, ['down'], '#182434');
+  tree.set(`${root}.icon.type`, [], 'box');
+  tree.set(`${root}.icon.checked.type`, [], 'filledBox');
+  tree.set(`${root}.icon.fill.color`, [], '#9bbdff');
+  tree.set(`${root}.icon.fill.color`, ['hovered'], '#b9d2ff');
+  tree.set(`${root}.icon.fill.color`, ['down'], '#7f9ef6');
+  tree.set(`${root}.label.color`, [], '#eff8ff');
+  return tree;
+}
+
+export const RadioAndCheckboxEvents: Story = {
   render: () => {
-    const wrapper = createStoryShell(920, 220);
+    const wrapper = createStoryShell(300);
+    const metric = addStoryMetric(wrapper, 'events: pending');
 
     void (async () => {
       const app = await createPixiApp(wrapper);
       const pixi = PixiProvider.shared;
+      const radioButtons: ButtonSimpleStore[] = [];
+      const checkboxes: ButtonSimpleStore[] = [];
+      const checkedValues = () => checkboxes
+        .filter((button) => button.value.checked)
+        .map((button) => button.value.buttonValue);
 
-      const CheckboxButton = createButtonSimpleStoreClass({
-        orientation: ORIENTATION_HORIZONTAL,
-        gap: 10,
-        paddingX: 12,
-        paddingY: 8,
-        sizeIncrement: 4,
-        minHeight: 40,
-        borderRadius: 12,
-        borderWidth: 2,
-        backgroundColor: '#2f5d8a',
-        hoverBackgroundColor: '#3b79b4',
-        downBackgroundColor: '#24486a',
-        disabledBackgroundColor: '#b2bcc7',
-        borderColor: '#17324b',
-        hoverBorderColor: '#1f4e78',
-        downBorderColor: '#163752',
-        disabledBorderColor: '#8a93a0',
-      }, [
+      const radioTree = setWarmButton(baseButtonTree('button.radio'), 'button.radio');
+      radioTree.set('button.radio.children', [], [
         {
-          type: 'icon',
-          id: 'check',
-          iconType: 'box',
-          checkedIconType: 'filledBox',
-          width: 16,
-          height: 16,
-          color: '#ffffff',
-          fillColor: '#8ec5ff',
-          hoverFillColor: '#b8dcff',
-          downFillColor: '#6fb2f8',
-          disabledColor: '#e8edf2',
-          disabledFillColor: '#cdd6df',
-          borderWidth: 2,
-        },
-        {
-          type: 'label',
+          type: PART_LABEL,
           id: 'label',
           useButtonLabel: true,
-          fontSize: 14,
-          color: '#ffffff',
-          disabledColor: '#eef1f4',
-        },
+          labelStyle: {
+            active: {color: '#fff8ef'},
+            hovered: {color: '#fff8ef'},
+            down: {color: '#fff8ef'},
+            disabled: {color: '#cccccc'},
+          }
+        }
       ]);
 
-      const RadioButton = createButtonSimpleStoreClass({
-        orientation: ORIENTATION_HORIZONTAL,
-        gap: 10,
-        paddingX: 12,
-        paddingY: 8,
-        sizeIncrement: 4,
-        minHeight: 40,
-        borderRadius: 20,
-        borderWidth: 2,
-        backgroundColor: '#65513d',
-        hoverBackgroundColor: '#82684f',
-        downBackgroundColor: '#574535',
-        disabledBackgroundColor: '#c8c0b8',
-        borderColor: '#3e2d1e',
-        hoverBorderColor: '#513726',
-        downBorderColor: '#342418',
-        disabledBorderColor: '#9e948a',
-      }, [
+      const checkboxTree = setCoolButton(baseButtonTree('button.checkbox'), 'button.checkbox');
+      checkboxTree.set('button.checkbox.children', [], [
         {
-          type: 'icon',
-          id: 'radio',
-          iconType: 'circle',
-          checkedIconType: 'filledCircle',
-          width: 16,
-          height: 16,
-          color: '#fff8ef',
-          fillColor: '#ffd49b',
-          hoverFillColor: '#ffe2b9',
-          downFillColor: '#f6c57f',
-          disabledColor: '#ede7e0',
-          disabledFillColor: '#d9d1ca',
-          borderWidth: 2,
-        },
-        {
-          type: 'label',
+          type: PART_LABEL,
           id: 'label',
           useButtonLabel: true,
-          fontSize: 14,
-          color: '#fff8ef',
-          disabledColor: '#f0ece7',
-        },
+          labelStyle: {
+            active: {color: '#eff8ff'},
+            hovered: {color: '#eff8ff'},
+            down: {color: '#eff8ff'},
+            disabled: {color: '#cccccc'},
+          }
+        }
       ]);
+      const RadioButton = createButtonSimpleStoreClass(radioTree, 'button.radio');
+      const CheckboxButton = createButtonSimpleStoreClass(checkboxTree, 'button.checkbox');
 
-      const checked = new CheckboxButton({
-        label: 'Checked',
-        checked: true,
-      }, {
-        app,
-        parentContainer: app.stage,
-        pixi,
+      app.stage.on(EVENT_RADIO_SELECTED, (event: { id?: string; buttonValue?: unknown }) => {
+        radioButtons.forEach((button) => button.onRadioDeselected({ id: event.id }));
+        metric.textContent = `radioSelected: ${String(event.buttonValue)}`;
       });
-      checked.setPosition(40, 44);
 
-      const unchecked = new CheckboxButton({
-        label: 'Unchecked',
-        checked: false,
-      }, {
-        app,
-        parentContainer: app.stage,
-        pixi,
+      app.stage.on(EVENT_CHECK_CHANGED, (event: { changedButtonValue?: unknown; checkedValues?: unknown[] }) => {
+        metric.textContent = `checkChanged: ${String(event.changedButtonValue)} -> [${(event.checkedValues ?? []).join(', ')}]`;
       });
-      unchecked.setPosition(280, 44);
 
-      const selected = new RadioButton({
-        label: 'Selected',
-        checked: true,
-      }, {
-        app,
-        parentContainer: app.stage,
-        pixi,
+      ['login', 'register', 'guest'].forEach((value, index) => {
+        const button = new RadioButton({
+          id: `radio-${value}`,
+          label: value,
+          buttonValue: value,
+          controlType: CONTROL_RADIO,
+          checked: index === 0,
+        }, { app, parentContainer: app.stage, pixi });
+        button.setPosition(40 + index * 150, 44);
+        button.kickoff();
+        radioButtons.push(button);
       });
-      selected.setPosition(540, 44);
 
-      [checked, unchecked, selected].forEach((button) => button.kickoff());
+      ['alerts', 'exports', 'audit'].forEach((value, index) => {
+        const button = new CheckboxButton({
+          id: `check-${value}`,
+          label: value,
+          buttonValue: value,
+          controlType: CONTROL_CHECKBOX,
+          checked: index === 0,
+        }, { app, parentContainer: app.stage, pixi, getCheckedValues: checkedValues });
+        button.setPosition(40 + index * 150, 120);
+        button.kickoff();
+        checkboxes.push(button);
+      });
+
+      metric.textContent = `checkChanged: init -> [${checkedValues().join(', ')}]`;
     })();
 
     return wrapper;
@@ -506,74 +653,270 @@ export const CheckedIcons: Story = {
 
 export const PressState: Story = {
   render: () => {
-    const wrapper = createStoryShell(860, 200);
+    const wrapper = createStoryShell(200);
 
     void (async () => {
       const app = await createPixiApp(wrapper);
       const pixi = PixiProvider.shared;
-
       const button = new ButtonSimpleStore({
         label: 'Hold To Confirm',
       }, {
         app,
         parentContainer: app.stage,
         pixi,
-        layout: {
-          x: 40,
-          y: 44,
-          orientation: ORIENTATION_HORIZONTAL,
-          gap: 8,
-          paddingX: 14,
-          paddingY: 10,
-          sizeIncrement: 4,
-          minHeight: 42,
-          borderRadius: 14,
-          borderWidth: 2,
-          backgroundColor: '#3c6b43',
-          hoverBackgroundColor: '#4a8654',
-          downBackgroundColor: '#2f5535',
-          disabledBackgroundColor: '#c2ccc3',
-          borderColor: '#1e3b23',
-          hoverBorderColor: '#28502f',
-          downBorderColor: '#17301b',
-          disabledBorderColor: '#95a096',
-        },
-        children: [
-          {
-            type: 'icon',
-            id: 'confirm',
-            iconType: 'circle',
-            checkedIconType: 'filledCircle',
-            width: 16,
-            height: 16,
-            color: '#ffffff',
-            fillColor: '#d5ffd7',
-            hoverFillColor: '#e8ffe9',
-            downFillColor: '#a8e5ac',
-            borderWidth: 2,
-          },
-          {
-            type: 'label',
-            id: 'label',
-            useButtonLabel: true,
-            fontSize: 14,
-            color: '#ffffff',
-          },
-        ],
+        styleTree: (() => {
+          const t = baseButtonTree();
+          t.set('button.simple.children', [], [
+            {
+              type: PART_LABEL,
+              id: 'label',
+              useButtonLabel: true,
+              labelStyle: {
+                active: {color: '#ffffff'},
+                hovered: {color: '#ffffff'},
+                down: {color: '#ffffff'},
+                disabled: {color: '#cccccc'},
+              }
+            }
+          ]);
+          return t;
+        })(),
+        x: 40,
+        y: 44,
       });
 
       button.kickoff();
-
       window.setTimeout(() => {
         button.onPointerOver();
         button.onPointerDown();
       }, 800);
-
-      window.setTimeout(() => {
-        button.onPointerUp();
-      }, 1800);
+      window.setTimeout(() => button.onPointerUp(), 1800);
     })();
 
     return wrapper;
   },
+};
+
+export const StyleTreeButtonGrid: Story = {
+  render: () => {
+    const wrapper = createStoryShell(560);
+    const metric = addStoryMetric(wrapper, 'style-tree grid: pending');
+
+    void (async () => {
+      const app = await createPixiApp(wrapper);
+      const pixi = PixiProvider.shared;
+      const styleTree = baseButtonTree();
+      styleTree.set('button.simple.children', [], [
+        {
+          type: PART_LABEL,
+          id: 'label',
+          useButtonLabel: true,
+          labelStyle: {
+            active: {color: '#ffffff'},
+            hovered: {color: '#ffffff'},
+            down: {color: '#ffffff'},
+            disabled: {color: '#cccccc'},
+          }
+        }
+      ]);
+      const GridButton = createButtonSimpleStoreClass(styleTree);
+      const buttons: ButtonSimpleStore[] = [];
+      const started = performance.now();
+
+      for (let index = 0; index < GRID_COLUMNS * GRID_ROWS; index += 1) {
+        const button = new GridButton({
+          label: gridLabel(index),
+          checked: index % 3 === 0,
+          disabled: index % 17 === 0,
+        }, { app, parentContainer: app.stage, pixi });
+        const { x, y } = gridPosition(index);
+        button.setPosition(x, y);
+        button.kickoff();
+        buttons.push(button);
+      }
+
+      app.render();
+      metric.textContent = `style-tree grid: ${buttons.length} buttons in ${(performance.now() - started).toFixed(1)}ms`;
+    })();
+
+    return wrapper;
+  },
+};
+
+export const MakeButtonStyleDemo: Story = {
+  argTypes: {
+    baseColor: {control: 'color'},
+    textColor: {control: 'color'},
+    fontSize: {control: {type: 'number', min: 1, max: 100, step: 1}},
+    paddingX: {control: {type: 'number', min: 0, max: 100, step: 1}},
+    paddingY: {control: {type: 'number', min: 0, max: 100, step: 1}},
+  },
+  args: {
+    baseColor: '#ff6b6b',
+    textColor: '#ffffff',
+    fontSize: 16,
+    paddingX: 20,
+    paddingY: 10,
+  },
+  render: (args, { loaded: { app } }) => {
+    const wrapper = createStoryShell(600, 350);
+    const pixi = PixiProvider.shared;
+
+    const jsonField = document.createElement('pre');
+    jsonField.style.width = '50%';
+    jsonField.style.height = '350px';
+    jsonField.style.overflow = 'auto';
+    jsonField.style.background = '#2c3e50';
+    jsonField.style.color = '#ecf0f1';
+    jsonField.style.padding = '10px';
+    jsonField.style.fontSize = '12px';
+    jsonField.style.fontFamily = 'Monaco, monospace';
+    jsonField.style.borderRadius = '8px';
+    jsonField.style.margin = '0';
+    jsonField.style.boxSizing = 'border-box';
+
+    const container = document.createElement('div');
+    container.style.display = 'flex';
+    container.style.gap = '10px';
+    container.style.alignItems = 'flex-start';
+    container.style.width = '100%';
+
+    const canvasWrapper = document.createElement('div');
+    canvasWrapper.style.width = '50%';
+    canvasWrapper.appendChild(app.canvas);
+    app.canvas.style.width = '100%';
+    app.canvas.style.height = 'auto';
+
+    const styleTree = makeButtonStyle({
+      baseColor: args.baseColor,
+      textColor: args.textColor,
+      fontSize: args.fontSize,
+      padding: { x: args.paddingX, y: args.paddingY },
+    });
+
+    // --- VARIETY: Overriding styleTree for different types ---
+    // Image icon children
+    const imgChildren = [
+      {
+        type: PART_ICON,
+        id: 'img-icon',
+        iconType: ICON_IMAGE,
+        icon: '/icons/demo-icon.png',
+        width: Math.max(16, args.fontSize),
+        height: Math.max(16, args.fontSize),
+        iconStyle: {
+          active: { alpha: 1 },
+          hovered: { alpha: 1 },
+          down: { alpha: 0.8 },
+          disabled: { alpha: 0.5 },
+        }
+      },
+      {
+        type: PART_LABEL,
+        id: 'label',
+        useButtonLabel: true,
+        labelStyle: {
+          active: { color: args.textColor },
+          hovered: { color: args.textColor },
+          down: { color: args.textColor },
+          disabled: { color: '#cccccc' },
+        }
+      }
+    ];
+
+    // Text only children
+    const textOnlyChildren = [
+      {
+        type: PART_LABEL,
+        id: 'label',
+        useButtonLabel: true,
+        labelStyle: {
+          active: { color: args.textColor },
+          hovered: { color: args.textColor },
+          down: { color: args.textColor },
+          disabled: { color: '#cccccc' },
+        }
+      }
+    ];
+
+    console.log('MakeButtonStyleDemo: args', args);
+    console.log('MakeButtonStyleDemo: styleTree fontSize', styleTree.get('button.simple.label.font.size', []));
+
+    jsonField.textContent = JSON.stringify(styleTree.toJSON(), null, 2);
+
+    // Clear stage before adding new buttons
+    app.stage.removeChildren();
+
+    const commonProps = {
+      app,
+      parentContainer: app.stage,
+      pixi,
+      styleTree,
+    };
+
+    // 1. Text Only Button
+    const textTree = styleTree.clone();
+    textTree.set('button.simple.children', [], textOnlyChildren);
+    const textButton = new ButtonSimpleStore({
+      label: 'Text Only',
+    }, {
+      ...commonProps,
+      styleTree: textTree,
+    });
+
+    textButton.setPosition(150, 40);
+    textButton.kickoff();
+
+    // 2. Image Button
+    const imgTree = styleTree.clone();
+    imgTree.set('button.simple.children', [], imgChildren);
+    const imgButton = new ButtonSimpleStore({
+      label: 'Image Icon',
+    }, {
+      ...commonProps,
+      styleTree: imgTree,
+    });
+
+    imgButton.setPosition(150, 110);
+    imgButton.kickoff();
+
+    // 3. Checkbox Button
+    const checkboxButton = new ButtonSimpleStore({
+      label: 'Checkbox',
+      controlType: CONTROL_CHECKBOX,
+    }, {
+      ...commonProps,
+    });
+    checkboxButton.setPosition(150, 180);
+    checkboxButton.kickoff();
+
+    // 4. Radio Button
+    const radioButton = new ButtonSimpleStore({
+      label: 'Radio',
+      controlType: CONTROL_RADIO,
+    }, {
+      ...commonProps,
+    });
+    radioButton.setPosition(150, 250);
+    radioButton.kickoff();
+
+    container.appendChild(canvasWrapper);
+    container.appendChild(jsonField);
+    wrapper.appendChild(container);
+
+    return wrapper;
+  },
+  loaders: [
+    async () => {
+      const wrapper = document.createElement('div');
+      wrapper.style.width = '100%';
+      wrapper.style.height = '600px';
+      const app = await createPixiApp(wrapper);
+      // Remove canvas from wrapper to allow render function to place it
+      if (app.canvas.parentNode) {
+        app.canvas.parentNode.removeChild(app.canvas);
+      }
+      return { app };
+    },
+  ],
 };

@@ -342,6 +342,10 @@ export class StyleTree {
     return exportToJSON(this, options);
   }
 
+  clone(): StyleTree {
+    return StyleTree.fromJSON(this.toJSON());
+  }
+
   clearCache(): void {
     this.cache.clear();
   }

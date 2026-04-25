@@ -1,0 +1,103 @@
+{
+  "button": {
+    "simple": {
+      "layout": {
+        "orientation": {
+          "$*": "horizontal"
+        },
+        "gap": {
+          "$*": 8
+        },
+        "padding": {
+          "x": {
+            "$*": 10
+          },
+          "y": {
+            "$*": 6
+          }
+        },
+        "size": {
+          "increment": {
+            "$*": 4
+          }
+        },
+        "min": {
+          "height": {
+            "$*": 34
+          }
+        },
+        "border": {
+          "radius": {
+            "$*": 10
+          },
+          "width": {
+            "$*": 2
+          },
+          "color": {
+            "$*": "#17324b",
+            "$hovered": "#1f4e78",
+            "$down": "#163752",
+            "$disabled": "#8a93a0"
+          }
+        },
+        "background": {
+          "color": {
+            "$*": "#2f5d8a",
+            "$hovered": "#3b79b4",
+            "$down": "#24486a",
+            "$disabled": "#b2bcc7"
+          }
+        }
+      },
+      "label": {
+        "font": {
+          "size": {
+            "$*": 14
+          },
+          "family": {
+            "$*": "Helvetica, Arial, sans-serif"
+          }
+        },
+        "color": {
+          "$*": "#ffffff",
+          "$disabled": "#eef1f4"
+        }
+      },
+      "icon": {
+        "type": {
+          "$*": "circle",
+          "$checkbox": "box"
+        },
+        "checked": {
+          "type": {
+            "$*": "filledCircle",
+            "$checkbox": "filledBox"
+          }
+        },
+        "width": {
+          "$*": 12
+        },
+        "height": {
+          "$*": 12
+        },
+        "color": {
+          "$*": "#ffffff",
+          "$disabled": "#e8edf2"
+        },
+        "fill": {
+          "color": {
+            "$*": "#8ec5ff",
+            "$hovered": "#b8dcff",
+            "$down": "#6fb2f8",
+            "$disabled": "#cdd6df"
+          }
+        },
+        "border": {
+          "width": {
+            "$*": 2
+          }
+        }
+      }
+    }
+  }
+}
